@@ -1,0 +1,27 @@
+{
+  "name": "日常活动记录器",
+  "short_name": "活动记录",
+  "description": "记录每天的活动、饮食和感受",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4CAF50",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/color/96/planner--v1.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "https://img.icons8.com/color/192/planner--v1.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://img.icons8.com/color/512/planner--v1.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

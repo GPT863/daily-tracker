@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>日常活动记录器</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>📅 今日活动记录</h1>
+            <div class="date-selector">
+                <button id="prevDay" class="date-btn">◀</button>
+                <span id="currentDate"></span>
+                <button id="nextDay" class="date-btn">▶</button>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <!-- 统计卡片 -->
+            <section class="stats-section">
+                <div class="stat-card">
+                    <span class="stat-icon">🍽️</span>
+                    <div class="stat-info">
+                        <div class="stat-value" id="mealCount">0</div>
+                        <div class="stat-label">用餐</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">💊</span>
+                    <div class="stat-info">
+                        <div class="stat-value" id="medCount">0</div>
+                        <div class="stat-label">用药</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">🏃</span>
+                    <div class="stat-info">
+                        <div class="stat-value" id="exerciseCount">0</div>
+                        <div class="stat-label">运动</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-icon">⏱️</span>
+                    <div class="stat-info">
+                        <div class="stat-value" id="exerciseTime">0m</div>
+                        <div class="stat-label">运动时长</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 今日提醒 -->
+            <section class="reminder-section">
+                <div class="reminder-header">
+                    <h2>🔔 今日提醒</h2>
+                    <button id="viewAllReminders" class="text-btn">查看全部</button>
+                </div>
+                <div id="todayReminders" class="reminder-list"></div>
+                <div id="noReminders" class="empty-state small">
+                    <p>今天没有提醒</p>
+                </div>
+            </section>
+
+            <!-- 时间线 -->
+            <section class="timeline-section">
+                <h2>📝 时间线</h2>
+                <div id="timeline" class="timeline"></div>
+                <div id="emptyState" class="empty-state">
+                    <p>今天还没有记录哦</p>
+                    <p>点击下方按钮添加活动吧！</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部导航按钮 -->
+        <div class="bottom-actions">
+            <button id="addBtn" class="fab-add">+</button>
+            <button id="reminderBtn" class="fab-reminder">🔔</button>
+        </div>
+
+        <!-- 添加/编辑活动表单模态框 -->
+        <div id="activityModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">添加活动</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <form id="activityForm" class="activity-form">
+                    <input type="hidden" id="activityId">
+                    
+                    <div class="form-group">
+                        <label for="activityTime">时间</label>
+                        <input type="time" id="activityTime" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="activityType">类型</label>
+                        <select id="activityType" required>
+                            <option value="meal">🍽️ 用餐</option>
+                            <option value="medication">💊 用药</option>
+                            <option value="exercise">🏃 运动</option>
+                            <option value="sleep">😴 休息</option>
+                            <option value="work">💼 工作</option>
+                            <option value="other">📌 其他</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="activityContent">内容</label>
+                        <input type="text" id="activityContent" placeholder="例如：吃了红烧肉" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="activityFeeling">感受</label>
+                        <textarea id="activityFeeling" rows="3" placeholder="感觉如何？满足、疲惫、开心..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="activityDuration">时长（分钟）</label>
+                        <input type="number" id="activityDuration" min="0" placeholder="可选">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel">取消</button>
+                        <button type="submit" class="btn-submit">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 导出模态框 -->
+        <div id="exportModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>导出数据</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="export-options">
+                    <button id="exportJson" class="export-btn">📄 导出JSON</button>
+                    <button id="exportCsv" class="export-btn">📊 导出CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提醒管理模态框 -->
+        <div id="reminderModal" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h2>🔔 提醒管理</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="reminder-content">
+                    <div class="reminder-tabs">
+                        <button class="tab-btn active" data-tab="today">今日提醒</button>
+                        <button class="tab-btn" data-tab="upcoming">即将到来</button>
+                        <button class="tab-btn" data-tab="all">全部提醒</button>
+                        <button class="tab-btn" data-tab="add">添加提醒</button>
+                    </div>
+
+                    <div id="tab-today" class="tab-content active">
+                        <div id="todayReminderList" class="reminder-detail-list"></div>
+                    </div>
+
+                    <div id="tab-upcoming" class="tab-content">
+                        <div id="upcomingReminderList" class="reminder-detail-list"></div>
+                    </div>
+
+                    <div id="tab-all" class="tab-content">
+                        <div id="allReminderList" class="reminder-detail-list"></div>
+                    </div>
+
+                    <div id="tab-add" class="tab-content">
+                        <form id="reminderForm" class="reminder-form">
+                            <div class="form-group">
+                                <label for="reminderTitle">提醒内容</label>
+                                <input type="text" id="reminderTitle" placeholder="例如：该吃药了" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="reminderType">类型</label>
+                                <select id="reminderType">
+                                    <option value="meal">🍽️ 用餐</option>
+                                    <option value="medication">💊 用药</option>
+                                    <option value="exercise">🏃 运动</option>
+                                    <option value="other">📌 其他</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="reminderDate">日期</label>
+                                <input type="date" id="reminderDate" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="reminderTime">时间</label>
+                                <input type="time" id="reminderTime" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="reminderRepeat" value="daily">
+                                    每天重复此提醒
+                                </label>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="reminderNotes">备注（可选）</label>
+                                <textarea id="reminderNotes" rows="2" placeholder="例如：降压药1片"></textarea>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn-cancel">取消</button>
+                                <button type="submit" class="btn-submit">添加提醒</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

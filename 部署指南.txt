@@ -1,0 +1,115 @@
+===============================================
+健康生活记录器 - 部署指南
+===============================================
+
+## 🎯 推荐方案：GitHub Pages（完全免费）
+
+### 为什么选择 GitHub Pages？
+✅ 完全免费，无需任何费用
+✅ 全球可访问，任何地方都能打开
+✅ 自动 HTTPS，安全连接
+✅ CDN 加速，访问速度快
+✅ 稳定可靠，GitHub 官方托管
+
+---
+
+## 📋 部署步骤（5分钟搞定）
+
+### 步骤1：注册 GitHub
+1. 访问：https://github.com
+2. 点击右上角 "Sign up" 注册账号
+3. 验证邮箱
+
+### 步骤2：创建仓库
+1. 登录后点击右上角 "+" → "New repository"
+2. 填写：
+   - Repository name: daily-tracker
+   - Description: 健康生活记录器
+   - 选择 Public（公开）
+3. 点击 "Create repository"
+
+### 步骤3：上传文件
+**需要上传 4 个文件（在 /root/.openclaw/workspace/daily-tracker/ 目录）：**
+
+1. index.html (11 KB)
+2. style.css (12 KB)  
+3. app.js (23 KB)
+4. manifest.json (682 B)
+
+**上传方法：**
+1. 在仓库页面点击 "Add file" → "Upload files"
+2. 把这 4 个文件拖拽上去
+3. 填写提交信息："Initial commit"
+4. 点击 "Commit changes"
+
+### 步骤4：启用 GitHub Pages
+1. 在仓库页面点击 "Settings"
+2. 左侧菜单找到 "Pages"
+3. Source 设置：
+   - Branch: 选择 main
+   - Folder: 选择 / (root)
+4. 点击 "Save"
+
+### 步骤5：等待部署
+- 大约 1-2 分钟
+- 页面会显示："Your site is live at ..."
+
+---
+
+## 📱 部署成功后
+
+你的应用地址将是：
+https://你的用户名.github.io/daily-tracker/
+
+例如：如果用户名是 guiliangfeng
+https://guiliangfeng.github.io/daily-tracker/
+
+---
+
+## 🚀 在手机上使用
+
+1. **iPhone (Safari):**
+   - 访问上面的地址
+   - 点击"分享" → "添加到主屏幕"
+
+2. **Android (Chrome):**
+   - 访问上面的地址
+   - 点击"三个点" → "添加到主屏幕"
+
+---
+
+## 💡 其他部署方案
+
+### 方案2：Netlify（拖拽部署）
+1. 访问：https://www.netlify.com
+2. 注册账号
+3. 把 4 个文件拖拽到页面
+4. 自动生成网址
+
+### 方案3：Vercel（推荐）
+1. 访问：https://vercel.com
+2. 用 GitHub 登录
+3. 导入 GitHub 仓库
+4. 自动部署
+
+---
+
+## ⚠️ 关于云服务器
+
+当前云服务器的端口被安全组封锁，无法从外部访问。
+
+如果要使用云服务器，需要：
+1. 登录云服务商控制台（阿里云/腾讯云）
+2. 找到这台服务器的"安全组"设置
+3. 添加入方向规则：
+   - 端口：80
+   - 协议：TCP
+   - 授权对象：0.0.0.0/0
+
+**但这需要配置，不如直接用 GitHub Pages 简单！**
+
+---
+
+## 📞 需要帮助？
+
+有任何问题随时联系我！
