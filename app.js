@@ -3,6 +3,7 @@ let currentDate = new Date();
 let activities = [];
 let reminders = [];
 let editingId = null;
+let timelineOrder = localStorage.getItem('dailyTracker_timelineOrder') || 'desc';
 
 // 活动类型图标映射
 const typeIcons = {
@@ -19,7 +20,7 @@ const typeLabels = {
     meal: '用餐',
     medication: '用药',
     exercise: '运动',
-    sleep: '休息',
+    sleep: '睡眠',
     work: '工作',
     other: '其他'
 };
@@ -41,11 +42,115 @@ document.addEventListener('DOMContentLoaded', () => {
 // 初始化数据库（使用LocalStorage模拟）
 function initDB() {
     if (!localStorage.getItem('dailyTracker_activities')) {
-        localStorage.setItem('dailyTracker_activities', JSON.stringify({}));
+        localStorage.setItem('dailyTracker_activities', JSON.stringify(createMockActivities()));
     }
     if (!localStorage.getItem('dailyTracker_reminders')) {
-        localStorage.setItem('dailyTracker_reminders', JSON.stringify([]));
+        localStorage.setItem('dailyTracker_reminders', JSON.stringify(createMockReminders()));
     }
+}
+
+function createMockActivities() {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return {
+        [getDateKey(today)]: [
+            createMockActivity('a1', '07:10', 'sleep', '昨晚睡了7.5小时', '早上起床状态不错，精神比较稳定'),
+            createMockActivity('a2', '08:00', 'meal', '早餐：全麦面包、鸡蛋、牛奶', '吃完很踏实，胃里很舒服', 20),
+            createMockActivity('a3', '09:00', 'medication', '维生素D 1粒', '无明显不适'),
+            createMockActivity('a4', '12:20', 'meal', '午餐：糙米饭、清炒西兰花、鸡胸肉', '清爽不油腻，下午不犯困', 30),
+            createMockActivity('a5', '15:30', 'work', '整理本周健康记录', '复盘后更清楚自己的作息问题', 45),
+            createMockActivity('a6', '19:10', 'exercise', '快走 + 拉伸', '微微出汗，腿部放松很多', 40),
+            createMockActivity('a7', '20:10', 'meal', '晚餐：南瓜粥和蔬菜沙拉', '晚餐轻一点，身体感觉更轻松', 25)
+        ],
+        [getDateKey(yesterday)]: [
+            createMockActivity('b1', '07:40', 'sleep', '午休补觉30分钟', '下午精神恢复了一些', 30),
+            createMockActivity('b2', '08:15', 'meal', '早餐：燕麦粥', '暖胃，早上状态平稳', 15),
+            createMockActivity('b3', '12:05', 'medication', '降压药 1片', '饭后服用，没有明显不适'),
+            createMockActivity('b4', '18:40', 'exercise', '慢跑 5 公里', '心率偏高，但整体状态不错', 35)
+        ],
+        [getDateKey(tomorrow)]: [
+            createMockActivity('c1', '07:30', 'sleep', '计划早起后记录睡眠情况', ''),
+            createMockActivity('c2', '19:00', 'exercise', '计划散步 30 分钟', '提前安排明天的运动节奏', 30)
+        ]
+    };
+}
+
+function createMockActivity(id, time, type, content, feeling, duration = null) {
+    return {
+        id,
+        time,
+        type,
+        content,
+        feeling,
+        duration,
+        createdAt: new Date().toISOString()
+    };
+}
+
+function createMockReminders() {
+    const today = getDateKey(new Date());
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return [
+        createMockReminder('r1', '早餐时间', 'meal', today, '08:00', true, '吃得清淡一点，先补充蛋白质'),
+        createMockReminder('r2', '记得服药', 'medication', today, '09:00', true, '早餐后服用'),
+        createMockReminder('r3', '晚上活动一下', 'exercise', today, '19:00', true, '至少快走 30 分钟'),
+        createMockReminder('r4', '准备睡眠', 'sleep', today, '22:30', true, '睡前少看手机'),
+        createMockReminder('r5', '复查预约提醒', 'other', getDateKey(tomorrow), '15:00', false, '带上病历和检查单'),
+        {
+            ...createMockReminder('r6', '午间散步', 'exercise', today, '13:30', false, '饭后散步 15 分钟'),
+            completed: true,
+            completedAt: new Date().toISOString()
+        }
+    ];
+}
+
+function createMockReminder(id, title, type, date, time, repeat, notes) {
+    return {
+        id,
+        title,
+        type,
+        date,
+        time,
+        repeat,
+        notes,
+        completed: false,
+        completedAt: null,
+        createdAt: new Date().toISOString()
+    };
+}
+
+function loadDemoData() {
+    const shouldReplace = confirm('这会用示例数据覆盖当前本地活动和提醒，是否继续？');
+    if (!shouldReplace) return;
+
+    localStorage.setItem('dailyTracker_activities', JSON.stringify(createMockActivities()));
+    localStorage.setItem('dailyTracker_reminders', JSON.stringify(createMockReminders()));
+
+    loadActivities();
+    loadReminders();
+    updateDisplay();
+    updateRemindersDisplay();
+    showToast('示例数据已加载');
+}
+
+function resetAllData() {
+    const shouldClear = confirm('这会清空当前浏览器中的全部活动和提醒数据，是否继续？');
+    if (!shouldClear) return;
+
+    localStorage.setItem('dailyTracker_activities', JSON.stringify({}));
+    localStorage.setItem('dailyTracker_reminders', JSON.stringify([]));
+
+    loadActivities();
+    loadReminders();
+    updateDisplay();
+    updateRemindersDisplay();
+    showToast('本地数据已清空');
 }
 
 // 加载活动数据
@@ -83,6 +188,16 @@ function setupEventListeners() {
         document.getElementById('reminderModal').style.display = 'block';
         renderReminderTabs('today');
     });
+
+    // 导出入口
+    ['exportBtn', 'timelineExportBtn', 'quickExportBtn'].forEach(id => {
+        document.getElementById(id).addEventListener('click', openExportModal);
+    });
+    document.getElementById('timelineOrderBtn').addEventListener('click', toggleTimelineOrder);
+
+    // 数据辅助入口
+    document.getElementById('seedDemoBtn').addEventListener('click', loadDemoData);
+    document.getElementById('resetDataBtn').addEventListener('click', resetAllData);
 
     // 查看全部提醒
     document.getElementById('viewAllReminders').addEventListener('click', () => {
@@ -129,6 +244,7 @@ function changeDate(days) {
 // 更新显示
 function updateDisplay() {
     updateDateDisplay();
+    updateTimelineOrderButton();
     updateTimeline();
     updateStats();
 }
@@ -143,15 +259,20 @@ function updateDateDisplay() {
 function updateTimeline() {
     const timeline = document.getElementById('timeline');
     const emptyState = document.getElementById('emptyState');
+    const displayActivities = [...activities].sort((a, b) => {
+        return timelineOrder === 'asc'
+            ? a.time.localeCompare(b.time)
+            : b.time.localeCompare(a.time);
+    });
 
-    if (activities.length === 0) {
+    if (displayActivities.length === 0) {
         timeline.innerHTML = '';
         emptyState.style.display = 'block';
         return;
     }
 
     emptyState.style.display = 'none';
-    timeline.innerHTML = activities.map(activity => `
+    timeline.innerHTML = displayActivities.map(activity => `
         <div class="timeline-item" data-id="${activity.id}">
             <div class="timeline-header">
                 <span class="timeline-time">${formatTime(activity.time)}</span>
@@ -166,6 +287,19 @@ function updateTimeline() {
             </div>
         </div>
     `).join('');
+}
+
+function updateTimelineOrderButton() {
+    const orderBtn = document.getElementById('timelineOrderBtn');
+    orderBtn.textContent = timelineOrder === 'desc' ? '倒序显示' : '顺序显示';
+}
+
+function toggleTimelineOrder() {
+    timelineOrder = timelineOrder === 'desc' ? 'asc' : 'desc';
+    localStorage.setItem('dailyTracker_timelineOrder', timelineOrder);
+    updateTimelineOrderButton();
+    updateTimeline();
+    showToast(timelineOrder === 'desc' ? '已切换为倒序显示' : '已切换为顺序显示');
 }
 
 // 更新统计数据
@@ -286,6 +420,10 @@ function exportJson() {
     downloadFile(blob, `daily-tracker-${dateKey}.json`);
     document.getElementById('exportModal').style.display = 'none';
     showToast('数据已导出！');
+}
+
+function openExportModal() {
+    document.getElementById('exportModal').style.display = 'block';
 }
 
 // 导出CSV

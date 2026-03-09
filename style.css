@@ -8,6 +8,9 @@
     --primary-color: #4CAF50;
     --secondary-color: #8BC34A;
     --accent-color: #FF9800;
+    --forest-color: #1f7a3d;
+    --mint-color: #dff5e4;
+    --leaf-shadow: 0 10px 30px rgba(40, 122, 68, 0.16);
     --bg-color: #f5f5f5;
     --card-bg: #ffffff;
     --text-color: #333333;
@@ -32,7 +35,9 @@ body {
 
 /* 头部样式 */
 .app-header {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background:
+        radial-gradient(circle at top right, rgba(223, 245, 228, 0.35), transparent 36%),
+        linear-gradient(135deg, var(--forest-color), var(--primary-color) 55%, var(--secondary-color));
     color: white;
     padding: 20px;
     text-align: center;
@@ -42,9 +47,57 @@ body {
     z-index: 100;
 }
 
+.header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.header-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .app-header h1 {
     font-size: 1.5rem;
-    margin-bottom: 15px;
+    margin-bottom: 0;
+}
+
+.header-tool-btn,
+.header-export-btn {
+    border: 1px solid rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.14);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    transition: transform 0.25s, background 0.25s, border-color 0.25s;
+}
+
+.header-tool-btn {
+    padding: 10px 14px;
+}
+
+.header-tool-btn.danger {
+    background: rgba(181, 42, 42, 0.18);
+    border-color: rgba(255,255,255,0.24);
+}
+
+.header-tool-btn:hover,
+.header-export-btn:hover {
+    background: rgba(255,255,255,0.22);
+    border-color: rgba(255,255,255,0.5);
+    transform: translateY(-1px);
+}
+
+.header-tool-btn.danger:hover {
+    background: rgba(181, 42, 42, 0.28);
 }
 
 .date-selector {
@@ -119,8 +172,46 @@ body {
 
 /* 时间线 */
 .timeline-section h2 {
-    margin-bottom: 20px;
     font-size: 1.3rem;
+}
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.section-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-order-btn,
+.section-export-btn {
+    border: none;
+    background: linear-gradient(135deg, var(--mint-color), #f4fff5);
+    color: var(--forest-color);
+    padding: 10px 14px;
+    border-radius: 999px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--leaf-shadow);
+    transition: transform 0.25s, box-shadow 0.25s;
+}
+
+.section-order-btn {
+    background: rgba(223, 245, 228, 0.72);
+    border: 1px solid rgba(40, 122, 68, 0.12);
+}
+
+.section-order-btn:hover,
+.section-export-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgba(40, 122, 68, 0.2);
 }
 
 .timeline {
@@ -249,7 +340,9 @@ body {
 
 /* 提醒区域 */
 .reminder-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background:
+        radial-gradient(circle at top right, rgba(223, 245, 228, 0.28), transparent 34%),
+        linear-gradient(135deg, #2f8f4c 0%, var(--forest-color) 55%, var(--primary-color) 100%);
     border-radius: 15px;
     padding: 20px;
     margin-bottom: 30px;
@@ -307,7 +400,7 @@ body {
 
 .reminder-time {
     font-weight: bold;
-    color: #667eea;
+    color: var(--forest-color);
     font-size: 1.1rem;
     min-width: 60px;
 }
@@ -341,7 +434,7 @@ body {
     z-index: 1000;
 }
 
-.fab-add, .fab-reminder {
+.fab-add, .fab-reminder, .fab-export {
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -361,11 +454,16 @@ body {
 }
 
 .fab-reminder {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #2f8f4c, #69b66b);
     font-size: 1.8rem;
 }
 
-.fab-add:hover, .fab-reminder:hover {
+.fab-export {
+    background: linear-gradient(135deg, var(--forest-color), #6cbf72);
+    font-size: 1.6rem;
+}
+
+.fab-add:hover, .fab-reminder:hover, .fab-export:hover {
     transform: scale(1.1);
     box-shadow: 0 6px 16px rgba(0,0,0,0.4);
 }
@@ -516,7 +614,7 @@ body {
     border-radius: 10px;
     font-size: 1rem;
     cursor: pointer;
-    background: var(--primary-color);
+    background: linear-gradient(135deg, var(--forest-color), var(--primary-color));
     color: white;
     transition: opacity 0.3s;
 }
@@ -550,13 +648,13 @@ body {
 }
 
 .tab-btn.active {
-    color: #667eea;
-    border-bottom-color: #667eea;
+    color: var(--forest-color);
+    border-bottom-color: var(--forest-color);
     font-weight: 500;
 }
 
 .tab-btn:hover {
-    background: rgba(102, 126, 234, 0.05);
+    background: rgba(40, 122, 68, 0.06);
 }
 
 .tab-content {
@@ -578,7 +676,7 @@ body {
     background: var(--bg-color);
     padding: 15px;
     border-radius: 10px;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid var(--forest-color);
 }
 
 .reminder-detail-header {
@@ -590,7 +688,7 @@ body {
 
 .reminder-detail-time {
     font-weight: bold;
-    color: #667eea;
+    color: var(--forest-color);
     font-size: 1.1rem;
 }
 
@@ -636,8 +734,25 @@ body {
 
 /* 响应式设计 */
 @media (max-width: 600px) {
+    .header-top {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .header-tools {
+        width: 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
     .app-header h1 {
         font-size: 1.3rem;
+    }
+
+    .header-tool-btn,
+    .header-export-btn {
+        padding: 9px 14px;
+        font-size: 0.85rem;
     }
 
     .stat-card {
@@ -654,6 +769,16 @@ body {
 
     .timeline-item {
         padding: 15px;
+    }
+
+    .section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .section-tools {
+        width: 100%;
+        flex-wrap: wrap;
     }
 
     .modal-content {

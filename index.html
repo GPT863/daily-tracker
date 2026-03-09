@@ -13,7 +13,14 @@
 <body>
     <div class="app-container">
         <header class="app-header">
-            <h1>📅 今日活动记录</h1>
+            <div class="header-top">
+                <h1>📅 今日活动记录</h1>
+                <div class="header-tools">
+                    <button id="seedDemoBtn" class="header-tool-btn">示例数据</button>
+                    <button id="resetDataBtn" class="header-tool-btn danger">清空</button>
+                    <button id="exportBtn" class="header-export-btn">导出</button>
+                </div>
+            </div>
             <div class="date-selector">
                 <button id="prevDay" class="date-btn">◀</button>
                 <span id="currentDate"></span>
@@ -68,7 +75,13 @@
 
             <!-- 时间线 -->
             <section class="timeline-section">
-                <h2>📝 时间线</h2>
+                <div class="section-heading">
+                    <h2>📝 时间线</h2>
+                    <div class="section-tools">
+                        <button id="timelineOrderBtn" class="section-order-btn">倒序显示</button>
+                        <button id="timelineExportBtn" class="section-export-btn">导出今日记录</button>
+                    </div>
+                </div>
                 <div id="timeline" class="timeline"></div>
                 <div id="emptyState" class="empty-state">
                     <p>今天还没有记录哦</p>
@@ -81,6 +94,7 @@
         <div class="bottom-actions">
             <button id="addBtn" class="fab-add">+</button>
             <button id="reminderBtn" class="fab-reminder">🔔</button>
+            <button id="quickExportBtn" class="fab-export">⇩</button>
         </div>
 
         <!-- 添加/编辑活动表单模态框 -->
@@ -104,7 +118,7 @@
                             <option value="meal">🍽️ 用餐</option>
                             <option value="medication">💊 用药</option>
                             <option value="exercise">🏃 运动</option>
-                            <option value="sleep">😴 休息</option>
+                            <option value="sleep">😴 睡眠</option>
                             <option value="work">💼 工作</option>
                             <option value="other">📌 其他</option>
                         </select>
@@ -187,6 +201,7 @@
                                     <option value="meal">🍽️ 用餐</option>
                                     <option value="medication">💊 用药</option>
                                     <option value="exercise">🏃 运动</option>
+                                    <option value="sleep">😴 睡眠</option>
                                     <option value="other">📌 其他</option>
                                 </select>
                             </div>
