@@ -52,6 +52,7 @@ body.elder-mode #currentDate {
 
 body.elder-mode .date-btn,
 body.elder-mode .fab-add,
+body.elder-mode .fab-health,
 body.elder-mode .fab-reminder,
 body.elder-mode .fab-export {
     width: 68px;
@@ -263,6 +264,67 @@ body.elder-mode .form-actions button {
     margin-bottom: 30px;
 }
 
+.health-section {
+    margin-bottom: 30px;
+}
+
+.health-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+}
+
+.health-summary-card {
+    background: linear-gradient(145deg, rgba(223, 245, 228, 0.82), rgba(255,255,255,0.96));
+    border: 1px solid rgba(40, 122, 68, 0.1);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: var(--leaf-shadow);
+}
+
+.health-summary-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.health-summary-icon {
+    font-size: 1.3rem;
+}
+
+.health-summary-label {
+    font-weight: 700;
+    color: var(--forest-color);
+}
+
+.health-summary-value {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--text-color);
+    margin-bottom: 6px;
+}
+
+.health-summary-image-wrap {
+    margin-bottom: 10px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.92);
+    box-shadow: inset 0 0 0 1px rgba(40, 122, 68, 0.08);
+}
+
+.health-summary-image {
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
+    display: block;
+}
+
+.health-summary-meta {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
 .stat-card {
     background: var(--card-bg);
     padding: 20px;
@@ -401,6 +463,23 @@ body.elder-mode .form-actions button {
     font-size: 1.1rem;
     margin-bottom: 8px;
     color: var(--text-color);
+}
+
+.health-timeline-item {
+    background: linear-gradient(145deg, rgba(223, 245, 228, 0.72), rgba(255,255,255,0.98));
+    border: 1px solid rgba(40, 122, 68, 0.08);
+}
+
+.health-timeline-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(223, 245, 228, 0.92);
+    color: var(--forest-color);
+    font-size: 0.82rem;
+    font-weight: 700;
+    margin-bottom: 10px;
 }
 
 .timeline-image-wrap {
@@ -588,7 +667,7 @@ body.elder-mode .form-actions button {
     z-index: 1000;
 }
 
-.fab-add, .fab-reminder, .fab-export {
+.fab-add, .fab-health, .fab-reminder, .fab-export {
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -607,6 +686,11 @@ body.elder-mode .form-actions button {
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
 }
 
+.fab-health {
+    background: linear-gradient(135deg, #2d8d64, #69c59a);
+    font-size: 1.5rem;
+}
+
 .fab-reminder {
     background: linear-gradient(135deg, #2f8f4c, #69b66b);
     font-size: 1.8rem;
@@ -617,7 +701,7 @@ body.elder-mode .form-actions button {
     font-size: 1.6rem;
 }
 
-.fab-add:hover, .fab-reminder:hover, .fab-export:hover {
+.fab-add:hover, .fab-health:hover, .fab-reminder:hover, .fab-export:hover {
     transform: scale(1.1);
     box-shadow: 0 6px 16px rgba(0,0,0,0.4);
 }

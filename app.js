@@ -1,14 +1,17 @@
 // 全局状态
 let currentDate = new Date();
 let activities = [];
+let healthRecords = [];
 let reminders = [];
 let editingId = null;
 let timelineOrder = localStorage.getItem('dailyTracker_timelineOrder') || 'desc';
 let pendingActivityImage = null;
 let pendingReminderImage = null;
+let pendingHealthImage = null;
 let profile = {};
 let activeReminderAlertId = null;
 let elderMode = localStorage.getItem('dailyTracker_elderMode') === 'true';
+let editingHealthId = null;
 
 // 活动类型图标映射
 const typeIcons = {
@@ -30,10 +33,38 @@ const typeLabels = {
     other: '其他'
 };
 
+const healthTypeLabels = {
+    bloodPressure: '血压',
+    heartRate: '心率',
+    bloodSugar: '血糖',
+    bloodLipid: '血脂',
+    uricAcid: '尿酸',
+    other: '其他指标'
+};
+
+const healthTypeIcons = {
+    bloodPressure: '🩺',
+    heartRate: '❤️',
+    bloodSugar: '🩸',
+    bloodLipid: '🧪',
+    uricAcid: '💧',
+    other: '📋'
+};
+
+const healthTypeUnits = {
+    bloodPressure: 'mmHg',
+    heartRate: 'bpm',
+    bloodSugar: 'mmol/L',
+    bloodLipid: 'mmol/L',
+    uricAcid: 'umol/L',
+    other: ''
+};
+
 // 初始化应用
 document.addEventListener('DOMContentLoaded', () => {
     initDB();
     loadActivities();
+    loadHealthRecords();
     loadReminders();
     loadProfile();
     applyElderMode();
@@ -54,6 +85,9 @@ function initDB() {
     }
     if (!localStorage.getItem('dailyTracker_reminders')) {
         localStorage.setItem('dailyTracker_reminders', JSON.stringify(createMockReminders()));
+    }
+    if (!localStorage.getItem('dailyTracker_healthRecords')) {
+        localStorage.setItem('dailyTracker_healthRecords', JSON.stringify(createMockHealthRecords()));
     }
     if (!localStorage.getItem('dailyTracker_profile')) {
         localStorage.setItem('dailyTracker_profile', JSON.stringify(createMockProfile()));
@@ -162,6 +196,38 @@ function createMockReminder(id, title, type, date, time, repeat, notes, image = 
     };
 }
 
+function createMockHealthRecords() {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    return {
+        [getDateKey(today)]: [
+            createMockHealthRecord('h1', '07:35', 'bloodPressure', '118/76', 'mmHg', '起床后静息测量', createMockImageDataUri('血压', '#d6efe0', '#6aa67f', '晨起测量记录')),
+            createMockHealthRecord('h2', '07:36', 'heartRate', '68', 'bpm', '晨起心率稳定'),
+            createMockHealthRecord('h3', '12:55', 'bloodSugar', '6.1', 'mmol/L', '午餐后1小时', createMockImageDataUri('血糖', '#f0d9cc', '#c98f7b', '试纸检测结果')),
+            createMockHealthRecord('h4', '21:20', 'uricAcid', '356', 'umol/L', '晚间复测')
+        ],
+        [getDateKey(yesterday)]: [
+            createMockHealthRecord('h5', '08:10', 'bloodPressure', '124/82', 'mmHg', '早餐前测量'),
+            createMockHealthRecord('h6', '18:20', 'heartRate', '92', 'bpm', '慢跑后10分钟', createMockImageDataUri('心率', '#f3d2d7', '#cf7e8b', '运动后监测'))
+        ]
+    };
+}
+
+function createMockHealthRecord(id, time, type, value, unit, notes = '', image = null) {
+    return {
+        id,
+        time,
+        type,
+        value,
+        unit,
+        notes,
+        image,
+        createdAt: new Date().toISOString()
+    };
+}
+
 function createMockProfile() {
     return {
         name: '张晨',
@@ -185,10 +251,12 @@ function loadDemoData() {
     if (!shouldReplace) return;
 
     localStorage.setItem('dailyTracker_activities', JSON.stringify(createMockActivities()));
+    localStorage.setItem('dailyTracker_healthRecords', JSON.stringify(createMockHealthRecords()));
     localStorage.setItem('dailyTracker_reminders', JSON.stringify(createMockReminders()));
     localStorage.setItem('dailyTracker_profile', JSON.stringify(createMockProfile()));
 
     loadActivities();
+    loadHealthRecords();
     loadReminders();
     loadProfile();
     updateDisplay();
@@ -201,10 +269,12 @@ function resetAllData() {
     if (!shouldClear) return;
 
     localStorage.setItem('dailyTracker_activities', JSON.stringify({}));
+    localStorage.setItem('dailyTracker_healthRecords', JSON.stringify({}));
     localStorage.setItem('dailyTracker_reminders', JSON.stringify([]));
     localStorage.setItem('dailyTracker_profile', JSON.stringify({}));
 
     loadActivities();
+    loadHealthRecords();
     loadReminders();
     loadProfile();
     updateDisplay();
@@ -220,6 +290,13 @@ function loadActivities() {
     activities.sort((a, b) => a.time.localeCompare(b.time));
 }
 
+function loadHealthRecords() {
+    const dateKey = getDateKey(currentDate);
+    const allData = JSON.parse(localStorage.getItem('dailyTracker_healthRecords'));
+    healthRecords = allData[dateKey] || [];
+    healthRecords.sort((a, b) => a.time.localeCompare(b.time));
+}
+
 // 保存活动数据
 function saveActivities() {
     const dateKey = getDateKey(currentDate);
@@ -228,6 +305,18 @@ function saveActivities() {
 
     try {
         localStorage.setItem('dailyTracker_activities', JSON.stringify(allData));
+    } catch (error) {
+        throw new Error('LOCAL_STORAGE_QUOTA_EXCEEDED');
+    }
+}
+
+function saveHealthRecords() {
+    const dateKey = getDateKey(currentDate);
+    const allData = JSON.parse(localStorage.getItem('dailyTracker_healthRecords'));
+    allData[dateKey] = healthRecords;
+
+    try {
+        localStorage.setItem('dailyTracker_healthRecords', JSON.stringify(allData));
     } catch (error) {
         throw new Error('LOCAL_STORAGE_QUOTA_EXCEEDED');
     }
@@ -252,6 +341,8 @@ function setupEventListeners() {
         document.getElementById('reminderModal').style.display = 'block';
         renderReminderTabs('today');
     });
+    document.getElementById('healthBtn').addEventListener('click', () => openHealthModal());
+    document.getElementById('addHealthBtnInline').addEventListener('click', () => openHealthModal());
 
     // 导出入口
     ['exportBtn', 'timelineExportBtn', 'quickExportBtn'].forEach(id => {
@@ -297,6 +388,11 @@ function setupEventListeners() {
     document.getElementById('activityImageUpload').addEventListener('change', handleActivityImageChange);
     document.getElementById('activityImageCamera').addEventListener('change', handleActivityImageChange);
     document.getElementById('removeActivityImage').addEventListener('click', clearPendingActivityImage);
+    document.getElementById('healthForm').addEventListener('submit', handleHealthFormSubmit);
+    document.getElementById('healthType').addEventListener('change', syncHealthUnitField);
+    document.getElementById('healthImageUpload').addEventListener('change', handleHealthImageChange);
+    document.getElementById('healthImageCamera').addEventListener('change', handleHealthImageChange);
+    document.getElementById('removeHealthImage').addEventListener('click', clearPendingHealthImage);
 
     // 导出按钮
     document.getElementById('exportJson').addEventListener('click', exportJson);
@@ -307,6 +403,7 @@ function setupEventListeners() {
 function changeDate(days) {
     currentDate.setDate(currentDate.getDate() + days);
     loadActivities();
+    loadHealthRecords();
     updateDisplay();
 }
 
@@ -315,6 +412,7 @@ function updateDisplay() {
     updateDateDisplay();
     updateElderModeButton();
     updateTimelineOrderButton();
+    updateHealthDisplay();
     updateTimeline();
     updateStats();
 }
@@ -329,20 +427,34 @@ function updateDateDisplay() {
 function updateTimeline() {
     const timeline = document.getElementById('timeline');
     const emptyState = document.getElementById('emptyState');
-    const displayActivities = [...activities].sort((a, b) => {
+    const timelineEntries = [
+        ...activities.map(activity => ({ kind: 'activity', time: activity.time, data: activity })),
+        ...healthRecords.map(record => ({ kind: 'health', time: record.time, data: record }))
+    ].sort((a, b) => {
+        if (a.time === b.time) {
+            return a.kind.localeCompare(b.kind);
+        }
+
         return timelineOrder === 'asc'
             ? a.time.localeCompare(b.time)
             : b.time.localeCompare(a.time);
     });
 
-    if (displayActivities.length === 0) {
+    if (timelineEntries.length === 0) {
         timeline.innerHTML = '';
         emptyState.style.display = 'block';
         return;
     }
 
     emptyState.style.display = 'none';
-    timeline.innerHTML = displayActivities.map(activity => `
+    timeline.innerHTML = timelineEntries.map(entry => entry.kind === 'activity'
+        ? renderActivityTimelineItem(entry.data)
+        : renderHealthTimelineItem(entry.data)
+    ).join('');
+}
+
+function renderActivityTimelineItem(activity) {
+    return `
         <div class="timeline-item" data-id="${activity.id}">
             <div class="timeline-header">
                 <span class="timeline-time">${formatTime(activity.time)}</span>
@@ -361,7 +473,30 @@ function updateTimeline() {
                 <button class="btn-action btn-delete" onclick="deleteActivity('${activity.id}')">删除</button>
             </div>
         </div>
-    `).join('');
+    `;
+}
+
+function renderHealthTimelineItem(record) {
+    return `
+        <div class="timeline-item health-timeline-item" data-id="${record.id}">
+            <div class="timeline-header">
+                <span class="timeline-time">${formatTime(record.time)}</span>
+                <span class="timeline-type">${healthTypeIcons[record.type]}</span>
+            </div>
+            <div class="health-timeline-badge">健康数据</div>
+            <div class="timeline-content">${healthTypeLabels[record.type]}：${escapeHtml(record.value)}${record.unit ? ` ${escapeHtml(record.unit)}` : ''}</div>
+            ${record.image ? `
+                <div class="timeline-image-wrap">
+                    <img class="timeline-image" src="${record.image}" alt="${escapeHtml(healthTypeLabels[record.type])}">
+                </div>
+            ` : ''}
+            ${record.notes ? `<div class="timeline-feeling">${escapeHtml(record.notes)}</div>` : ''}
+            <div class="timeline-actions">
+                <button class="btn-action btn-edit" onclick="editHealthRecord('${record.id}')">编辑</button>
+                <button class="btn-action btn-delete" onclick="deleteHealthRecord('${record.id}')">删除</button>
+            </div>
+        </div>
+    `;
 }
 
 function updateTimelineOrderButton() {
@@ -437,6 +572,42 @@ function openModal(activity = null) {
     modal.style.display = 'block';
 }
 
+function openHealthModal(record = null) {
+    const modal = document.getElementById('healthModal');
+    const form = document.getElementById('healthForm');
+    const title = document.getElementById('healthModalTitle');
+
+    form.reset();
+    resetHealthImageInputs();
+
+    if (record) {
+        editingHealthId = record.id;
+        title.textContent = '编辑健康数据';
+        document.getElementById('healthTime').value = record.time;
+        document.getElementById('healthType').value = record.type;
+        document.getElementById('healthValue').value = record.value;
+        document.getElementById('healthUnit').value = record.unit || '';
+        document.getElementById('healthNotes').value = record.notes || '';
+        pendingHealthImage = record.image || null;
+    } else {
+        editingHealthId = null;
+        title.textContent = '记录健康数据';
+        pendingHealthImage = null;
+        const now = new Date();
+        document.getElementById('healthTime').value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        document.getElementById('healthType').value = 'bloodPressure';
+        syncHealthUnitField();
+    }
+
+    updateHealthImagePreview();
+    modal.style.display = 'block';
+}
+
+function syncHealthUnitField() {
+    const type = document.getElementById('healthType').value;
+    document.getElementById('healthUnit').value = healthTypeUnits[type] || '';
+}
+
 // 处理表单提交
 async function handleFormSubmit(e) {
     e.preventDefault();
@@ -474,6 +645,125 @@ async function handleFormSubmit(e) {
         console.error(error);
         showToast('保存失败：图片过大或本地存储空间不足');
     }
+}
+
+function handleHealthFormSubmit(e) {
+    e.preventDefault();
+
+    const record = {
+        id: editingHealthId || Date.now().toString(),
+        time: document.getElementById('healthTime').value,
+        type: document.getElementById('healthType').value,
+        value: document.getElementById('healthValue').value.trim(),
+        unit: document.getElementById('healthUnit').value.trim(),
+        notes: document.getElementById('healthNotes').value.trim(),
+        image: pendingHealthImage,
+        createdAt: editingHealthId ? healthRecords.find(r => r.id === editingHealthId)?.createdAt : new Date().toISOString()
+    };
+
+    if (editingHealthId) {
+        const index = healthRecords.findIndex(r => r.id === editingHealthId);
+        if (index > -1) {
+            healthRecords[index] = record;
+        }
+    } else {
+        healthRecords.push(record);
+    }
+
+    healthRecords.sort((a, b) => a.time.localeCompare(b.time));
+
+    try {
+        saveHealthRecords();
+        updateDisplay();
+        document.getElementById('healthModal').style.display = 'none';
+        pendingHealthImage = null;
+        resetHealthImageInputs();
+        showToast(editingHealthId ? '健康数据已更新！' : '健康数据已记录！');
+    } catch (error) {
+        console.error(error);
+        showToast('保存失败：图片过大或本地存储空间不足');
+    }
+}
+
+function updateHealthDisplay() {
+    const container = document.getElementById('healthSummary');
+    const emptyState = document.getElementById('healthEmptyState');
+
+    if (healthRecords.length === 0) {
+        container.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+    }
+
+    emptyState.style.display = 'none';
+
+    const latestByType = Object.values(healthRecords.reduce((acc, record) => {
+        const existing = acc[record.type];
+        if (!existing || existing.time < record.time) {
+            acc[record.type] = record;
+        }
+        return acc;
+    }, {}));
+
+    container.innerHTML = latestByType.map(record => `
+        <div class="health-summary-card">
+            <div class="health-summary-header">
+                <span class="health-summary-icon">${healthTypeIcons[record.type]}</span>
+                <span class="health-summary-label">${healthTypeLabels[record.type]}</span>
+            </div>
+            ${record.image ? `
+                <div class="health-summary-image-wrap">
+                    <img class="health-summary-image" src="${record.image}" alt="${escapeHtml(healthTypeLabels[record.type])}">
+                </div>
+            ` : ''}
+            <div class="health-summary-value">${escapeHtml(record.value)}${record.unit ? ` ${escapeHtml(record.unit)}` : ''}</div>
+            <div class="health-summary-meta">${record.time}${record.notes ? ` · ${escapeHtml(record.notes)}` : ''}</div>
+        </div>
+    `).join('');
+}
+
+async function handleHealthImageChange(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    try {
+        pendingHealthImage = await readAndCompressImage(file);
+        updateHealthImagePreview();
+        showToast('健康数据图片已添加');
+    } catch (error) {
+        console.error(error);
+        showToast('图片处理失败，请重试');
+    } finally {
+        resetHealthImageInputs();
+    }
+}
+
+function clearPendingHealthImage() {
+    pendingHealthImage = null;
+    updateHealthImagePreview();
+    resetHealthImageInputs();
+}
+
+function updateHealthImagePreview() {
+    const preview = document.getElementById('healthImagePreview');
+    const previewImg = document.getElementById('healthImagePreviewImg');
+    const hint = document.getElementById('healthImageHint');
+
+    if (!pendingHealthImage) {
+        preview.classList.add('hidden');
+        previewImg.removeAttribute('src');
+        hint.style.display = 'block';
+        return;
+    }
+
+    preview.classList.remove('hidden');
+    previewImg.src = pendingHealthImage;
+    hint.style.display = 'none';
+}
+
+function resetHealthImageInputs() {
+    document.getElementById('healthImageUpload').value = '';
+    document.getElementById('healthImageCamera').value = '';
 }
 
 async function handleActivityImageChange(e) {
@@ -582,6 +872,7 @@ function exportJson() {
     const data = {
         date: dateKey,
         activities: activities,
+        healthRecords: healthRecords,
         exportedAt: new Date().toISOString()
     };
 
@@ -591,22 +882,50 @@ function exportJson() {
     showToast('数据已导出！');
 }
 
+window.editHealthRecord = function(id) {
+    const record = healthRecords.find(r => r.id === id);
+    if (record) {
+        openHealthModal(record);
+    }
+}
+
+window.deleteHealthRecord = function(id) {
+    if (confirm('确定要删除这条健康数据吗？')) {
+        healthRecords = healthRecords.filter(r => r.id !== id);
+        saveHealthRecords();
+        updateDisplay();
+        showToast('健康数据已删除！');
+    }
+}
+
 function openExportModal() {
     document.getElementById('exportModal').style.display = 'block';
 }
 
 // 导出CSV
 function exportCsv() {
-    const headers = ['时间', '类型', '内容', '感受', '时长(分钟)'];
-    const rows = activities.map(a => [
+    const headers = ['记录类别', '时间', '类型', '内容/数值', '补充信息', '时长(分钟)', '单位'];
+    const activityRows = activities.map(a => [
+        '活动',
         a.time,
         typeLabels[a.type],
         a.content,
         a.feeling || '',
-        a.duration || ''
+        a.duration || '',
+        ''
     ]);
 
-    const csv = [headers, ...rows]
+    const healthRows = healthRecords.map(r => [
+        '健康数据',
+        r.time,
+        healthTypeLabels[r.type],
+        r.value,
+        r.notes || '',
+        '',
+        r.unit || ''
+    ]);
+
+    const csv = [headers, ...activityRows, ...healthRows]
         .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
         .join('\n');
 
