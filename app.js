@@ -6,6 +6,8 @@ let editingId = null;
 let timelineOrder = localStorage.getItem('dailyTracker_timelineOrder') || 'desc';
 let pendingActivityImage = null;
 let pendingReminderImage = null;
+let profile = {};
+let activeReminderAlertId = null;
 
 // 活动类型图标映射
 const typeIcons = {
@@ -32,8 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initDB();
     loadActivities();
     loadReminders();
+    loadProfile();
     setupEventListeners();
     setupReminderListeners();
+    setupProfileListeners();
     updateDisplay();
     updateRemindersDisplay();
     checkReminders();
@@ -48,6 +52,9 @@ function initDB() {
     }
     if (!localStorage.getItem('dailyTracker_reminders')) {
         localStorage.setItem('dailyTracker_reminders', JSON.stringify(createMockReminders()));
+    }
+    if (!localStorage.getItem('dailyTracker_profile')) {
+        localStorage.setItem('dailyTracker_profile', JSON.stringify(createMockProfile()));
     }
 }
 
@@ -153,15 +160,35 @@ function createMockReminder(id, title, type, date, time, repeat, notes, image = 
     };
 }
 
+function createMockProfile() {
+    return {
+        name: '张晨',
+        gender: 'female',
+        age: '34',
+        height: '165',
+        weight: '58',
+        bloodType: 'A',
+        bloodPressure: '118/76',
+        bloodSugar: '5.3 mmol/L',
+        chronicConditions: '轻度胃炎，季节性鼻炎',
+        allergies: '海鲜轻微过敏',
+        medications: '维生素D 每日1粒，益生菌按需补充',
+        healthGoals: '规律睡眠、每周运动4次、晚餐控制油脂',
+        notes: '近期重点关注睡眠质量和饭后血糖波动'
+    };
+}
+
 function loadDemoData() {
     const shouldReplace = confirm('这会用示例数据覆盖当前本地活动和提醒，是否继续？');
     if (!shouldReplace) return;
 
     localStorage.setItem('dailyTracker_activities', JSON.stringify(createMockActivities()));
     localStorage.setItem('dailyTracker_reminders', JSON.stringify(createMockReminders()));
+    localStorage.setItem('dailyTracker_profile', JSON.stringify(createMockProfile()));
 
     loadActivities();
     loadReminders();
+    loadProfile();
     updateDisplay();
     updateRemindersDisplay();
     showToast('示例数据已加载');
@@ -173,9 +200,11 @@ function resetAllData() {
 
     localStorage.setItem('dailyTracker_activities', JSON.stringify({}));
     localStorage.setItem('dailyTracker_reminders', JSON.stringify([]));
+    localStorage.setItem('dailyTracker_profile', JSON.stringify({}));
 
     loadActivities();
     loadReminders();
+    loadProfile();
     updateDisplay();
     updateRemindersDisplay();
     showToast('本地数据已清空');
@@ -227,6 +256,7 @@ function setupEventListeners() {
         document.getElementById(id).addEventListener('click', openExportModal);
     });
     document.getElementById('timelineOrderBtn').addEventListener('click', toggleTimelineOrder);
+    document.getElementById('profileBtn').addEventListener('click', openProfileModal);
 
     // 数据辅助入口
     document.getElementById('seedDemoBtn').addEventListener('click', loadDemoData);
@@ -241,21 +271,21 @@ function setupEventListeners() {
     // 模态框关闭
     document.querySelectorAll('.close').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            e.target.closest('.modal').style.display = 'none';
+            closeModal(e.target.closest('.modal'));
         });
     });
 
     // 点击模态框外部关闭
     window.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
-            e.target.style.display = 'none';
+            closeModal(e.target);
         }
     });
 
     // 取消按钮
     document.querySelectorAll('.btn-cancel').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            e.target.closest('.modal').style.display = 'none';
+            closeModal(e.target.closest('.modal'));
         });
     });
 
@@ -639,7 +669,7 @@ function registerServiceWorker() {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         document.querySelectorAll('.modal').forEach(modal => {
-            modal.style.display = 'none';
+            closeModal(modal);
         });
     }
     if (e.key === 'n' && e.ctrlKey) {
@@ -664,6 +694,14 @@ function saveReminders() {
     }
 }
 
+function loadProfile() {
+    profile = JSON.parse(localStorage.getItem('dailyTracker_profile')) || {};
+}
+
+function saveProfile() {
+    localStorage.setItem('dailyTracker_profile', JSON.stringify(profile));
+}
+
 // 设置提醒相关事件监听
 function setupReminderListeners() {
     // 标签切换
@@ -679,6 +717,13 @@ function setupReminderListeners() {
     document.getElementById('reminderImageUpload').addEventListener('change', handleReminderImageChange);
     document.getElementById('reminderImageCamera').addEventListener('change', handleReminderImageChange);
     document.getElementById('removeReminderImage').addEventListener('click', clearPendingReminderImage);
+    document.getElementById('snoozeReminderBtn').addEventListener('click', snoozeActiveReminder);
+    document.getElementById('completeReminderBtn').addEventListener('click', completeActiveReminder);
+    document.getElementById('dismissAlertBtn').addEventListener('click', closeReminderAlertModal);
+}
+
+function setupProfileListeners() {
+    document.getElementById('profileForm').addEventListener('submit', handleProfileSubmit);
 }
 
 // 渲染提醒标签
@@ -911,6 +956,7 @@ window.completeReminder = function(id) {
                 ...reminder,
                 id: Date.now().toString(),
                 date: tomorrow.toISOString().split('T')[0],
+                snoozeUntil: null,
                 completed: false,
                 completedAt: null,
                 createdAt: new Date().toISOString()
@@ -922,6 +968,9 @@ window.completeReminder = function(id) {
         saveReminders();
         renderReminderTabs('today');
         updateRemindersDisplay();
+        if (activeReminderAlertId === id) {
+            closeReminderAlertModal();
+        }
         showToast(reminder.completed ? '提醒已完成！' : '提醒已恢复');
     }
 }
@@ -956,7 +1005,11 @@ function updateRemindersDisplay() {
         emptyState.style.display = 'none';
         container.innerHTML = todayReminders.slice(0, 3).map(r => `
             <div class="reminder-item" onclick="openReminderModal()">
-                <span class="reminder-icon">${typeIcons[r.type]}</span>
+                ${r.image ? `
+                    <div class="reminder-thumb-wrap">
+                        <img class="reminder-thumb" src="${r.image}" alt="${escapeHtml(r.title)}">
+                    </div>
+                ` : `<span class="reminder-icon">${typeIcons[r.type]}</span>`}
                 <div class="reminder-content">
                     <div class="reminder-title">${escapeHtml(r.title)}</div>
                     <div class="reminder-type">${r.time} ${r.repeat ? '• 每日' : ''}</div>
@@ -970,20 +1023,13 @@ function updateRemindersDisplay() {
 // 检查提醒（每分钟调用）
 function checkReminders() {
     const now = new Date();
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const today = getDateKey(now);
+    const dueReminder = reminders.find(reminder => shouldTriggerReminder(reminder, now));
 
-    reminders.forEach(reminder => {
-        if (reminder.completed) return;
+    if (!dueReminder) return;
+    if (activeReminderAlertId === dueReminder.id) return;
 
-        const reminderDate = new Date(reminder.date + 'T' + reminder.time);
-        const reminderDateKey = getDateKey(reminderDate);
-
-        // 检查是否在提醒时间（1分钟内）
-        if (reminderDateKey === today && reminder.time === currentTime) {
-            showNotification(reminder);
-        }
-    });
+    showNotification(dueReminder);
+    openReminderAlertModal(dueReminder);
 }
 
 // 显示通知
@@ -991,7 +1037,8 @@ function showNotification(reminder) {
     if ('Notification' in window && Notification.permission === 'granted') {
         const notification = new Notification(`${typeIcons[reminder.type]} ${reminder.title}`, {
             body: reminder.notes || reminder.time,
-            icon: '🔔',
+            icon: reminder.image || undefined,
+            image: reminder.image || undefined,
             tag: reminder.id,
             requireInteraction: true
         });
@@ -1004,6 +1051,143 @@ function showNotification(reminder) {
         // 浏览器不支持通知或权限未授予，显示Toast
         showToast(`🔔 ${reminder.title} - ${reminder.time}`);
     }
+}
+
+function shouldTriggerReminder(reminder, now) {
+    if (!reminder || reminder.completed) return false;
+
+    const triggerTime = getReminderTriggerTime(reminder);
+    if (!triggerTime) return false;
+
+    return getDateKey(triggerTime) === getDateKey(now) && triggerTime <= now;
+}
+
+function getReminderTriggerTime(reminder) {
+    if (reminder.snoozeUntil) {
+        return new Date(reminder.snoozeUntil);
+    }
+
+    return new Date(`${reminder.date}T${reminder.time}`);
+}
+
+function openReminderAlertModal(reminder) {
+    activeReminderAlertId = reminder.id;
+
+    const badge = document.getElementById('alertReminderBadge');
+    const title = document.getElementById('alertReminderTitle');
+    const meta = document.getElementById('alertReminderMeta');
+    const notes = document.getElementById('alertReminderNotes');
+    const imageWrap = document.getElementById('alertReminderImageWrap');
+    const image = document.getElementById('alertReminderImage');
+
+    badge.textContent = `${typeIcons[reminder.type]} ${typeLabels[reminder.type] || '提醒'}`;
+    title.textContent = reminder.title;
+    meta.textContent = `${reminder.time}${reminder.repeat ? ' · 每日重复' : ''}`;
+    notes.textContent = reminder.notes || '请及时处理这条提醒。';
+
+    if (reminder.image) {
+        image.src = reminder.image;
+        imageWrap.classList.remove('hidden');
+    } else {
+        image.removeAttribute('src');
+        imageWrap.classList.add('hidden');
+    }
+
+    document.getElementById('snoozeMinutes').value = '10';
+    document.getElementById('reminderAlertModal').style.display = 'block';
+}
+
+function closeReminderAlertModal() {
+    activeReminderAlertId = null;
+    document.getElementById('reminderAlertModal').style.display = 'none';
+}
+
+function closeModal(modal) {
+    if (!modal) return;
+
+    if (modal.id === 'reminderAlertModal') {
+        closeReminderAlertModal();
+        return;
+    }
+
+    modal.style.display = 'none';
+}
+
+function snoozeActiveReminder() {
+    if (!activeReminderAlertId) return;
+
+    const reminder = reminders.find(r => r.id === activeReminderAlertId);
+    if (!reminder) return;
+
+    const minutes = parseInt(document.getElementById('snoozeMinutes').value, 10) || 10;
+    const snoozeUntil = new Date();
+    snoozeUntil.setMinutes(snoozeUntil.getMinutes() + minutes);
+    reminder.snoozeUntil = snoozeUntil.toISOString();
+
+    saveReminders();
+    updateRemindersDisplay();
+    renderReminderTabs('today');
+    closeReminderAlertModal();
+    showToast(`提醒已延后 ${minutes} 分钟`);
+}
+
+function completeActiveReminder() {
+    if (!activeReminderAlertId) return;
+    const reminderId = activeReminderAlertId;
+    closeReminderAlertModal();
+    window.completeReminder(reminderId);
+}
+
+function openProfileModal() {
+    populateProfileForm();
+    document.getElementById('profileModal').style.display = 'block';
+}
+
+function populateProfileForm() {
+    const fields = [
+        'Name',
+        'Gender',
+        'Age',
+        'Height',
+        'Weight',
+        'BloodType',
+        'BloodPressure',
+        'BloodSugar',
+        'ChronicConditions',
+        'Allergies',
+        'Medications',
+        'HealthGoals',
+        'Notes'
+    ];
+
+    fields.forEach(field => {
+        const key = field.charAt(0).toLowerCase() + field.slice(1);
+        document.getElementById(`profile${field}`).value = profile[key] || '';
+    });
+}
+
+function handleProfileSubmit(e) {
+    e.preventDefault();
+
+    profile = {
+        name: document.getElementById('profileName').value.trim(),
+        gender: document.getElementById('profileGender').value,
+        age: document.getElementById('profileAge').value,
+        height: document.getElementById('profileHeight').value,
+        weight: document.getElementById('profileWeight').value,
+        bloodType: document.getElementById('profileBloodType').value,
+        bloodPressure: document.getElementById('profileBloodPressure').value.trim(),
+        bloodSugar: document.getElementById('profileBloodSugar').value.trim(),
+        chronicConditions: document.getElementById('profileChronicConditions').value.trim(),
+        allergies: document.getElementById('profileAllergies').value.trim(),
+        medications: document.getElementById('profileMedications').value.trim(),
+        healthGoals: document.getElementById('profileHealthGoals').value.trim(),
+        notes: document.getElementById('profileNotes').value.trim()
+    };
+
+    saveProfile();
+    document.getElementById('profileModal').style.display = 'none';
+    showToast('个人信息已保存');
 }
 
 // 请求通知权限

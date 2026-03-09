@@ -16,6 +16,7 @@
             <div class="header-top">
                 <h1>📅 今日活动记录</h1>
                 <div class="header-tools">
+                    <button id="profileBtn" class="header-tool-btn">个人信息</button>
                     <button id="seedDemoBtn" class="header-tool-btn">示例数据</button>
                     <button id="resetDataBtn" class="header-tool-btn danger">清空</button>
                     <button id="exportBtn" class="header-export-btn">导出</button>
@@ -267,6 +268,138 @@
                                 <button type="submit" class="btn-submit">添加提醒</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 个人信息模态框 -->
+        <div id="profileModal" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h2>👤 个人信息</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <form id="profileForm" class="activity-form">
+                    <div class="profile-intro">
+                        <p>记录个人身体基础情况和健康基本情况，为后续健康诊断和个性化建议提供基础数据。</p>
+                    </div>
+
+                    <div class="profile-grid">
+                        <div class="form-group">
+                            <label for="profileName">姓名</label>
+                            <input type="text" id="profileName" placeholder="例如：张三">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileGender">性别</label>
+                            <select id="profileGender">
+                                <option value="">请选择</option>
+                                <option value="male">男</option>
+                                <option value="female">女</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileAge">年龄</label>
+                            <input type="number" id="profileAge" min="0" placeholder="例如：35">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileHeight">身高（cm）</label>
+                            <input type="number" id="profileHeight" min="0" placeholder="例如：168">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileWeight">体重（kg）</label>
+                            <input type="number" id="profileWeight" min="0" step="0.1" placeholder="例如：62.5">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileBloodType">血型</label>
+                            <select id="profileBloodType">
+                                <option value="">请选择</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="AB">AB</option>
+                                <option value="O">O</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileBloodPressure">常见血压</label>
+                            <input type="text" id="profileBloodPressure" placeholder="例如：120/80">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileBloodSugar">常见血糖</label>
+                            <input type="text" id="profileBloodSugar" placeholder="例如：5.6 mmol/L">
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profileChronicConditions">慢性病 / 既往病史</label>
+                            <textarea id="profileChronicConditions" rows="3" placeholder="例如：高血压、脂肪肝、胃炎"></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profileAllergies">过敏史</label>
+                            <textarea id="profileAllergies" rows="3" placeholder="例如：海鲜过敏、青霉素过敏"></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profileMedications">长期用药</label>
+                            <textarea id="profileMedications" rows="3" placeholder="例如：降压药每日 1 次，维生素 D 每日 1 粒"></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profileHealthGoals">当前健康目标</label>
+                            <textarea id="profileHealthGoals" rows="3" placeholder="例如：控制血压、规律睡眠、减重 5kg"></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profileNotes">补充说明</label>
+                            <textarea id="profileNotes" rows="3" placeholder="其他需要长期记录的身体基础情况"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel">取消</button>
+                        <button type="submit" class="btn-submit">保存信息</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 到点提醒弹窗 -->
+        <div id="reminderAlertModal" class="modal">
+            <div class="modal-content reminder-alert-panel">
+                <div class="modal-header">
+                    <h2>⏰ 到点提醒</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="reminder-alert-body">
+                    <div id="alertReminderBadge" class="alert-reminder-badge"></div>
+                    <div id="alertReminderTitle" class="alert-reminder-title"></div>
+                    <div id="alertReminderMeta" class="alert-reminder-meta"></div>
+                    <div id="alertReminderImageWrap" class="alert-reminder-image-wrap hidden">
+                        <img id="alertReminderImage" alt="提醒图片">
+                    </div>
+                    <div id="alertReminderNotes" class="alert-reminder-notes"></div>
+
+                    <div class="form-group">
+                        <label for="snoozeMinutes">延后提醒</label>
+                        <select id="snoozeMinutes">
+                            <option value="10" selected>10 分钟</option>
+                            <option value="15">15 分钟</option>
+                            <option value="30">30 分钟</option>
+                        </select>
+                    </div>
+
+                    <div class="alert-actions">
+                        <button type="button" id="dismissAlertBtn" class="btn-cancel">稍后处理</button>
+                        <button type="button" id="snoozeReminderBtn" class="section-order-btn">延后提醒</button>
+                        <button type="button" id="completeReminderBtn" class="btn-submit">标记完成</button>
                     </div>
                 </div>
             </div>
