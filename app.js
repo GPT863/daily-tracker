@@ -4,6 +4,8 @@ let activities = [];
 let reminders = [];
 let editingId = null;
 let timelineOrder = localStorage.getItem('dailyTracker_timelineOrder') || 'desc';
+let pendingActivityImage = null;
+let pendingReminderImage = null;
 
 // 活动类型图标映射
 const typeIcons = {
@@ -58,19 +60,19 @@ function createMockActivities() {
 
     return {
         [getDateKey(today)]: [
-            createMockActivity('a1', '07:10', 'sleep', '昨晚睡了7.5小时', '早上起床状态不错，精神比较稳定'),
-            createMockActivity('a2', '08:00', 'meal', '早餐：全麦面包、鸡蛋、牛奶', '吃完很踏实，胃里很舒服', 20),
+            createMockActivity('a1', '07:10', 'sleep', '昨晚睡了7.5小时', '早上起床状态不错，精神比较稳定', null, createMockImageDataUri('睡眠', '#b8e6c6', '#5fae75', '月亮和叶片')),
+            createMockActivity('a2', '08:00', 'meal', '早餐：全麦面包、鸡蛋、牛奶', '吃完很踏实，胃里很舒服', 20, createMockImageDataUri('早餐', '#f5d68b', '#88b56a', '燕麦与鸡蛋')),
             createMockActivity('a3', '09:00', 'medication', '维生素D 1粒', '无明显不适'),
-            createMockActivity('a4', '12:20', 'meal', '午餐：糙米饭、清炒西兰花、鸡胸肉', '清爽不油腻，下午不犯困', 30),
+            createMockActivity('a4', '12:20', 'meal', '午餐：糙米饭、清炒西兰花、鸡胸肉', '清爽不油腻，下午不犯困', 30, createMockImageDataUri('午餐', '#d9f0c7', '#76a95d', '糙米饭和西兰花')),
             createMockActivity('a5', '15:30', 'work', '整理本周健康记录', '复盘后更清楚自己的作息问题', 45),
-            createMockActivity('a6', '19:10', 'exercise', '快走 + 拉伸', '微微出汗，腿部放松很多', 40),
+            createMockActivity('a6', '19:10', 'exercise', '快走 + 拉伸', '微微出汗，腿部放松很多', 40, createMockImageDataUri('运动', '#b7ead8', '#3c8f68', '快走与拉伸')),
             createMockActivity('a7', '20:10', 'meal', '晚餐：南瓜粥和蔬菜沙拉', '晚餐轻一点，身体感觉更轻松', 25)
         ],
         [getDateKey(yesterday)]: [
-            createMockActivity('b1', '07:40', 'sleep', '午休补觉30分钟', '下午精神恢复了一些', 30),
+            createMockActivity('b1', '07:40', 'sleep', '午休补觉30分钟', '下午精神恢复了一些', 30, createMockImageDataUri('午休', '#caefd4', '#6bb07e', '安静的靠枕')),
             createMockActivity('b2', '08:15', 'meal', '早餐：燕麦粥', '暖胃，早上状态平稳', 15),
             createMockActivity('b3', '12:05', 'medication', '降压药 1片', '饭后服用，没有明显不适'),
-            createMockActivity('b4', '18:40', 'exercise', '慢跑 5 公里', '心率偏高，但整体状态不错', 35)
+            createMockActivity('b4', '18:40', 'exercise', '慢跑 5 公里', '心率偏高，但整体状态不错', 35, createMockImageDataUri('慢跑', '#c8f1d1', '#419a63', '公园跑道'))
         ],
         [getDateKey(tomorrow)]: [
             createMockActivity('c1', '07:30', 'sleep', '计划早起后记录睡眠情况', ''),
@@ -79,7 +81,7 @@ function createMockActivities() {
     };
 }
 
-function createMockActivity(id, time, type, content, feeling, duration = null) {
+function createMockActivity(id, time, type, content, feeling, duration = null, image = null) {
     return {
         id,
         time,
@@ -87,8 +89,33 @@ function createMockActivity(id, time, type, content, feeling, duration = null) {
         content,
         feeling,
         duration,
+        image,
         createdAt: new Date().toISOString()
     };
+}
+
+function createMockImageDataUri(title, topColor, bottomColor, subtitle) {
+    const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+            <defs>
+                <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="${topColor}"/>
+                    <stop offset="100%" stop-color="${bottomColor}"/>
+                </linearGradient>
+            </defs>
+            <rect width="1200" height="720" rx="48" fill="url(#bg)"/>
+            <circle cx="950" cy="160" r="88" fill="rgba(255,255,255,0.18)"/>
+            <circle cx="1015" cy="245" r="42" fill="rgba(255,255,255,0.14)"/>
+            <path d="M140 560 C280 410, 470 400, 650 545 S980 690, 1110 545 L1110 720 L140 720 Z" fill="rgba(255,255,255,0.18)"/>
+            <rect x="84" y="84" width="220" height="58" rx="29" fill="rgba(255,255,255,0.2)"/>
+            <text x="194" y="121" text-anchor="middle" font-size="28" font-family="Segoe UI, Arial" fill="white">健康记录</text>
+            <text x="96" y="325" font-size="92" font-weight="700" font-family="Segoe UI, Arial" fill="white">${title}</text>
+            <text x="100" y="392" font-size="38" font-family="Segoe UI, Arial" fill="rgba(255,255,255,0.92)">${subtitle}</text>
+            <text x="98" y="635" font-size="28" font-family="Segoe UI, Arial" fill="rgba(255,255,255,0.9)">示例图片 · 本地演示数据</text>
+        </svg>
+    `;
+
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
 function createMockReminders() {
@@ -98,9 +125,9 @@ function createMockReminders() {
 
     return [
         createMockReminder('r1', '早餐时间', 'meal', today, '08:00', true, '吃得清淡一点，先补充蛋白质'),
-        createMockReminder('r2', '记得服药', 'medication', today, '09:00', true, '早餐后服用'),
+        createMockReminder('r2', '记得服药', 'medication', today, '09:00', true, '早餐后服用', createMockImageDataUri('用药', '#d7f0cf', '#78ae69', '随餐服用提醒')),
         createMockReminder('r3', '晚上活动一下', 'exercise', today, '19:00', true, '至少快走 30 分钟'),
-        createMockReminder('r4', '准备睡眠', 'sleep', today, '22:30', true, '睡前少看手机'),
+        createMockReminder('r4', '准备睡眠', 'sleep', today, '22:30', true, '睡前少看手机', createMockImageDataUri('睡眠提醒', '#cbead3', '#659f76', '放下手机准备休息')),
         createMockReminder('r5', '复查预约提醒', 'other', getDateKey(tomorrow), '15:00', false, '带上病历和检查单'),
         {
             ...createMockReminder('r6', '午间散步', 'exercise', today, '13:30', false, '饭后散步 15 分钟'),
@@ -110,7 +137,7 @@ function createMockReminders() {
     ];
 }
 
-function createMockReminder(id, title, type, date, time, repeat, notes) {
+function createMockReminder(id, title, type, date, time, repeat, notes, image = null) {
     return {
         id,
         title,
@@ -119,6 +146,7 @@ function createMockReminder(id, title, type, date, time, repeat, notes) {
         time,
         repeat,
         notes,
+        image,
         completed: false,
         completedAt: null,
         createdAt: new Date().toISOString()
@@ -166,7 +194,12 @@ function saveActivities() {
     const dateKey = getDateKey(currentDate);
     const allData = JSON.parse(localStorage.getItem('dailyTracker_activities'));
     allData[dateKey] = activities;
-    localStorage.setItem('dailyTracker_activities', JSON.stringify(allData));
+
+    try {
+        localStorage.setItem('dailyTracker_activities', JSON.stringify(allData));
+    } catch (error) {
+        throw new Error('LOCAL_STORAGE_QUOTA_EXCEEDED');
+    }
 }
 
 // 获取日期键
@@ -228,6 +261,9 @@ function setupEventListeners() {
 
     // 表单提交
     document.getElementById('activityForm').addEventListener('submit', handleFormSubmit);
+    document.getElementById('activityImageUpload').addEventListener('change', handleActivityImageChange);
+    document.getElementById('activityImageCamera').addEventListener('change', handleActivityImageChange);
+    document.getElementById('removeActivityImage').addEventListener('click', clearPendingActivityImage);
 
     // 导出按钮
     document.getElementById('exportJson').addEventListener('click', exportJson);
@@ -279,6 +315,11 @@ function updateTimeline() {
                 <span class="timeline-type">${typeIcons[activity.type]}</span>
             </div>
             <div class="timeline-content">${escapeHtml(activity.content)}</div>
+            ${activity.image ? `
+                <div class="timeline-image-wrap">
+                    <img class="timeline-image" src="${activity.image}" alt="${escapeHtml(activity.content)}">
+                </div>
+            ` : ''}
             ${activity.feeling ? `<div class="timeline-feeling">"${escapeHtml(activity.feeling)}"</div>` : ''}
             ${activity.duration ? `<div class="timeline-duration">⏱️ ${activity.duration}分钟</div>` : ''}
             <div class="timeline-actions">
@@ -337,6 +378,7 @@ function openModal(activity = null) {
     const title = document.getElementById('modalTitle');
 
     form.reset();
+    resetImageInputs();
 
     if (activity) {
         editingId = activity.id;
@@ -346,20 +388,23 @@ function openModal(activity = null) {
         document.getElementById('activityContent').value = activity.content;
         document.getElementById('activityFeeling').value = activity.feeling || '';
         document.getElementById('activityDuration').value = activity.duration || '';
+        pendingActivityImage = activity.image || null;
     } else {
         editingId = null;
         title.textContent = '添加活动';
+        pendingActivityImage = null;
         // 设置默认时间
         const now = new Date();
         const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         document.getElementById('activityTime').value = time;
     }
 
+    updateActivityImagePreview();
     modal.style.display = 'block';
 }
 
 // 处理表单提交
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
     e.preventDefault();
 
     const activity = {
@@ -369,6 +414,7 @@ function handleFormSubmit(e) {
         content: document.getElementById('activityContent').value,
         feeling: document.getElementById('activityFeeling').value,
         duration: parseInt(document.getElementById('activityDuration').value) || null,
+        image: pendingActivityImage,
         createdAt: editingId ? activities.find(a => a.id === editingId)?.createdAt : new Date().toISOString()
     };
 
@@ -382,11 +428,100 @@ function handleFormSubmit(e) {
     }
 
     activities.sort((a, b) => a.time.localeCompare(b.time));
-    saveActivities();
-    updateDisplay();
-    document.getElementById('activityModal').style.display = 'none';
 
-    showToast(editingId ? '活动已更新！' : '活动已添加！');
+    try {
+        saveActivities();
+        updateDisplay();
+        document.getElementById('activityModal').style.display = 'none';
+        pendingActivityImage = null;
+        resetImageInputs();
+        showToast(editingId ? '活动已更新！' : '活动已添加！');
+    } catch (error) {
+        console.error(error);
+        showToast('保存失败：图片过大或本地存储空间不足');
+    }
+}
+
+async function handleActivityImageChange(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    try {
+        pendingActivityImage = await readAndCompressImage(file);
+        updateActivityImagePreview();
+        showToast('图片已添加');
+    } catch (error) {
+        console.error(error);
+        showToast('图片处理失败，请重试');
+    } finally {
+        resetImageInputs();
+    }
+}
+
+function clearPendingActivityImage() {
+    pendingActivityImage = null;
+    updateActivityImagePreview();
+    resetImageInputs();
+}
+
+function updateActivityImagePreview() {
+    const preview = document.getElementById('activityImagePreview');
+    const previewImg = document.getElementById('activityImagePreviewImg');
+    const hint = document.getElementById('activityImageHint');
+
+    if (!pendingActivityImage) {
+        preview.classList.add('hidden');
+        previewImg.removeAttribute('src');
+        hint.style.display = 'block';
+        return;
+    }
+
+    preview.classList.remove('hidden');
+    previewImg.src = pendingActivityImage;
+    hint.style.display = 'none';
+}
+
+function resetImageInputs() {
+    document.getElementById('activityImageUpload').value = '';
+    document.getElementById('activityImageCamera').value = '';
+}
+
+function readAndCompressImage(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+                const maxSize = 1600;
+                let { width, height } = img;
+
+                if (width > height && width > maxSize) {
+                    height = Math.round((height * maxSize) / width);
+                    width = maxSize;
+                } else if (height >= width && height > maxSize) {
+                    width = Math.round((width * maxSize) / height);
+                    height = maxSize;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Canvas not supported'));
+                    return;
+                }
+
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.82));
+            };
+            img.onerror = () => reject(new Error('Image load failed'));
+            img.src = reader.result;
+        };
+        reader.onerror = () => reject(new Error('File read failed'));
+        reader.readAsDataURL(file);
+    });
 }
 
 // 编辑活动
@@ -522,7 +657,11 @@ function loadReminders() {
 
 // 保存提醒数据
 function saveReminders() {
-    localStorage.setItem('dailyTracker_reminders', JSON.stringify(reminders));
+    try {
+        localStorage.setItem('dailyTracker_reminders', JSON.stringify(reminders));
+    } catch (error) {
+        throw new Error('LOCAL_STORAGE_QUOTA_EXCEEDED');
+    }
 }
 
 // 设置提醒相关事件监听
@@ -537,6 +676,9 @@ function setupReminderListeners() {
 
     // 提醒表单提交
     document.getElementById('reminderForm').addEventListener('submit', handleReminderSubmit);
+    document.getElementById('reminderImageUpload').addEventListener('change', handleReminderImageChange);
+    document.getElementById('reminderImageCamera').addEventListener('change', handleReminderImageChange);
+    document.getElementById('removeReminderImage').addEventListener('click', clearPendingReminderImage);
 }
 
 // 渲染提醒标签
@@ -649,6 +791,11 @@ function renderReminderItem(reminder, showDate = false) {
                 </div>
             </div>
             <div class="reminder-detail-title">${escapeHtml(reminder.title)}</div>
+            ${reminder.image ? `
+                <div class="reminder-detail-image-wrap">
+                    <img class="reminder-detail-image" src="${reminder.image}" alt="${escapeHtml(reminder.title)}">
+                </div>
+            ` : ''}
             ${reminder.notes ? `<div class="reminder-detail-notes">${escapeHtml(reminder.notes)}</div>` : ''}
             <div class="reminder-detail-actions">
                 <button class="btn-action btn-edit" onclick="completeReminder('${reminder.id}')">
@@ -672,15 +819,26 @@ function handleReminderSubmit(e) {
         time: document.getElementById('reminderTime').value,
         repeat: document.getElementById('reminderRepeat').checked,
         notes: document.getElementById('reminderNotes').value,
+        image: pendingReminderImage,
         completed: false,
         createdAt: new Date().toISOString()
     };
 
     reminders.push(reminder);
-    saveReminders();
+    try {
+        saveReminders();
+    } catch (error) {
+        reminders.pop();
+        console.error(error);
+        showToast('保存失败：图片过大或本地存储空间不足');
+        return;
+    }
 
     // 清空表单
     document.getElementById('reminderForm').reset();
+    pendingReminderImage = null;
+    updateReminderImagePreview();
+    resetReminderImageInputs();
 
     // 请求通知权限
     requestNotificationPermission();
@@ -691,6 +849,50 @@ function handleReminderSubmit(e) {
     // 切换到"今日提醒"标签
     renderReminderTabs('today');
     updateRemindersDisplay();
+}
+
+async function handleReminderImageChange(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    try {
+        pendingReminderImage = await readAndCompressImage(file);
+        updateReminderImagePreview();
+        showToast('提醒图片已添加');
+    } catch (error) {
+        console.error(error);
+        showToast('图片处理失败，请重试');
+    } finally {
+        resetReminderImageInputs();
+    }
+}
+
+function clearPendingReminderImage() {
+    pendingReminderImage = null;
+    updateReminderImagePreview();
+    resetReminderImageInputs();
+}
+
+function updateReminderImagePreview() {
+    const preview = document.getElementById('reminderImagePreview');
+    const previewImg = document.getElementById('reminderImagePreviewImg');
+    const hint = document.getElementById('reminderImageHint');
+
+    if (!pendingReminderImage) {
+        preview.classList.add('hidden');
+        previewImg.removeAttribute('src');
+        hint.style.display = 'block';
+        return;
+    }
+
+    preview.classList.remove('hidden');
+    previewImg.src = pendingReminderImage;
+    hint.style.display = 'none';
+}
+
+function resetReminderImageInputs() {
+    document.getElementById('reminderImageUpload').value = '';
+    document.getElementById('reminderImageCamera').value = '';
 }
 
 // 完成提醒
