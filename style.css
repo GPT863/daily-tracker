@@ -30,6 +30,124 @@ body {
     display: none !important;
 }
 
+body.elder-mode {
+    font-size: 18px;
+}
+
+body.elder-mode .app-container {
+    max-width: 920px;
+}
+
+body.elder-mode .app-header {
+    padding: 24px;
+}
+
+body.elder-mode .app-header h1 {
+    font-size: 1.85rem;
+}
+
+body.elder-mode #currentDate {
+    font-size: 1.15rem;
+}
+
+body.elder-mode .date-btn,
+body.elder-mode .fab-add,
+body.elder-mode .fab-reminder,
+body.elder-mode .fab-export {
+    width: 68px;
+    height: 68px;
+}
+
+body.elder-mode .header-tool-btn,
+body.elder-mode .header-export-btn,
+body.elder-mode .section-order-btn,
+body.elder-mode .section-export-btn,
+body.elder-mode .text-btn,
+body.elder-mode .image-upload-btn,
+body.elder-mode .remove-image-btn {
+    font-size: 1rem;
+    padding: 12px 18px;
+}
+
+body.elder-mode .header-tool-btn.active {
+    background: rgba(223, 245, 228, 0.92);
+    color: var(--forest-color);
+    border-color: rgba(255,255,255,0.72);
+}
+
+body.elder-mode .stat-card,
+body.elder-mode .timeline-item,
+body.elder-mode .reminder-item,
+body.elder-mode .reminder-detail-item,
+body.elder-mode .modal-content,
+body.elder-mode .image-upload-card {
+    border-radius: 18px;
+}
+
+body.elder-mode .stat-card {
+    padding: 24px;
+}
+
+body.elder-mode .stat-icon {
+    font-size: 2.8rem;
+}
+
+body.elder-mode .stat-value {
+    font-size: 2.1rem;
+}
+
+body.elder-mode .timeline-item,
+body.elder-mode .reminder-item,
+body.elder-mode .reminder-detail-item {
+    padding: 20px;
+}
+
+body.elder-mode .timeline-time,
+body.elder-mode .reminder-time,
+body.elder-mode .reminder-detail-time {
+    font-size: 1.25rem;
+}
+
+body.elder-mode .timeline-content,
+body.elder-mode .reminder-title,
+body.elder-mode .reminder-detail-title,
+body.elder-mode .alert-reminder-title {
+    font-size: 1.15rem;
+}
+
+body.elder-mode .timeline-feeling,
+body.elder-mode .timeline-duration,
+body.elder-mode .reminder-type,
+body.elder-mode .reminder-detail-notes,
+body.elder-mode .alert-reminder-meta,
+body.elder-mode .alert-reminder-notes,
+body.elder-mode .profile-intro {
+    font-size: 1rem;
+}
+
+body.elder-mode .form-group label,
+body.elder-mode .tab-btn,
+body.elder-mode .btn-action {
+    font-size: 1rem;
+}
+
+body.elder-mode .form-group input,
+body.elder-mode .form-group select,
+body.elder-mode .form-group textarea {
+    font-size: 1.08rem;
+    padding: 14px;
+}
+
+body.elder-mode .modal-header h2 {
+    font-size: 1.5rem;
+}
+
+body.elder-mode .alert-actions button,
+body.elder-mode .form-actions button {
+    min-height: 52px;
+    font-size: 1.05rem;
+}
+
 .app-container {
     max-width: 800px;
     margin: 0 auto;

@@ -8,6 +8,7 @@ let pendingActivityImage = null;
 let pendingReminderImage = null;
 let profile = {};
 let activeReminderAlertId = null;
+let elderMode = localStorage.getItem('dailyTracker_elderMode') === 'true';
 
 // 活动类型图标映射
 const typeIcons = {
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadActivities();
     loadReminders();
     loadProfile();
+    applyElderMode();
     setupEventListeners();
     setupReminderListeners();
     setupProfileListeners();
@@ -257,6 +259,7 @@ function setupEventListeners() {
     });
     document.getElementById('timelineOrderBtn').addEventListener('click', toggleTimelineOrder);
     document.getElementById('profileBtn').addEventListener('click', openProfileModal);
+    document.getElementById('elderModeBtn').addEventListener('click', toggleElderMode);
 
     // 数据辅助入口
     document.getElementById('seedDemoBtn').addEventListener('click', loadDemoData);
@@ -310,6 +313,7 @@ function changeDate(days) {
 // 更新显示
 function updateDisplay() {
     updateDateDisplay();
+    updateElderModeButton();
     updateTimelineOrderButton();
     updateTimeline();
     updateStats();
@@ -1111,6 +1115,26 @@ function closeModal(modal) {
     }
 
     modal.style.display = 'none';
+}
+
+function applyElderMode() {
+    document.body.classList.toggle('elder-mode', elderMode);
+    updateElderModeButton();
+}
+
+function updateElderModeButton() {
+    const btn = document.getElementById('elderModeBtn');
+    if (!btn) return;
+
+    btn.textContent = elderMode ? '标准模式' : '长辈模式';
+    btn.classList.toggle('active', elderMode);
+}
+
+function toggleElderMode() {
+    elderMode = !elderMode;
+    localStorage.setItem('dailyTracker_elderMode', String(elderMode));
+    applyElderMode();
+    showToast(elderMode ? '已开启长辈模式' : '已切换为标准模式');
 }
 
 function snoozeActiveReminder() {
