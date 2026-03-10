@@ -3,15 +3,56 @@ let currentDate = new Date();
 let activities = [];
 let healthRecords = [];
 let reminders = [];
+let allActivitiesData = {};
+let allHealthRecordsData = {};
 let editingId = null;
 let timelineOrder = localStorage.getItem('dailyTracker_timelineOrder') || 'desc';
 let pendingActivityImage = null;
 let pendingReminderImage = null;
 let pendingHealthImage = null;
 let profile = {};
+let metadata = {};
 let activeReminderAlertId = null;
 let elderMode = localStorage.getItem('dailyTracker_elderMode') === 'true';
 let editingHealthId = null;
+let editingReminderId = null;
+let serviceWorkerRegistration = null;
+let pendingImportData = null;
+let reminderSearchState = {
+    keyword: '',
+    type: '',
+    status: '',
+    startDate: '',
+    endDate: '',
+    sortBy: 'timeAsc'
+};
+let submitLocks = {
+    activity: false,
+    health: false,
+    reminder: false,
+    import: false
+};
+
+const STORAGE_SCHEMA_VERSION = 2;
+const BACKUP_REMINDER_DAYS = 7;
+const legacyStorageKeys = {
+    activities: 'dailyTracker_activities',
+    healthRecords: 'dailyTracker_healthRecords',
+    reminders: 'dailyTracker_reminders',
+    profile: 'dailyTracker_profile',
+    metadata: 'dailyTracker_metadata'
+};
+const idbConfig = {
+    dbName: 'dailyTrackerDB',
+    storeName: 'appState'
+};
+const healthValidationRules = {
+    bloodPressure: { systolic: [60, 250], diastolic: [40, 150] },
+    heartRate: { min: 30, max: 220, label: '心率' },
+    bloodSugar: { min: 1, max: 30, label: '血糖' },
+    bloodLipid: { min: 0.5, max: 20, label: '血脂' },
+    uricAcid: { min: 60, max: 1200, label: '尿酸' }
+};
 
 // 活动类型图标映射
 const typeIcons = {
@@ -61,8 +102,8 @@ const healthTypeUnits = {
 };
 
 // 初始化应用
-document.addEventListener('DOMContentLoaded', () => {
-    initDB();
+document.addEventListener('DOMContentLoaded', async () => {
+    await initDB();
     loadActivities();
     loadHealthRecords();
     loadReminders();
@@ -73,25 +114,209 @@ document.addEventListener('DOMContentLoaded', () => {
     setupProfileListeners();
     updateDisplay();
     updateRemindersDisplay();
+    renderReminderTabs('today');
+    updateStorageStatus();
+    maybeRemindBackup();
     checkReminders();
-    setInterval(checkReminders, 60000); // 每分钟检查一次
-    registerServiceWorker();
+    setInterval(checkReminders, 60000);
+    await registerServiceWorker();
+    await syncRemindersToServiceWorker();
 });
 
-// 初始化数据库（使用LocalStorage模拟）
-function initDB() {
-    if (!localStorage.getItem('dailyTracker_activities')) {
-        localStorage.setItem('dailyTracker_activities', JSON.stringify(createMockActivities()));
+function getDefaultMetadata() {
+    return {
+        schemaVersion: STORAGE_SCHEMA_VERSION,
+        storageEngine: 'localStorage',
+        lastBackupAt: '',
+        lastImportAt: '',
+        backupReminderDays: BACKUP_REMINDER_DAYS
+    };
+}
+
+function createEmptyState() {
+    return {
+        activities: {},
+        healthRecords: {},
+        reminders: [],
+        profile: {},
+        metadata: getDefaultMetadata()
+    };
+}
+
+function getLocalStorageJSON(key, fallback) {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+    } catch (error) {
+        console.error(`Failed to parse storage key: ${key}`, error);
+        return fallback;
     }
-    if (!localStorage.getItem('dailyTracker_reminders')) {
-        localStorage.setItem('dailyTracker_reminders', JSON.stringify(createMockReminders()));
+}
+
+function setLocalStorageJSON(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+}
+
+function openIndexedDB() {
+    return new Promise((resolve, reject) => {
+        if (!('indexedDB' in window)) {
+            reject(new Error('INDEXEDDB_UNAVAILABLE'));
+            return;
+        }
+
+        const request = indexedDB.open(idbConfig.dbName, 1);
+        request.onerror = () => reject(request.error || new Error('INDEXEDDB_OPEN_FAILED'));
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(idbConfig.storeName)) {
+                db.createObjectStore(idbConfig.storeName, { keyPath: 'key' });
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+    });
+}
+
+async function readStateFromIndexedDB(key) {
+    const db = await openIndexedDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(idbConfig.storeName, 'readonly');
+        const store = transaction.objectStore(idbConfig.storeName);
+        const request = store.get(key);
+        request.onerror = () => reject(request.error || new Error('INDEXEDDB_READ_FAILED'));
+        request.onsuccess = () => {
+            resolve(request.result ? request.result.value : undefined);
+            db.close();
+        };
+    });
+}
+
+async function writeStateToIndexedDB(key, value) {
+    const db = await openIndexedDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(idbConfig.storeName, 'readwrite');
+        const store = transaction.objectStore(idbConfig.storeName);
+        store.put({ key, value });
+        transaction.oncomplete = () => {
+            db.close();
+            resolve();
+        };
+        transaction.onerror = () => reject(transaction.error || new Error('INDEXEDDB_WRITE_FAILED'));
+    });
+}
+
+async function initializeStorageState() {
+    const fallbackState = {
+        activities: getLocalStorageJSON(legacyStorageKeys.activities, {}),
+        healthRecords: getLocalStorageJSON(legacyStorageKeys.healthRecords, {}),
+        reminders: getLocalStorageJSON(legacyStorageKeys.reminders, []),
+        profile: getLocalStorageJSON(legacyStorageKeys.profile, {}),
+        metadata: {
+            ...getDefaultMetadata(),
+            ...getLocalStorageJSON(legacyStorageKeys.metadata, {})
+        }
+    };
+
+    try {
+        await openIndexedDB();
+        const keys = ['activities', 'healthRecords', 'reminders', 'profile', 'metadata'];
+        const indexedState = {};
+
+        for (const key of keys) {
+            indexedState[key] = await readStateFromIndexedDB(key);
+        }
+
+        const hasIndexedData = keys.some(key => indexedState[key] !== undefined);
+
+        if (!hasIndexedData) {
+            const initialState = Object.keys(fallbackState.activities).length
+                || Object.keys(fallbackState.healthRecords).length
+                || fallbackState.reminders.length
+                || Object.keys(fallbackState.profile).length
+                ? fallbackState
+                : createEmptyState();
+
+            for (const key of keys) {
+                await writeStateToIndexedDB(key, initialState[key]);
+            }
+
+            metadata = {
+                ...getDefaultMetadata(),
+                ...initialState.metadata,
+                storageEngine: 'IndexedDB',
+                schemaVersion: STORAGE_SCHEMA_VERSION
+            };
+            await writeStateToIndexedDB('metadata', metadata);
+            setLocalStorageJSON(legacyStorageKeys.metadata, metadata);
+            return initialState;
+        }
+
+        const normalizedState = {
+            activities: indexedState.activities || {},
+            healthRecords: indexedState.healthRecords || {},
+            reminders: indexedState.reminders || [],
+            profile: indexedState.profile || {},
+            metadata: {
+                ...getDefaultMetadata(),
+                ...(indexedState.metadata || {}),
+                storageEngine: 'IndexedDB',
+                schemaVersion: STORAGE_SCHEMA_VERSION
+            }
+        };
+
+        return normalizedState;
+    } catch (error) {
+        console.warn('IndexedDB unavailable, fallback to localStorage', error);
+        fallbackState.metadata = {
+            ...getDefaultMetadata(),
+            ...fallbackState.metadata,
+            storageEngine: 'localStorage',
+            schemaVersion: STORAGE_SCHEMA_VERSION
+        };
+        return fallbackState;
     }
-    if (!localStorage.getItem('dailyTracker_healthRecords')) {
-        localStorage.setItem('dailyTracker_healthRecords', JSON.stringify(createMockHealthRecords()));
+}
+
+async function persistAppState() {
+    metadata = {
+        ...getDefaultMetadata(),
+        ...metadata,
+        schemaVersion: STORAGE_SCHEMA_VERSION
+    };
+
+    const state = {
+        activities: allActivitiesData,
+        healthRecords: allHealthRecordsData,
+        reminders,
+        profile,
+        metadata
+    };
+
+    try {
+        if (metadata.storageEngine === 'IndexedDB') {
+            for (const [key, value] of Object.entries(state)) {
+                await writeStateToIndexedDB(key, value);
+            }
+        }
+        setLocalStorageJSON(legacyStorageKeys.activities, allActivitiesData);
+        setLocalStorageJSON(legacyStorageKeys.healthRecords, allHealthRecordsData);
+        setLocalStorageJSON(legacyStorageKeys.reminders, reminders);
+        setLocalStorageJSON(legacyStorageKeys.profile, profile);
+        setLocalStorageJSON(legacyStorageKeys.metadata, metadata);
+    } catch (error) {
+        throw new Error('STORAGE_WRITE_FAILED');
     }
-    if (!localStorage.getItem('dailyTracker_profile')) {
-        localStorage.setItem('dailyTracker_profile', JSON.stringify(createMockProfile()));
-    }
+}
+
+async function initDB() {
+    const state = await initializeStorageState();
+    allActivitiesData = state.activities || {};
+    allHealthRecordsData = state.healthRecords || {};
+    reminders = normalizeReminders(state.reminders || []);
+    profile = state.profile || {};
+    metadata = {
+        ...getDefaultMetadata(),
+        ...(state.metadata || {})
+    };
 }
 
 function createMockActivities() {
@@ -246,80 +471,76 @@ function createMockProfile() {
     };
 }
 
-function loadDemoData() {
+async function loadDemoData() {
     const shouldReplace = confirm('这会用示例数据覆盖当前本地活动和提醒，是否继续？');
     if (!shouldReplace) return;
 
-    localStorage.setItem('dailyTracker_activities', JSON.stringify(createMockActivities()));
-    localStorage.setItem('dailyTracker_healthRecords', JSON.stringify(createMockHealthRecords()));
-    localStorage.setItem('dailyTracker_reminders', JSON.stringify(createMockReminders()));
-    localStorage.setItem('dailyTracker_profile', JSON.stringify(createMockProfile()));
+    allActivitiesData = createMockActivities();
+    allHealthRecordsData = createMockHealthRecords();
+    reminders = normalizeReminders(createMockReminders());
+    profile = createMockProfile();
+    metadata.lastImportAt = new Date().toISOString();
+    await persistAppState();
 
     loadActivities();
     loadHealthRecords();
-    loadReminders();
-    loadProfile();
     updateDisplay();
     updateRemindersDisplay();
+    renderReminderTabs('today');
+    updateStorageStatus();
     showToast('示例数据已加载');
 }
 
-function resetAllData() {
+async function resetAllData() {
     const shouldClear = confirm('这会清空当前浏览器中的全部活动和提醒数据，是否继续？');
     if (!shouldClear) return;
 
-    localStorage.setItem('dailyTracker_activities', JSON.stringify({}));
-    localStorage.setItem('dailyTracker_healthRecords', JSON.stringify({}));
-    localStorage.setItem('dailyTracker_reminders', JSON.stringify([]));
-    localStorage.setItem('dailyTracker_profile', JSON.stringify({}));
+    allActivitiesData = {};
+    allHealthRecordsData = {};
+    reminders = [];
+    profile = {};
+    metadata = {
+        ...getDefaultMetadata(),
+        ...metadata,
+        storageEngine: metadata.storageEngine || 'localStorage'
+    };
+    await persistAppState();
 
     loadActivities();
     loadHealthRecords();
-    loadReminders();
-    loadProfile();
     updateDisplay();
     updateRemindersDisplay();
+    renderReminderTabs('today');
+    updateStorageStatus();
     showToast('本地数据已清空');
 }
 
 // 加载活动数据
 function loadActivities() {
     const dateKey = getDateKey(currentDate);
-    const allData = JSON.parse(localStorage.getItem('dailyTracker_activities'));
-    activities = allData[dateKey] || [];
+    activities = [...(allActivitiesData[dateKey] || [])];
     activities.sort((a, b) => a.time.localeCompare(b.time));
 }
 
 function loadHealthRecords() {
     const dateKey = getDateKey(currentDate);
-    const allData = JSON.parse(localStorage.getItem('dailyTracker_healthRecords'));
-    healthRecords = allData[dateKey] || [];
+    healthRecords = [...(allHealthRecordsData[dateKey] || [])];
     healthRecords.sort((a, b) => a.time.localeCompare(b.time));
 }
 
 // 保存活动数据
-function saveActivities() {
+async function saveActivities() {
     const dateKey = getDateKey(currentDate);
-    const allData = JSON.parse(localStorage.getItem('dailyTracker_activities'));
-    allData[dateKey] = activities;
-
-    try {
-        localStorage.setItem('dailyTracker_activities', JSON.stringify(allData));
-    } catch (error) {
-        throw new Error('LOCAL_STORAGE_QUOTA_EXCEEDED');
-    }
+    allActivitiesData[dateKey] = [...activities];
+    await persistAppState();
+    await updateStorageStatus();
 }
 
-function saveHealthRecords() {
+async function saveHealthRecords() {
     const dateKey = getDateKey(currentDate);
-    const allData = JSON.parse(localStorage.getItem('dailyTracker_healthRecords'));
-    allData[dateKey] = healthRecords;
-
-    try {
-        localStorage.setItem('dailyTracker_healthRecords', JSON.stringify(allData));
-    } catch (error) {
-        throw new Error('LOCAL_STORAGE_QUOTA_EXCEEDED');
-    }
+    allHealthRecordsData[dateKey] = [...healthRecords];
+    await persistAppState();
+    await updateStorageStatus();
 }
 
 // 获取日期键
@@ -397,6 +618,13 @@ function setupEventListeners() {
     // 导出按钮
     document.getElementById('exportJson').addEventListener('click', exportJson);
     document.getElementById('exportCsv').addEventListener('click', exportCsv);
+    document.getElementById('importJsonBtn').addEventListener('click', () => {
+        document.getElementById('importJsonInput').click();
+    });
+    document.getElementById('importJsonInput').addEventListener('change', handleImportFileSelection);
+    document.getElementById('confirmImportMerge').addEventListener('click', () => confirmImport('merge'));
+    document.getElementById('confirmImportReplace').addEventListener('click', () => confirmImport('replace'));
+    document.getElementById('snoozeMinutes').addEventListener('change', toggleCustomSnoozeField);
 }
 
 // 更改日期
@@ -608,21 +836,128 @@ function syncHealthUnitField() {
     document.getElementById('healthUnit').value = healthTypeUnits[type] || '';
 }
 
+function getDateTimeForKey(dateKey, time) {
+    return new Date(`${dateKey}T${time}:00`);
+}
+
+function validateEntryTime(dateKey, time, label) {
+    if (!time) {
+        showToast(`请填写${label}时间`);
+        return false;
+    }
+
+    const entryDateTime = getDateTimeForKey(dateKey, time);
+    const now = new Date();
+
+    if (entryDateTime > now) {
+        showToast(`${label}时间不能晚于当前时间`);
+        return false;
+    }
+
+    const diffDays = Math.abs(now - entryDateTime) / (1000 * 60 * 60 * 24);
+    if (diffDays > 30) {
+        return confirm(`${label}时间距今天已超过 30 天，是否继续保存？`);
+    }
+
+    return true;
+}
+
+function isDuplicateActivity(candidate) {
+    return activities.some(item => (
+        item.time === candidate.time
+        && item.type === candidate.type
+        && item.content === candidate.content
+    ));
+}
+
+function isDuplicateHealthRecord(candidate) {
+    return healthRecords.some(item => (
+        item.time === candidate.time
+        && item.type === candidate.type
+        && item.value === candidate.value
+    ));
+}
+
+function validateHealthRecord(type, value) {
+    if (!value) {
+        return { valid: false, needsConfirm: false, message: '请填写健康数值' };
+    }
+
+    if (type === 'bloodPressure') {
+        const match = value.match(/^(\d{2,3})\s*\/\s*(\d{2,3})$/);
+        if (!match) {
+            return { valid: false, needsConfirm: false, message: '血压格式应为 收缩压/舒张压，例如 120/80' };
+        }
+
+        const systolic = parseInt(match[1], 10);
+        const diastolic = parseInt(match[2], 10);
+        const [minSys, maxSys] = healthValidationRules.bloodPressure.systolic;
+        const [minDia, maxDia] = healthValidationRules.bloodPressure.diastolic;
+        const inRange = systolic >= minSys && systolic <= maxSys && diastolic >= minDia && diastolic <= maxDia;
+
+        return inRange
+            ? { valid: true, needsConfirm: false, message: '' }
+            : { valid: true, needsConfirm: true, message: '血压数值超出建议范围，确认继续保存吗？' };
+    }
+
+    if (type === 'other') {
+        return { valid: true, needsConfirm: false, message: '' };
+    }
+
+    const numericValue = Number(value);
+    if (Number.isNaN(numericValue)) {
+        return { valid: false, needsConfirm: false, message: '该健康指标需要填写数字' };
+    }
+
+    const rule = healthValidationRules[type];
+    if (!rule) {
+        return { valid: true, needsConfirm: false, message: '' };
+    }
+
+    const inRange = numericValue >= rule.min && numericValue <= rule.max;
+    return inRange
+        ? { valid: true, needsConfirm: false, message: '' }
+        : { valid: true, needsConfirm: true, message: `${rule.label}超出建议范围，确认继续保存吗？` };
+}
+
 // 处理表单提交
 async function handleFormSubmit(e) {
     e.preventDefault();
+    if (submitLocks.activity) return;
+
+    const time = document.getElementById('activityTime').value;
+    const type = document.getElementById('activityType').value;
+    const content = document.getElementById('activityContent').value.trim();
+    const feeling = document.getElementById('activityFeeling').value.trim();
+    const duration = parseInt(document.getElementById('activityDuration').value, 10) || null;
+
+    if (!content) {
+        showToast('请填写活动内容');
+        return;
+    }
+
+    if (!validateEntryTime(getDateKey(currentDate), time, '活动记录')) {
+        return;
+    }
+
+    if (!editingId && isDuplicateActivity({ time, type, content })) {
+        showToast('检测到重复活动，请勿重复提交');
+        return;
+    }
 
     const activity = {
         id: editingId || Date.now().toString(),
-        time: document.getElementById('activityTime').value,
-        type: document.getElementById('activityType').value,
-        content: document.getElementById('activityContent').value,
-        feeling: document.getElementById('activityFeeling').value,
-        duration: parseInt(document.getElementById('activityDuration').value) || null,
+        time,
+        type,
+        content,
+        feeling,
+        duration,
         image: pendingActivityImage,
-        createdAt: editingId ? activities.find(a => a.id === editingId)?.createdAt : new Date().toISOString()
+        createdAt: editingId ? activities.find(a => a.id === editingId)?.createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString()
     };
 
+    submitLocks.activity = true;
     if (editingId) {
         const index = activities.findIndex(a => a.id === editingId);
         if (index > -1) {
@@ -635,7 +970,7 @@ async function handleFormSubmit(e) {
     activities.sort((a, b) => a.time.localeCompare(b.time));
 
     try {
-        saveActivities();
+        await saveActivities();
         updateDisplay();
         document.getElementById('activityModal').style.display = 'none';
         pendingActivityImage = null;
@@ -644,23 +979,53 @@ async function handleFormSubmit(e) {
     } catch (error) {
         console.error(error);
         showToast('保存失败：图片过大或本地存储空间不足');
+    } finally {
+        submitLocks.activity = false;
     }
 }
 
-function handleHealthFormSubmit(e) {
+async function handleHealthFormSubmit(e) {
     e.preventDefault();
+    if (submitLocks.health) return;
+
+    const time = document.getElementById('healthTime').value;
+    const type = document.getElementById('healthType').value;
+    const value = document.getElementById('healthValue').value.trim();
+    const unit = document.getElementById('healthUnit').value.trim();
+    const notes = document.getElementById('healthNotes').value.trim();
+
+    if (!validateEntryTime(getDateKey(currentDate), time, '健康数据')) {
+        return;
+    }
+
+    const validationResult = validateHealthRecord(type, value);
+    if (!validationResult.valid) {
+        showToast(validationResult.message);
+        return;
+    }
+
+    if (validationResult.needsConfirm && !confirm(validationResult.message)) {
+        return;
+    }
+
+    if (!editingHealthId && isDuplicateHealthRecord({ time, type, value })) {
+        showToast('检测到重复健康数据，请确认后再提交');
+        return;
+    }
 
     const record = {
         id: editingHealthId || Date.now().toString(),
-        time: document.getElementById('healthTime').value,
-        type: document.getElementById('healthType').value,
-        value: document.getElementById('healthValue').value.trim(),
-        unit: document.getElementById('healthUnit').value.trim(),
-        notes: document.getElementById('healthNotes').value.trim(),
+        time,
+        type,
+        value,
+        unit,
+        notes,
         image: pendingHealthImage,
-        createdAt: editingHealthId ? healthRecords.find(r => r.id === editingHealthId)?.createdAt : new Date().toISOString()
+        createdAt: editingHealthId ? healthRecords.find(r => r.id === editingHealthId)?.createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString()
     };
 
+    submitLocks.health = true;
     if (editingHealthId) {
         const index = healthRecords.findIndex(r => r.id === editingHealthId);
         if (index > -1) {
@@ -673,7 +1038,7 @@ function handleHealthFormSubmit(e) {
     healthRecords.sort((a, b) => a.time.localeCompare(b.time));
 
     try {
-        saveHealthRecords();
+        await saveHealthRecords();
         updateDisplay();
         document.getElementById('healthModal').style.display = 'none';
         pendingHealthImage = null;
@@ -682,6 +1047,8 @@ function handleHealthFormSubmit(e) {
     } catch (error) {
         console.error(error);
         showToast('保存失败：图片过大或本地存储空间不足');
+    } finally {
+        submitLocks.health = false;
     }
 }
 
@@ -860,24 +1227,29 @@ window.editActivity = function(id) {
 window.deleteActivity = function(id) {
     if (confirm('确定要删除这个活动吗？')) {
         activities = activities.filter(a => a.id !== id);
-        saveActivities();
-        updateDisplay();
-        showToast('活动已删除！');
+        saveActivities()
+            .then(() => {
+                updateDisplay();
+                showToast('活动已删除！');
+            })
+            .catch(() => showToast('删除失败，请稍后重试'));
     }
 }
 
 // 导出JSON
-function exportJson() {
-    const dateKey = getDateKey(currentDate);
+async function exportJson() {
+    const snapshot = buildFullExportPayload();
     const data = {
-        date: dateKey,
-        activities: activities,
-        healthRecords: healthRecords,
+        ...snapshot,
         exportedAt: new Date().toISOString()
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    downloadFile(blob, `daily-tracker-${dateKey}.json`);
+    const dateKey = getDateKey(currentDate);
+    downloadFile(blob, `daily-tracker-backup-${dateKey}.json`);
+    metadata.lastBackupAt = new Date().toISOString();
+    await persistAppState();
+    updateStorageStatus();
     document.getElementById('exportModal').style.display = 'none';
     showToast('数据已导出！');
 }
@@ -892,14 +1264,18 @@ window.editHealthRecord = function(id) {
 window.deleteHealthRecord = function(id) {
     if (confirm('确定要删除这条健康数据吗？')) {
         healthRecords = healthRecords.filter(r => r.id !== id);
-        saveHealthRecords();
-        updateDisplay();
-        showToast('健康数据已删除！');
+        saveHealthRecords()
+            .then(() => {
+                updateDisplay();
+                showToast('健康数据已删除！');
+            })
+            .catch(() => showToast('删除失败，请稍后重试'));
     }
 }
 
 function openExportModal() {
     document.getElementById('exportModal').style.display = 'block';
+    updateStorageStatus();
 }
 
 // 导出CSV
@@ -981,10 +1357,21 @@ function escapeHtml(text) {
 }
 
 // 注册Service Worker（PWA支持）
-function registerServiceWorker() {
-    if ('serviceWorker' in navigator) {
-        // Service Worker注册代码将在后续添加
-        console.log('Service Worker support detected');
+async function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+
+    try {
+        serviceWorkerRegistration = await navigator.serviceWorker.register('./sw.js');
+
+        if ('sync' in serviceWorkerRegistration) {
+            try {
+                await serviceWorkerRegistration.sync.register('daily-tracker-sync');
+            } catch (error) {
+                console.warn('Background sync unavailable', error);
+            }
+        }
+    } catch (error) {
+        console.error('Service Worker registration failed', error);
     }
 }
 
@@ -1005,24 +1392,24 @@ document.addEventListener('keydown', (e) => {
 
 // 加载提醒数据
 function loadReminders() {
-    reminders = JSON.parse(localStorage.getItem('dailyTracker_reminders')) || [];
+    reminders = normalizeReminders(reminders || []);
 }
 
 // 保存提醒数据
-function saveReminders() {
-    try {
-        localStorage.setItem('dailyTracker_reminders', JSON.stringify(reminders));
-    } catch (error) {
-        throw new Error('LOCAL_STORAGE_QUOTA_EXCEEDED');
-    }
+async function saveReminders() {
+    reminders = normalizeReminders(reminders);
+    await persistAppState();
+    await syncRemindersToServiceWorker();
+    await updateStorageStatus();
 }
 
 function loadProfile() {
-    profile = JSON.parse(localStorage.getItem('dailyTracker_profile')) || {};
+    profile = profile || {};
 }
 
-function saveProfile() {
-    localStorage.setItem('dailyTracker_profile', JSON.stringify(profile));
+async function saveProfile() {
+    await persistAppState();
+    await updateStorageStatus();
 }
 
 // 设置提醒相关事件监听
@@ -1043,6 +1430,8 @@ function setupReminderListeners() {
     document.getElementById('snoozeReminderBtn').addEventListener('click', snoozeActiveReminder);
     document.getElementById('completeReminderBtn').addEventListener('click', completeActiveReminder);
     document.getElementById('dismissAlertBtn').addEventListener('click', closeReminderAlertModal);
+    document.getElementById('applyReminderSearch').addEventListener('click', applyReminderSearch);
+    document.getElementById('resetReminderSearch').addEventListener('click', resetReminderSearch);
 }
 
 function setupProfileListeners() {
@@ -1081,8 +1470,14 @@ function renderReminderTabs(tab) {
         case 'all':
             renderAllReminders();
             break;
+        case 'history':
+            renderReminderHistory();
+            break;
+        case 'search':
+            renderReminderSearchResults();
+            break;
         case 'add':
-            setDefaultReminderDate();
+            populateReminderForm();
             break;
     }
 }
@@ -1095,6 +1490,34 @@ function setDefaultReminderDate() {
 
     document.getElementById('reminderDate').value = tomorrow.toISOString().split('T')[0];
     document.getElementById('reminderTime').value = '09:00';
+}
+
+function populateReminderForm(reminder = null) {
+    const form = document.getElementById('reminderForm');
+    form.reset();
+    resetReminderImageInputs();
+    clearPendingReminderImage();
+
+    if (reminder) {
+        editingReminderId = reminder.id;
+        document.getElementById('reminderId').value = reminder.id;
+        document.getElementById('reminderTitle').value = reminder.title;
+        document.getElementById('reminderType').value = reminder.type;
+        document.getElementById('reminderDate').value = reminder.date;
+        document.getElementById('reminderTime').value = reminder.time;
+        document.getElementById('reminderRepeat').checked = Boolean(reminder.repeat);
+        document.getElementById('reminderNotes').value = reminder.notes || '';
+        document.getElementById('reminderSubmitBtn').textContent = '保存提醒';
+        pendingReminderImage = reminder.image || null;
+    } else {
+        editingReminderId = null;
+        document.getElementById('reminderId').value = '';
+        document.getElementById('reminderSubmitBtn').textContent = '添加提醒';
+        pendingReminderImage = null;
+        setDefaultReminderDate();
+    }
+
+    updateReminderImagePreview();
 }
 
 // 渲染今日提醒
@@ -1138,6 +1561,63 @@ function renderAllReminders() {
         : allReminders.map(r => renderReminderItem(r, true)).join('');
 }
 
+function renderReminderHistory() {
+    const history = reminders
+        .filter(reminder => reminder.completed)
+        .sort((a, b) => new Date(b.completedAt || b.date) - new Date(a.completedAt || a.date));
+
+    const container = document.getElementById('historyReminderList');
+    container.innerHTML = history.length === 0
+        ? '<p class="text-secondary">还没有完成过的提醒</p>'
+        : history.map(r => renderReminderItem(r, true)).join('');
+}
+
+function getReminderStatus(reminder) {
+    if (reminder.completed) return 'completed';
+    const triggerTime = getReminderTriggerTime(reminder);
+    return triggerTime && triggerTime < new Date() ? 'overdue' : 'pending';
+}
+
+function getFilteredReminders() {
+    const keyword = reminderSearchState.keyword.trim().toLowerCase();
+    const startDate = reminderSearchState.startDate;
+    const endDate = reminderSearchState.endDate;
+
+    let filtered = reminders.filter(reminder => {
+        const text = `${reminder.title} ${reminder.notes || ''}`.toLowerCase();
+        if (keyword && !text.includes(keyword)) return false;
+        if (reminderSearchState.type && reminder.type !== reminderSearchState.type) return false;
+        if (reminderSearchState.status && getReminderStatus(reminder) !== reminderSearchState.status) return false;
+        if (startDate && reminder.date < startDate) return false;
+        if (endDate && reminder.date > endDate) return false;
+        return true;
+    });
+
+    switch (reminderSearchState.sortBy) {
+        case 'timeDesc':
+            filtered.sort((a, b) => new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`));
+            break;
+        case 'type':
+            filtered.sort((a, b) => a.type.localeCompare(b.type) || a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+            break;
+        case 'status':
+            filtered.sort((a, b) => getReminderStatus(a).localeCompare(getReminderStatus(b)) || a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+            break;
+        default:
+            filtered.sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+    }
+
+    return filtered;
+}
+
+function renderReminderSearchResults() {
+    const results = getFilteredReminders();
+    const container = document.getElementById('searchReminderList');
+    container.innerHTML = results.length === 0
+        ? '<p class="text-secondary">没有匹配的提醒</p>'
+        : results.map(r => renderReminderItem(r, true)).join('');
+}
+
 // 渲染单个提醒项
 function renderReminderItem(reminder, showDate = false) {
     const date = new Date(reminder.date + 'T' + reminder.time);
@@ -1145,6 +1625,7 @@ function renderReminderItem(reminder, showDate = false) {
     const timeStr = reminder.time;
     const isCompleted = reminder.completed;
     const isPast = date < new Date();
+    const snoozeInfo = reminder.snoozeCount ? `已延后 ${reminder.snoozeCount} 次` : '';
 
     return `
         <div class="reminder-detail-item ${isCompleted ? 'completed' : ''} ${isPast && !isCompleted ? 'overdue' : ''}">
@@ -1164,8 +1645,9 @@ function renderReminderItem(reminder, showDate = false) {
                     <img class="reminder-detail-image" src="${reminder.image}" alt="${escapeHtml(reminder.title)}">
                 </div>
             ` : ''}
-            ${reminder.notes ? `<div class="reminder-detail-notes">${escapeHtml(reminder.notes)}</div>` : ''}
+            ${(reminder.notes || snoozeInfo) ? `<div class="reminder-detail-notes">${escapeHtml([reminder.notes, snoozeInfo].filter(Boolean).join(' · '))}</div>` : ''}
             <div class="reminder-detail-actions">
+                ${!isCompleted ? `<button class="btn-action btn-edit" onclick="editReminder('${reminder.id}')">编辑</button>` : ''}
                 <button class="btn-action btn-edit" onclick="completeReminder('${reminder.id}')">
                     ${isCompleted ? '✓ 已完成' : '标记完成'}
                 </button>
@@ -1176,45 +1658,67 @@ function renderReminderItem(reminder, showDate = false) {
 }
 
 // 处理提醒表单提交
-function handleReminderSubmit(e) {
+async function handleReminderSubmit(e) {
     e.preventDefault();
+    if (submitLocks.reminder) return;
 
-    const reminder = {
-        id: Date.now().toString(),
-        title: document.getElementById('reminderTitle').value,
-        type: document.getElementById('reminderType').value,
-        date: document.getElementById('reminderDate').value,
-        time: document.getElementById('reminderTime').value,
-        repeat: document.getElementById('reminderRepeat').checked,
-        notes: document.getElementById('reminderNotes').value,
-        image: pendingReminderImage,
-        completed: false,
-        createdAt: new Date().toISOString()
-    };
+    const title = document.getElementById('reminderTitle').value.trim();
+    const date = document.getElementById('reminderDate').value;
+    const time = document.getElementById('reminderTime').value;
+    const type = document.getElementById('reminderType').value;
+    const notes = document.getElementById('reminderNotes').value.trim();
 
-    reminders.push(reminder);
-    try {
-        saveReminders();
-    } catch (error) {
-        reminders.pop();
-        console.error(error);
-        showToast('保存失败：图片过大或本地存储空间不足');
+    if (!title || !date || !time) {
+        showToast('请完整填写提醒内容、日期和时间');
         return;
     }
 
-    // 清空表单
-    document.getElementById('reminderForm').reset();
-    pendingReminderImage = null;
-    updateReminderImagePreview();
-    resetReminderImageInputs();
+    if (!editingReminderId && reminders.some(item => item.title === title && item.date === date && item.time === time && item.type === type && !item.completed)) {
+        showToast('检测到重复提醒，请勿重复提交');
+        return;
+    }
 
-    // 请求通知权限
+    submitLocks.reminder = true;
+    const wasEditing = Boolean(editingReminderId);
+    const existingReminder = editingReminderId ? reminders.find(item => item.id === editingReminderId) : null;
+
+    const reminder = {
+        id: editingReminderId || Date.now().toString(),
+        title,
+        type,
+        date,
+        time,
+        repeat: document.getElementById('reminderRepeat').checked,
+        notes,
+        image: pendingReminderImage,
+        completed: existingReminder?.completed || false,
+        completedAt: existingReminder?.completedAt || null,
+        snoozeUntil: existingReminder?.snoozeUntil || null,
+        snoozeCount: existingReminder?.snoozeCount || 0,
+        history: existingReminder?.history || [],
+        createdAt: existingReminder?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+
+    try {
+        if (editingReminderId) {
+            reminders = reminders.map(item => item.id === editingReminderId ? reminder : item);
+        } else {
+            reminders.push(reminder);
+        }
+        reminders = normalizeReminders(reminders);
+        await saveReminders();
+    } catch (error) {
+        console.error(error);
+        showToast('保存失败：图片过大或本地存储空间不足');
+        submitLocks.reminder = false;
+        return;
+    }
+
+    populateReminderForm();
     requestNotificationPermission();
-
-    // 显示成功消息
-    showToast('提醒已添加！');
-
-    // 切换到"今日提醒"标签
+    showToast(wasEditing ? '提醒已更新！' : '提醒已添加！');
+    submitLocks.reminder = false;
     renderReminderTabs('today');
     updateRemindersDisplay();
 }
@@ -1269,6 +1773,13 @@ window.completeReminder = function(id) {
     if (reminder) {
         reminder.completed = !reminder.completed;
         reminder.completedAt = reminder.completed ? new Date().toISOString() : null;
+        reminder.snoozeUntil = reminder.completed ? null : reminder.snoozeUntil;
+        reminder.history = reminder.history || [];
+        reminder.history.push({
+            action: reminder.completed ? 'completed' : 'reopened',
+            at: new Date().toISOString()
+        });
+        reminder.updatedAt = new Date().toISOString();
 
         // 如果是重复提醒且已完成，创建明天的提醒
         if (reminder.repeat && reminder.completed) {
@@ -1280,21 +1791,25 @@ window.completeReminder = function(id) {
                 id: Date.now().toString(),
                 date: tomorrow.toISOString().split('T')[0],
                 snoozeUntil: null,
+                snoozeCount: 0,
+                history: [],
                 completed: false,
                 completedAt: null,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
             };
 
             reminders.push(newReminder);
         }
 
-        saveReminders();
-        renderReminderTabs('today');
-        updateRemindersDisplay();
-        if (activeReminderAlertId === id) {
-            closeReminderAlertModal();
-        }
-        showToast(reminder.completed ? '提醒已完成！' : '提醒已恢复');
+        saveReminders().then(() => {
+            renderReminderTabs('today');
+            updateRemindersDisplay();
+            if (activeReminderAlertId === id) {
+                closeReminderAlertModal();
+            }
+            showToast(reminder.completed ? '提醒已完成！' : '提醒已恢复');
+        });
     }
 }
 
@@ -1302,10 +1817,11 @@ window.completeReminder = function(id) {
 window.deleteReminder = function(id) {
     if (confirm('确定要删除这个提醒吗？')) {
         reminders = reminders.filter(r => r.id !== id);
-        saveReminders();
-        renderReminderTabs('today');
-        updateRemindersDisplay();
-        showToast('提醒已删除');
+        saveReminders().then(() => {
+            renderReminderTabs('today');
+            updateRemindersDisplay();
+            showToast('提醒已删除');
+        });
     }
 }
 
@@ -1327,7 +1843,7 @@ function updateRemindersDisplay() {
     } else {
         emptyState.style.display = 'none';
         container.innerHTML = todayReminders.slice(0, 3).map(r => `
-            <div class="reminder-item" onclick="openReminderModal()">
+            <div class="reminder-item" onclick="openReminderManagerFor('${r.id}')">
                 ${r.image ? `
                     <div class="reminder-thumb-wrap">
                         <img class="reminder-thumb" src="${r.image}" alt="${escapeHtml(r.title)}">
@@ -1357,19 +1873,15 @@ function checkReminders() {
 
 // 显示通知
 function showNotification(reminder) {
-    if ('Notification' in window && Notification.permission === 'granted') {
-        const notification = new Notification(`${typeIcons[reminder.type]} ${reminder.title}`, {
+    if ('Notification' in window && Notification.permission === 'granted' && serviceWorkerRegistration?.showNotification) {
+        serviceWorkerRegistration.showNotification(`${typeIcons[reminder.type]} ${reminder.title}`, {
             body: reminder.notes || reminder.time,
-            icon: reminder.image || undefined,
+            icon: reminder.image || './icons/app-icon.svg',
             image: reminder.image || undefined,
             tag: reminder.id,
-            requireInteraction: true
+            requireInteraction: true,
+            data: { reminderId: reminder.id }
         });
-
-        notification.onclick = () => {
-            window.focus();
-            notification.close();
-        };
     } else {
         // 浏览器不支持通知或权限未授予，显示Toast
         showToast(`🔔 ${reminder.title} - ${reminder.time}`);
@@ -1417,6 +1929,9 @@ function openReminderAlertModal(reminder) {
     }
 
     document.getElementById('snoozeMinutes').value = '10';
+    document.getElementById('customSnoozeMinutes').value = '';
+    toggleCustomSnoozeField();
+    updateSnoozeMeta(reminder);
     document.getElementById('reminderAlertModal').style.display = 'block';
 }
 
@@ -1462,16 +1977,35 @@ function snoozeActiveReminder() {
     const reminder = reminders.find(r => r.id === activeReminderAlertId);
     if (!reminder) return;
 
-    const minutes = parseInt(document.getElementById('snoozeMinutes').value, 10) || 10;
+    const minutes = getSelectedSnoozeMinutes();
+    if (!minutes) {
+        showToast('请输入有效的延后分钟数');
+        return;
+    }
+
+    if ((reminder.snoozeCount || 0) >= 3) {
+        showToast('该提醒最多只能延后 3 次');
+        return;
+    }
+
     const snoozeUntil = new Date();
     snoozeUntil.setMinutes(snoozeUntil.getMinutes() + minutes);
     reminder.snoozeUntil = snoozeUntil.toISOString();
+    reminder.snoozeCount = (reminder.snoozeCount || 0) + 1;
+    reminder.history = reminder.history || [];
+    reminder.history.push({
+        action: 'snoozed',
+        at: new Date().toISOString(),
+        minutes
+    });
+    reminder.updatedAt = new Date().toISOString();
 
-    saveReminders();
-    updateRemindersDisplay();
-    renderReminderTabs('today');
-    closeReminderAlertModal();
-    showToast(`提醒已延后 ${minutes} 分钟`);
+    saveReminders().then(() => {
+        updateRemindersDisplay();
+        renderReminderTabs('today');
+        closeReminderAlertModal();
+        showToast(`提醒已延后 ${minutes} 分钟`);
+    });
 }
 
 function completeActiveReminder() {
@@ -1509,7 +2043,7 @@ function populateProfileForm() {
     });
 }
 
-function handleProfileSubmit(e) {
+async function handleProfileSubmit(e) {
     e.preventDefault();
 
     profile = {
@@ -1528,7 +2062,7 @@ function handleProfileSubmit(e) {
         notes: document.getElementById('profileNotes').value.trim()
     };
 
-    saveProfile();
+    await saveProfile();
     document.getElementById('profileModal').style.display = 'none';
     showToast('个人信息已保存');
 }
@@ -1548,4 +2082,287 @@ function requestNotificationPermission() {
 window.openReminderModal = function() {
     document.getElementById('reminderModal').style.display = 'block';
     renderReminderTabs('today');
+}
+
+window.openReminderManagerFor = function(id) {
+    document.getElementById('reminderModal').style.display = 'block';
+    renderReminderTabs('today');
+    if (id) {
+        const reminder = reminders.find(item => item.id === id);
+        if (reminder) {
+            openReminderAlertModal(reminder);
+        }
+    }
+}
+
+window.editReminder = function(id) {
+    const reminder = reminders.find(item => item.id === id);
+    if (!reminder) return;
+    if (reminder.completed) {
+        showToast('已完成提醒不支持编辑');
+        return;
+    }
+
+    document.getElementById('reminderModal').style.display = 'block';
+    renderReminderTabs('add');
+    populateReminderForm(reminder);
+}
+
+function applyReminderSearch() {
+    reminderSearchState = {
+        keyword: document.getElementById('reminderSearchKeyword').value.trim(),
+        type: document.getElementById('reminderFilterType').value,
+        status: document.getElementById('reminderFilterStatus').value,
+        startDate: document.getElementById('reminderFilterStartDate').value,
+        endDate: document.getElementById('reminderFilterEndDate').value,
+        sortBy: document.getElementById('reminderSortBy').value
+    };
+    renderReminderSearchResults();
+}
+
+function resetReminderSearch() {
+    reminderSearchState = {
+        keyword: '',
+        type: '',
+        status: '',
+        startDate: '',
+        endDate: '',
+        sortBy: 'timeAsc'
+    };
+    document.getElementById('reminderSearchKeyword').value = '';
+    document.getElementById('reminderFilterType').value = '';
+    document.getElementById('reminderFilterStatus').value = '';
+    document.getElementById('reminderFilterStartDate').value = '';
+    document.getElementById('reminderFilterEndDate').value = '';
+    document.getElementById('reminderSortBy').value = 'timeAsc';
+    renderReminderSearchResults();
+}
+
+function normalizeReminders(source) {
+    return (source || []).map(reminder => ({
+        snoozeUntil: null,
+        snoozeCount: 0,
+        history: [],
+        updatedAt: reminder.createdAt || new Date().toISOString(),
+        ...reminder
+    }));
+}
+
+function toggleCustomSnoozeField() {
+    const select = document.getElementById('snoozeMinutes');
+    const input = document.getElementById('customSnoozeMinutes');
+    input.classList.toggle('hidden', select.value !== 'custom');
+}
+
+function getSelectedSnoozeMinutes() {
+    const selectValue = document.getElementById('snoozeMinutes').value;
+    if (selectValue === 'custom') {
+        const custom = parseInt(document.getElementById('customSnoozeMinutes').value, 10);
+        if (Number.isNaN(custom) || custom < 1 || custom > 240) return null;
+        return custom;
+    }
+
+    const preset = parseInt(selectValue, 10);
+    return Number.isNaN(preset) ? null : preset;
+}
+
+function updateSnoozeMeta(reminder) {
+    const meta = document.getElementById('snoozeMetaText');
+    const count = reminder?.snoozeCount || 0;
+    meta.textContent = count > 0 ? `已延后 ${count}/3 次` : '本次最多可延后 3 次';
+}
+
+function buildFullExportPayload() {
+    return JSON.parse(JSON.stringify({
+        schemaVersion: STORAGE_SCHEMA_VERSION,
+        date: getDateKey(currentDate),
+        activitiesByDate: allActivitiesData,
+        healthRecordsByDate: allHealthRecordsData,
+        reminders,
+        profile,
+        metadata
+    }));
+}
+
+async function handleImportFileSelection(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        pendingImportData = normalizeImportPayload(parsed);
+        const preview = summarizeImportPayload(pendingImportData);
+        document.getElementById('importPreviewText').textContent = preview;
+        document.getElementById('importPreview').classList.remove('hidden');
+    } catch (error) {
+        console.error(error);
+        showToast('导入文件解析失败，请检查 JSON 格式');
+    } finally {
+        e.target.value = '';
+    }
+}
+
+function normalizeImportPayload(parsed) {
+    if (!parsed || typeof parsed !== 'object') {
+        throw new Error('INVALID_IMPORT_PAYLOAD');
+    }
+
+    if (parsed.activities && parsed.healthRecords && !parsed.activitiesByDate && !parsed.healthRecordsByDate) {
+        const dateKey = parsed.date || getDateKey(currentDate);
+        return {
+            activitiesByDate: { [dateKey]: parsed.activities || [] },
+            healthRecordsByDate: { [dateKey]: parsed.healthRecords || [] },
+            reminders: parsed.reminders || [],
+            profile: parsed.profile || {},
+            metadata: parsed.metadata || {}
+        };
+    }
+
+    return {
+        activitiesByDate: parsed.activitiesByDate || {},
+        healthRecordsByDate: parsed.healthRecordsByDate || {},
+        reminders: parsed.reminders || [],
+        profile: parsed.profile || {},
+        metadata: parsed.metadata || {}
+    };
+}
+
+function summarizeImportPayload(payload) {
+    const activityCount = Object.values(payload.activitiesByDate).reduce((sum, list) => sum + list.length, 0);
+    const healthCount = Object.values(payload.healthRecordsByDate).reduce((sum, list) => sum + list.length, 0);
+    const reminderCount = payload.reminders.length;
+    const dates = Object.keys(payload.activitiesByDate).concat(Object.keys(payload.healthRecordsByDate)).sort();
+    const rangeText = dates.length ? `${dates[0]} 至 ${dates[dates.length - 1]}` : '未包含日期记录';
+    return `检测到 ${activityCount} 条活动、${healthCount} 条健康数据、${reminderCount} 条提醒；日期范围：${rangeText}`;
+}
+
+async function confirmImport(strategy) {
+    if (!pendingImportData || submitLocks.import) return;
+    submitLocks.import = true;
+    const previousState = buildFullExportPayload();
+
+    try {
+        if (strategy === 'replace') {
+            allActivitiesData = pendingImportData.activitiesByDate;
+            allHealthRecordsData = pendingImportData.healthRecordsByDate;
+            reminders = normalizeReminders(pendingImportData.reminders);
+            profile = pendingImportData.profile || {};
+        } else {
+            allActivitiesData = mergeDateBuckets(allActivitiesData, pendingImportData.activitiesByDate);
+            allHealthRecordsData = mergeDateBuckets(allHealthRecordsData, pendingImportData.healthRecordsByDate);
+            reminders = mergeReminders(reminders, pendingImportData.reminders);
+            profile = {
+                ...profile,
+                ...(pendingImportData.profile || {})
+            };
+        }
+
+        metadata.lastImportAt = new Date().toISOString();
+        await persistAppState();
+        loadActivities();
+        loadHealthRecords();
+        updateDisplay();
+        updateRemindersDisplay();
+        renderReminderTabs('today');
+        updateStorageStatus();
+        document.getElementById('importPreview').classList.add('hidden');
+        pendingImportData = null;
+        showToast(strategy === 'replace' ? '数据已替换导入' : '数据已合并导入');
+    } catch (error) {
+        console.error(error);
+        allActivitiesData = previousState.activitiesByDate;
+        allHealthRecordsData = previousState.healthRecordsByDate;
+        reminders = previousState.reminders;
+        profile = previousState.profile;
+        metadata = {
+            ...metadata,
+            ...(previousState.metadata || {})
+        };
+        showToast('导入失败，已保留原始数据');
+    } finally {
+        submitLocks.import = false;
+    }
+}
+
+function mergeDateBuckets(existing, incoming) {
+    const merged = { ...existing };
+    Object.entries(incoming || {}).forEach(([dateKey, list]) => {
+        merged[dateKey] = [...(merged[dateKey] || []).filter(item => !list.some(incomingItem => incomingItem.id === item.id)), ...list];
+        merged[dateKey].sort((a, b) => a.time.localeCompare(b.time));
+    });
+    return merged;
+}
+
+function mergeReminders(existing, incoming) {
+    const base = normalizeReminders(existing);
+    const incomingNormalized = normalizeReminders(incoming);
+    const map = new Map(base.map(item => [item.id, item]));
+    incomingNormalized.forEach(item => map.set(item.id, item));
+    return [...map.values()];
+}
+
+async function updateStorageStatus() {
+    const usageText = document.getElementById('storageUsageText');
+    const usageBar = document.getElementById('storageUsageBar');
+    const engineBadge = document.getElementById('storageEngineBadge');
+    const backupText = document.getElementById('backupReminderText');
+
+    if (!usageText || !usageBar || !engineBadge || !backupText) return;
+
+    const bytesUsed = new Blob([JSON.stringify(buildFullExportPayload())]).size;
+    let quotaBytes = 0;
+
+    if (navigator.storage?.estimate) {
+        try {
+            const estimate = await navigator.storage.estimate();
+            quotaBytes = estimate.quota || 0;
+        } catch (error) {
+            console.warn('Unable to estimate storage quota', error);
+        }
+    }
+
+    const ratio = quotaBytes ? Math.min(bytesUsed / quotaBytes, 1) : 0;
+    usageText.textContent = quotaBytes
+        ? `已用 ${(bytesUsed / 1024 / 1024).toFixed(2)} MB / ${(quotaBytes / 1024 / 1024).toFixed(2)} MB`
+        : `当前数据约 ${(bytesUsed / 1024).toFixed(1)} KB`;
+    usageBar.style.width = `${Math.max(ratio * 100, 6)}%`;
+    usageBar.classList.toggle('warn', ratio >= 0.8);
+    engineBadge.textContent = metadata.storageEngine === 'IndexedDB' ? 'IndexedDB' : 'LocalStorage';
+    backupText.textContent = getBackupReminderText();
+}
+
+function getBackupReminderText() {
+    if (!metadata.lastBackupAt) {
+        return '尚未导出备份，建议尽快执行一次 JSON 备份。';
+    }
+
+    const diffDays = Math.floor((Date.now() - new Date(metadata.lastBackupAt).getTime()) / (1000 * 60 * 60 * 24));
+    return diffDays >= BACKUP_REMINDER_DAYS
+        ? `距离上次备份已超过 ${BACKUP_REMINDER_DAYS} 天，建议立即备份。`
+        : `最近一次备份时间：${new Date(metadata.lastBackupAt).toLocaleString('zh-CN')}`;
+}
+
+function maybeRemindBackup() {
+    const hasAnyData = Object.keys(allActivitiesData).length
+        || Object.keys(allHealthRecordsData).length
+        || reminders.length
+        || Object.keys(profile).length;
+    if (!hasAnyData) return;
+
+    const backupText = getBackupReminderText();
+    if (backupText.includes('建议')) {
+        showToast('请留意数据备份，避免本地数据丢失');
+    }
+}
+
+async function syncRemindersToServiceWorker() {
+    if (!navigator.serviceWorker?.controller && !serviceWorkerRegistration?.active) return;
+    const target = navigator.serviceWorker.controller || serviceWorkerRegistration.active;
+    if (!target) return;
+
+    target.postMessage({
+        type: 'SYNC_REMINDERS',
+        reminders
+    });
 }

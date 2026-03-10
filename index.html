@@ -184,12 +184,32 @@
         <div id="exportModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>导出数据</h2>
+                    <h2>数据管理</h2>
                     <span class="close">&times;</span>
                 </div>
                 <div class="export-options">
+                    <div class="storage-panel">
+                        <div class="storage-panel-header">
+                            <strong>存储状态</strong>
+                            <span id="storageEngineBadge" class="storage-badge">检测中</span>
+                        </div>
+                        <div id="storageUsageText" class="storage-usage-text">正在读取存储信息...</div>
+                        <div class="storage-progress">
+                            <div id="storageUsageBar" class="storage-progress-bar"></div>
+                        </div>
+                        <div id="backupReminderText" class="storage-helper-text"></div>
+                    </div>
+                    <button id="importJsonBtn" class="export-btn secondary">📥 导入JSON备份</button>
                     <button id="exportJson" class="export-btn">📄 导出JSON</button>
                     <button id="exportCsv" class="export-btn">📊 导出CSV</button>
+                    <input type="file" id="importJsonInput" accept="application/json,.json" hidden>
+                    <div id="importPreview" class="import-preview hidden">
+                        <div id="importPreviewText" class="storage-helper-text"></div>
+                        <div class="import-actions">
+                            <button id="confirmImportMerge" type="button" class="btn-submit">合并导入</button>
+                            <button id="confirmImportReplace" type="button" class="section-order-btn">替换导入</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -206,6 +226,8 @@
                         <button class="tab-btn active" data-tab="today">今日提醒</button>
                         <button class="tab-btn" data-tab="upcoming">即将到来</button>
                         <button class="tab-btn" data-tab="all">全部提醒</button>
+                        <button class="tab-btn" data-tab="history">提醒历史</button>
+                        <button class="tab-btn" data-tab="search">搜索筛选</button>
                         <button class="tab-btn" data-tab="add">添加提醒</button>
                     </div>
 
@@ -221,8 +243,66 @@
                         <div id="allReminderList" class="reminder-detail-list"></div>
                     </div>
 
+                    <div id="tab-history" class="tab-content">
+                        <div id="historyReminderList" class="reminder-detail-list"></div>
+                    </div>
+
+                    <div id="tab-search" class="tab-content">
+                        <div class="reminder-search-panel">
+                            <div class="form-group">
+                                <label for="reminderSearchKeyword">关键词</label>
+                                <input type="text" id="reminderSearchKeyword" placeholder="搜索提醒内容或备注">
+                            </div>
+                            <div class="reminder-filter-grid">
+                                <div class="form-group">
+                                    <label for="reminderFilterType">类型</label>
+                                    <select id="reminderFilterType">
+                                        <option value="">全部类型</option>
+                                        <option value="meal">🍽️ 用餐</option>
+                                        <option value="medication">💊 用药</option>
+                                        <option value="exercise">🏃 运动</option>
+                                        <option value="sleep">😴 睡眠</option>
+                                        <option value="other">📌 其他</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="reminderFilterStatus">状态</label>
+                                    <select id="reminderFilterStatus">
+                                        <option value="">全部状态</option>
+                                        <option value="pending">未完成</option>
+                                        <option value="completed">已完成</option>
+                                        <option value="overdue">已过期</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="reminderFilterStartDate">开始日期</label>
+                                    <input type="date" id="reminderFilterStartDate">
+                                </div>
+                                <div class="form-group">
+                                    <label for="reminderFilterEndDate">结束日期</label>
+                                    <input type="date" id="reminderFilterEndDate">
+                                </div>
+                                <div class="form-group">
+                                    <label for="reminderSortBy">排序方式</label>
+                                    <select id="reminderSortBy">
+                                        <option value="timeAsc">按时间升序</option>
+                                        <option value="timeDesc">按时间降序</option>
+                                        <option value="type">按类型</option>
+                                        <option value="status">按状态</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="import-actions">
+                                <button id="applyReminderSearch" type="button" class="btn-submit">应用筛选</button>
+                                <button id="resetReminderSearch" type="button" class="btn-cancel">重置</button>
+                            </div>
+                        </div>
+                        <div id="searchReminderList" class="reminder-detail-list"></div>
+                    </div>
+
                     <div id="tab-add" class="tab-content">
                         <form id="reminderForm" class="reminder-form">
+                            <input type="hidden" id="reminderId">
                             <div class="form-group">
                                 <label for="reminderTitle">提醒内容</label>
                                 <input type="text" id="reminderTitle" placeholder="例如：该吃药了" required>
@@ -280,7 +360,7 @@
 
                             <div class="form-actions">
                                 <button type="button" class="btn-cancel">取消</button>
-                                <button type="submit" class="btn-submit">添加提醒</button>
+                                <button type="submit" id="reminderSubmitBtn" class="btn-submit">添加提醒</button>
                             </div>
                         </form>
                     </div>
@@ -475,7 +555,10 @@
                             <option value="10" selected>10 分钟</option>
                             <option value="15">15 分钟</option>
                             <option value="30">30 分钟</option>
+                            <option value="custom">自定义</option>
                         </select>
+                        <input type="number" id="customSnoozeMinutes" class="hidden" min="1" max="240" placeholder="输入 1-240 分钟">
+                        <div id="snoozeMetaText" class="storage-helper-text"></div>
                     </div>
 
                     <div class="alert-actions">
