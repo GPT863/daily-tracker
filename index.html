@@ -157,14 +157,12 @@
 
                     <div class="form-group">
                         <label>图片记录</label>
-                        <div class="image-upload-card">
-                            <div class="image-upload-actions">
-                                <label for="activityImageUpload" class="image-upload-btn">上传图片</label>
-                                <label for="activityImageCamera" class="image-upload-btn camera">拍照上传</label>
-                            </div>
-                            <input type="file" id="activityImageUpload" accept="image/*" hidden>
-                            <input type="file" id="activityImageCamera" accept="image/*" capture="environment" hidden>
-                            <div id="activityImageHint" class="image-upload-hint">支持从相册选择或直接拍照，图片会保存在本地浏览器中。</div>
+                            <div class="image-upload-card">
+                                <div class="image-upload-actions">
+                                    <label for="activityImageUpload" class="image-upload-btn">上传图片</label>
+                                </div>
+                                <input type="file" id="activityImageUpload" accept="image/*" hidden>
+                            <div id="activityImageHint" class="image-upload-hint">点击上传图片后，可从相机拍照或从相册选择，图片会保存在本地浏览器中。</div>
                             <div id="activityImagePreview" class="activity-image-preview hidden">
                                 <img id="activityImagePreviewImg" alt="活动图片预览">
                                 <button type="button" id="removeActivityImage" class="remove-image-btn">移除图片</button>
@@ -287,11 +285,9 @@
                                 <div class="image-upload-card">
                                     <div class="image-upload-actions">
                                         <label for="reminderImageUpload" class="image-upload-btn">上传图片</label>
-                                        <label for="reminderImageCamera" class="image-upload-btn camera">拍照上传</label>
                                     </div>
                                     <input type="file" id="reminderImageUpload" accept="image/*" hidden>
-                                    <input type="file" id="reminderImageCamera" accept="image/*" capture="environment" hidden>
-                                    <div id="reminderImageHint" class="image-upload-hint">可为用药、饮食、运动或睡眠提醒附加图片说明。</div>
+                                    <div id="reminderImageHint" class="image-upload-hint">点击上传图片后，可从相机拍照或从相册选择，为提醒附加图片说明。</div>
                                     <div id="reminderImagePreview" class="activity-image-preview hidden">
                                         <img id="reminderImagePreviewImg" alt="提醒图片预览">
                                         <button type="button" id="removeReminderImage" class="remove-image-btn">移除图片</button>
@@ -356,11 +352,9 @@
                         <div class="image-upload-card">
                             <div class="image-upload-actions">
                                 <label for="healthImageUpload" class="image-upload-btn">上传图片</label>
-                                <label for="healthImageCamera" class="image-upload-btn camera">拍照上传</label>
                             </div>
                             <input type="file" id="healthImageUpload" accept="image/*" hidden>
-                            <input type="file" id="healthImageCamera" accept="image/*" capture="environment" hidden>
-                            <div id="healthImageHint" class="image-upload-hint">可上传检测报告、仪器屏幕、试纸结果等图片。</div>
+                            <div id="healthImageHint" class="image-upload-hint">点击上传图片后，可从相机拍照或从相册选择检测报告、仪器屏幕、试纸结果等图片。</div>
                             <div id="healthImagePreview" class="activity-image-preview hidden">
                                 <img id="healthImagePreviewImg" alt="健康数据图片预览">
                                 <button type="button" id="removeHealthImage" class="remove-image-btn">移除图片</button>

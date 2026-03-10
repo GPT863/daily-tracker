@@ -856,10 +856,6 @@ body.elder-mode .form-actions button {
     transition: transform 0.25s, box-shadow 0.25s, opacity 0.25s;
 }
 
-.image-upload-btn.camera {
-    background: linear-gradient(135deg, #4c9f5b, #7acb72);
-}
-
 .image-upload-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 12px 24px rgba(40, 122, 68, 0.18);

@@ -599,12 +599,10 @@ function setupEventListeners() {
     // 表单提交
     document.getElementById('activityForm').addEventListener('submit', handleFormSubmit);
     document.getElementById('activityImageUpload').addEventListener('change', handleActivityImageChange);
-    document.getElementById('activityImageCamera').addEventListener('change', handleActivityImageChange);
     document.getElementById('removeActivityImage').addEventListener('click', clearPendingActivityImage);
     document.getElementById('healthForm').addEventListener('submit', handleHealthFormSubmit);
     document.getElementById('healthType').addEventListener('change', syncHealthUnitField);
     document.getElementById('healthImageUpload').addEventListener('change', handleHealthImageChange);
-    document.getElementById('healthImageCamera').addEventListener('change', handleHealthImageChange);
     document.getElementById('removeHealthImage').addEventListener('click', clearPendingHealthImage);
 
     // 导出按钮
@@ -1122,7 +1120,6 @@ function updateHealthImagePreview() {
 
 function resetHealthImageInputs() {
     document.getElementById('healthImageUpload').value = '';
-    document.getElementById('healthImageCamera').value = '';
 }
 
 async function handleActivityImageChange(e) {
@@ -1166,7 +1163,6 @@ function updateActivityImagePreview() {
 
 function resetImageInputs() {
     document.getElementById('activityImageUpload').value = '';
-    document.getElementById('activityImageCamera').value = '';
 }
 
 function readAndCompressImage(file) {
@@ -1417,7 +1413,6 @@ function setupReminderListeners() {
     // 提醒表单提交
     document.getElementById('reminderForm').addEventListener('submit', handleReminderSubmit);
     document.getElementById('reminderImageUpload').addEventListener('change', handleReminderImageChange);
-    document.getElementById('reminderImageCamera').addEventListener('change', handleReminderImageChange);
     document.getElementById('removeReminderImage').addEventListener('click', clearPendingReminderImage);
     document.getElementById('snoozeReminderBtn').addEventListener('click', snoozeActiveReminder);
     document.getElementById('completeReminderBtn').addEventListener('click', completeActiveReminder);
@@ -1691,7 +1686,6 @@ function updateReminderImagePreview() {
 
 function resetReminderImageInputs() {
     document.getElementById('reminderImageUpload').value = '';
-    document.getElementById('reminderImageCamera').value = '';
 }
 
 // 完成提醒
