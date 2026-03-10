@@ -18,14 +18,6 @@ let editingHealthId = null;
 let editingReminderId = null;
 let serviceWorkerRegistration = null;
 let pendingImportData = null;
-let reminderSearchState = {
-    keyword: '',
-    type: '',
-    status: '',
-    startDate: '',
-    endDate: '',
-    sortBy: 'timeAsc'
-};
 let submitLocks = {
     activity: false,
     health: false,
@@ -1430,8 +1422,6 @@ function setupReminderListeners() {
     document.getElementById('snoozeReminderBtn').addEventListener('click', snoozeActiveReminder);
     document.getElementById('completeReminderBtn').addEventListener('click', completeActiveReminder);
     document.getElementById('dismissAlertBtn').addEventListener('click', closeReminderAlertModal);
-    document.getElementById('applyReminderSearch').addEventListener('click', applyReminderSearch);
-    document.getElementById('resetReminderSearch').addEventListener('click', resetReminderSearch);
 }
 
 function setupProfileListeners() {
@@ -1469,12 +1459,6 @@ function renderReminderTabs(tab) {
             break;
         case 'all':
             renderAllReminders();
-            break;
-        case 'history':
-            renderReminderHistory();
-            break;
-        case 'search':
-            renderReminderSearchResults();
             break;
         case 'add':
             populateReminderForm();
@@ -1559,63 +1543,6 @@ function renderAllReminders() {
     container.innerHTML = allReminders.length === 0
         ? '<p class="text-secondary">还没有任何提醒</p>'
         : allReminders.map(r => renderReminderItem(r, true)).join('');
-}
-
-function renderReminderHistory() {
-    const history = reminders
-        .filter(reminder => reminder.completed)
-        .sort((a, b) => new Date(b.completedAt || b.date) - new Date(a.completedAt || a.date));
-
-    const container = document.getElementById('historyReminderList');
-    container.innerHTML = history.length === 0
-        ? '<p class="text-secondary">还没有完成过的提醒</p>'
-        : history.map(r => renderReminderItem(r, true)).join('');
-}
-
-function getReminderStatus(reminder) {
-    if (reminder.completed) return 'completed';
-    const triggerTime = getReminderTriggerTime(reminder);
-    return triggerTime && triggerTime < new Date() ? 'overdue' : 'pending';
-}
-
-function getFilteredReminders() {
-    const keyword = reminderSearchState.keyword.trim().toLowerCase();
-    const startDate = reminderSearchState.startDate;
-    const endDate = reminderSearchState.endDate;
-
-    let filtered = reminders.filter(reminder => {
-        const text = `${reminder.title} ${reminder.notes || ''}`.toLowerCase();
-        if (keyword && !text.includes(keyword)) return false;
-        if (reminderSearchState.type && reminder.type !== reminderSearchState.type) return false;
-        if (reminderSearchState.status && getReminderStatus(reminder) !== reminderSearchState.status) return false;
-        if (startDate && reminder.date < startDate) return false;
-        if (endDate && reminder.date > endDate) return false;
-        return true;
-    });
-
-    switch (reminderSearchState.sortBy) {
-        case 'timeDesc':
-            filtered.sort((a, b) => new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`));
-            break;
-        case 'type':
-            filtered.sort((a, b) => a.type.localeCompare(b.type) || a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
-            break;
-        case 'status':
-            filtered.sort((a, b) => getReminderStatus(a).localeCompare(getReminderStatus(b)) || a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
-            break;
-        default:
-            filtered.sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
-    }
-
-    return filtered;
-}
-
-function renderReminderSearchResults() {
-    const results = getFilteredReminders();
-    const container = document.getElementById('searchReminderList');
-    container.innerHTML = results.length === 0
-        ? '<p class="text-secondary">没有匹配的提醒</p>'
-        : results.map(r => renderReminderItem(r, true)).join('');
 }
 
 // 渲染单个提醒项
@@ -2106,36 +2033,6 @@ window.editReminder = function(id) {
     document.getElementById('reminderModal').style.display = 'block';
     renderReminderTabs('add');
     populateReminderForm(reminder);
-}
-
-function applyReminderSearch() {
-    reminderSearchState = {
-        keyword: document.getElementById('reminderSearchKeyword').value.trim(),
-        type: document.getElementById('reminderFilterType').value,
-        status: document.getElementById('reminderFilterStatus').value,
-        startDate: document.getElementById('reminderFilterStartDate').value,
-        endDate: document.getElementById('reminderFilterEndDate').value,
-        sortBy: document.getElementById('reminderSortBy').value
-    };
-    renderReminderSearchResults();
-}
-
-function resetReminderSearch() {
-    reminderSearchState = {
-        keyword: '',
-        type: '',
-        status: '',
-        startDate: '',
-        endDate: '',
-        sortBy: 'timeAsc'
-    };
-    document.getElementById('reminderSearchKeyword').value = '';
-    document.getElementById('reminderFilterType').value = '';
-    document.getElementById('reminderFilterStatus').value = '';
-    document.getElementById('reminderFilterStartDate').value = '';
-    document.getElementById('reminderFilterEndDate').value = '';
-    document.getElementById('reminderSortBy').value = 'timeAsc';
-    renderReminderSearchResults();
 }
 
 function normalizeReminders(source) {

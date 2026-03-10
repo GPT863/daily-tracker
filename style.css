@@ -1008,8 +1008,7 @@ body.elder-mode .form-actions button {
 }
 
 .storage-panel,
-.import-preview,
-.reminder-search-panel {
+.import-preview {
     padding: 16px;
     border-radius: 16px;
     background: linear-gradient(145deg, rgba(223, 245, 228, 0.76), rgba(255,255,255,0.96));
@@ -1228,12 +1227,6 @@ body.elder-mode .form-actions button {
     width: auto;
 }
 
-.reminder-filter-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0 14px;
-}
-
 /* 响应式设计 */
 @media (max-width: 600px) {
     .header-top {
@@ -1298,10 +1291,6 @@ body.elder-mode .form-actions button {
 
     .modal-content.large {
         width: 95%;
-    }
-
-    .reminder-filter-grid {
-        grid-template-columns: 1fr;
     }
 
     .import-actions {
