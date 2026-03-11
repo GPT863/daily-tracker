@@ -450,13 +450,13 @@ function createMockReminders() {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     return [
-        createMockReminder('r1', '早餐时间', 'meal', today, '08:00', true, '吃得清淡一点，先补充蛋白质'),
-        createMockReminder('r2', '记得服药', 'medication', today, '09:00', true, '早餐后服用', createMockImageDataUri('用药', '#d7f0cf', '#78ae69', '随餐服用提醒')),
-        createMockReminder('r3', '晚上活动一下', 'exercise', today, '19:00', true, '至少快走 30 分钟'),
-        createMockReminder('r4', '准备睡眠', 'sleep', today, '22:30', true, '睡前少看手机', createMockImageDataUri('睡眠提醒', '#cbead3', '#659f76', '放下手机准备休息')),
-        createMockReminder('r5', '复查预约提醒', 'other', getDateKey(tomorrow), '15:00', false, '带上病历和检查单'),
+        createMockReminder('r1', '早餐时间', 'meal', today, '08:00', 'daily', '吃得清淡一点，先补充蛋白质'),
+        createMockReminder('r2', '记得服药', 'medication', today, '09:00', 'daily', '早餐后服用', createMockImageDataUri('用药', '#d7f0cf', '#78ae69', '随餐服用提醒')),
+        createMockReminder('r3', '晚上活动一下', 'exercise', today, '19:00', 'weekly', '至少快走 30 分钟'),
+        createMockReminder('r4', '准备睡眠', 'sleep', today, '22:30', 'daily', '睡前少看手机', createMockImageDataUri('睡眠提醒', '#cbead3', '#659f76', '放下手机准备休息')),
+        createMockReminder('r5', '复查预约提醒', 'other', getDateKey(tomorrow), '15:00', 'monthly', '带上病历和检查单'),
         {
-            ...createMockReminder('r6', '午间散步', 'exercise', today, '13:30', false, '饭后散步 15 分钟'),
+            ...createMockReminder('r6', '午间散步', 'exercise', today, '13:30', 'none', '饭后散步 15 分钟'),
             completed: true,
             completedAt: new Date().toISOString()
         }
@@ -2287,7 +2287,7 @@ function populateReminderForm(reminder = null) {
         document.getElementById('reminderType').value = reminder.type;
         document.getElementById('reminderDate').value = reminder.date;
         document.getElementById('reminderTime').value = reminder.time;
-        document.getElementById('reminderRepeat').checked = Boolean(reminder.repeat);
+        document.getElementById('reminderRepeat').value = normalizeReminderRepeat(reminder.repeat);
         document.getElementById('reminderNotes').value = reminder.notes || '';
         document.getElementById('reminderSubmitBtn').textContent = '保存提醒';
         pendingReminderImage = reminder.image || null;
@@ -2297,6 +2297,7 @@ function populateReminderForm(reminder = null) {
         document.getElementById('reminderSubmitBtn').textContent = '添加提醒';
         pendingReminderImage = null;
         setDefaultReminderDate();
+        document.getElementById('reminderRepeat').value = 'none';
     }
 
     updateReminderImagePreview();
@@ -2390,6 +2391,7 @@ function renderReminderHistoryItem(reminder) {
     const isCompleted = reminder.completed;
     const completedAt = reminder.completedAt ? new Date(reminder.completedAt) : null;
     const completedAtStr = completedAt ? completedAt.toLocaleString('zh-CN') : '';
+    const repeatLabel = getReminderRepeatLabel(reminder.repeat);
 
     // 获取类型标签
     const typeLabels = {
@@ -2429,7 +2431,7 @@ function renderReminderHistoryItem(reminder) {
                 <div>
                     <span class="reminder-detail-time">${timeStr}</span>
                     <span class="reminder-detail-date">${dateStr}</span>
-                    ${reminder.repeat ? '<span style="margin-left:8px;font-size:0.8rem;">🔄</span>' : ''}
+                    ${repeatLabel ? `<span style="margin-left:8px;font-size:0.8rem;">🔄 ${repeatLabel}</span>` : ''}
                 </div>
                 <div>
                     ${typeLabels[reminder.type] || typeIcons[reminder.type]}
@@ -2484,6 +2486,7 @@ function renderReminderItem(reminder, showDate = false) {
     const isCompleted = reminder.completed;
     const isPast = date < new Date();
     const snoozeInfo = reminder.snoozeCount ? `已延后 ${reminder.snoozeCount} 次` : '';
+    const repeatLabel = getReminderRepeatLabel(reminder.repeat);
 
     return `
         <div class="reminder-detail-item ${isCompleted ? 'completed' : ''} ${isPast && !isCompleted ? 'overdue' : ''}">
@@ -2491,7 +2494,7 @@ function renderReminderItem(reminder, showDate = false) {
                 <div>
                     <span class="reminder-detail-time">${timeStr}</span>
                     ${showDate ? `<span class="reminder-detail-date">${dateStr}</span>` : ''}
-                    ${reminder.repeat ? '<span style="margin-left:8px;font-size:0.8rem;">🔄</span>' : ''}
+                    ${repeatLabel ? `<span style="margin-left:8px;font-size:0.8rem;">🔄 ${repeatLabel}</span>` : ''}
                 </div>
                 <div>
                     ${typeIcons[reminder.type]}
@@ -2503,7 +2506,7 @@ function renderReminderItem(reminder, showDate = false) {
                     <img class="reminder-detail-image" src="${reminder.image}" alt="${escapeHtml(reminder.title)}">
                 </div>
             ` : ''}
-            ${(reminder.notes || snoozeInfo) ? `<div class="reminder-detail-notes">${escapeHtml([reminder.notes, snoozeInfo].filter(Boolean).join(' · '))}</div>` : ''}
+            ${(reminder.notes || snoozeInfo || getReminderRepeatLabel(reminder.repeat)) ? `<div class="reminder-detail-notes">${escapeHtml([reminder.notes, snoozeInfo, getReminderRepeatLabel(reminder.repeat)].filter(Boolean).join(' · '))}</div>` : ''}
             <div class="reminder-detail-actions">
                 ${!isCompleted ? `<button class="btn-action btn-edit" onclick="editReminder('${reminder.id}')">编辑</button>` : ''}
                 <button class="btn-action btn-edit" onclick="completeReminder('${reminder.id}')">
@@ -2524,6 +2527,7 @@ async function handleReminderSubmit(e) {
     const date = document.getElementById('reminderDate').value;
     const time = document.getElementById('reminderTime').value;
     const type = document.getElementById('reminderType').value;
+    const repeat = normalizeReminderRepeat(document.getElementById('reminderRepeat').value);
     const notes = document.getElementById('reminderNotes').value.trim();
 
     if (!title || !date || !time) {
@@ -2546,7 +2550,7 @@ async function handleReminderSubmit(e) {
         type,
         date,
         time,
-        repeat: document.getElementById('reminderRepeat').checked,
+        repeat,
         notes,
         image: pendingReminderImage,
         completed: existingReminder?.completed || false,
@@ -2638,15 +2642,14 @@ window.completeReminder = function(id) {
         });
         reminder.updatedAt = new Date().toISOString();
 
-        // 如果是重复提醒且已完成，创建明天的提醒
-        if (reminder.repeat && reminder.completed) {
-            const tomorrow = new Date(reminder.date);
-            tomorrow.setDate(tomorrow.getDate() + 1);
+        // 如果是重复提醒且已完成，创建下一次提醒
+        if (isRepeatingReminder(reminder.repeat) && reminder.completed) {
+            const nextDate = getNextReminderDate(reminder.date, reminder.repeat);
 
             const newReminder = {
                 ...reminder,
                 id: Date.now().toString(),
-                date: tomorrow.toISOString().split('T')[0],
+                date: nextDate,
                 snoozeUntil: null,
                 snoozeCount: 0,
                 history: [],
@@ -2708,7 +2711,7 @@ function updateRemindersDisplay() {
                 ` : `<span class="reminder-icon">${typeIcons[r.type]}</span>`}
                 <div class="reminder-content">
                     <div class="reminder-title">${escapeHtml(r.title)}</div>
-                    <div class="reminder-type">${r.time} ${r.repeat ? '• 每日' : ''}</div>
+                    <div class="reminder-type">${r.time}${getReminderRepeatLabel(r.repeat) ? ` • ${getReminderRepeatLabel(r.repeat)}` : ''}</div>
                 </div>
                 <span class="reminder-time">${r.time}</span>
             </div>
@@ -2774,7 +2777,7 @@ function openReminderAlertModal(reminder) {
 
     badge.textContent = `${typeIcons[reminder.type]} ${typeLabels[reminder.type] || '提醒'}`;
     title.textContent = reminder.title;
-    meta.textContent = `${reminder.time}${reminder.repeat ? ' · 每日重复' : ''}`;
+    meta.textContent = `${reminder.time}${getReminderRepeatLabel(reminder.repeat) ? ` · ${getReminderRepeatLabel(reminder.repeat)}` : ''}`;
     notes.textContent = reminder.notes || '请及时处理这条提醒。';
 
     if (reminder.image) {
@@ -2956,8 +2959,58 @@ function normalizeReminders(source) {
         snoozeCount: 0,
         history: [],
         updatedAt: reminder.createdAt || new Date().toISOString(),
+        repeat: normalizeReminderRepeat(reminder.repeat),
         ...reminder
+    })).map(reminder => ({
+        ...reminder,
+        repeat: normalizeReminderRepeat(reminder.repeat)
     }));
+}
+
+function normalizeReminderRepeat(repeat) {
+    if (repeat === true) return 'daily';
+    if (repeat === false || repeat === null || repeat === undefined || repeat === '') return 'none';
+
+    const allowed = ['none', 'daily', 'weekly', 'biweekly', 'monthly'];
+    return allowed.includes(repeat) ? repeat : 'none';
+}
+
+function isRepeatingReminder(repeat) {
+    return normalizeReminderRepeat(repeat) !== 'none';
+}
+
+function getReminderRepeatLabel(repeat) {
+    const labels = {
+        daily: '每天',
+        weekly: '每周',
+        biweekly: '每2周',
+        monthly: '每月'
+    };
+    return labels[normalizeReminderRepeat(repeat)] || '';
+}
+
+function getNextReminderDate(dateKey, repeat) {
+    const normalizedRepeat = normalizeReminderRepeat(repeat);
+    const nextDate = new Date(`${dateKey}T00:00:00`);
+
+    switch (normalizedRepeat) {
+        case 'daily':
+            nextDate.setDate(nextDate.getDate() + 1);
+            break;
+        case 'weekly':
+            nextDate.setDate(nextDate.getDate() + 7);
+            break;
+        case 'biweekly':
+            nextDate.setDate(nextDate.getDate() + 14);
+            break;
+        case 'monthly':
+            nextDate.setMonth(nextDate.getMonth() + 1);
+            break;
+        default:
+            return dateKey;
+    }
+
+    return getDateKey(nextDate);
 }
 
 function toggleCustomSnoozeField() {
