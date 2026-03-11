@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daily-tracker-v5';
+const CACHE_NAME = 'daily-tracker-v7';
 const APP_ASSETS = [
   './',
   './index.html',

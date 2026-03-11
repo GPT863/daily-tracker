@@ -398,6 +398,8 @@ function createMockActivity(id, time, type, content, feeling, duration = null, i
     return {
         id,
         time,
+        startTime: time,
+        endTime: duration ? addMinutesToTime(time, duration) : time,
         type,
         content,
         feeling,
@@ -563,8 +565,8 @@ async function resetAllData() {
 // 加载活动数据
 function loadActivities() {
     const dateKey = getDateKey(currentDate);
-    activities = [...(allActivitiesData[dateKey] || [])];
-    activities.sort((a, b) => a.time.localeCompare(b.time));
+    activities = (allActivitiesData[dateKey] || []).map(normalizeActivity);
+    activities.sort((a, b) => getActivitySortTime(a).localeCompare(getActivitySortTime(b)));
 }
 
 function loadHealthRecords() {
@@ -576,7 +578,7 @@ function loadHealthRecords() {
 // 保存活动数据
 async function saveActivities() {
     const dateKey = getDateKey(currentDate);
-    allActivitiesData[dateKey] = [...activities];
+    allActivitiesData[dateKey] = activities.map(normalizeActivity);
     await persistAppState();
     await updateStorageStatus();
 }
@@ -673,6 +675,9 @@ function setupEventListeners() {
 
     // 表单提交
     document.getElementById('activityForm').addEventListener('submit', handleFormSubmit);
+    document.getElementById('activityStartTime').addEventListener('input', updateActivityDurationField);
+    document.getElementById('activityEndTime').addEventListener('input', updateActivityDurationField);
+    document.getElementById('activityType').addEventListener('change', updateActivityDurationField);
     document.getElementById('activityImageUpload').addEventListener('change', handleActivityImageChange);
     document.getElementById('removeActivityImage').addEventListener('click', clearPendingActivityImage);
     document.getElementById('healthForm').addEventListener('submit', handleHealthFormSubmit);
@@ -761,7 +766,7 @@ function updateTimeline() {
     const timeline = document.getElementById('timeline');
     const emptyState = document.getElementById('emptyState');
     const timelineEntries = [
-        ...activities.map(activity => ({ kind: 'activity', time: activity.time, data: activity })),
+        ...activities.map(activity => ({ kind: 'activity', time: getActivitySortTime(activity), data: normalizeActivity(activity) })),
         ...healthRecords.map(record => ({ kind: 'health', time: record.time, data: record }))
     ].sort((a, b) => {
         if (a.time === b.time) {
@@ -787,10 +792,11 @@ function updateTimeline() {
 }
 
 function renderActivityTimelineItem(activity) {
+    const duration = getActivityDuration(activity);
     return `
         <div class="timeline-item" data-id="${activity.id}">
             <div class="timeline-header">
-                <span class="timeline-time">${formatTime(activity.time)}</span>
+                <span class="timeline-time">${getActivityTimeRangeText(activity)}</span>
                 <span class="timeline-type">${typeIcons[activity.type]}</span>
             </div>
             <div class="timeline-content">${escapeHtml(activity.content)}</div>
@@ -800,7 +806,7 @@ function renderActivityTimelineItem(activity) {
                 </div>
             ` : ''}
             ${activity.feeling ? `<div class="timeline-feeling">"${escapeHtml(activity.feeling)}"</div>` : ''}
-            ${activity.duration ? `<div class="timeline-duration">⏱️ ${activity.duration}分钟</div>` : ''}
+            ${duration ? `<div class="timeline-duration">⏱️ ${duration}分钟</div>` : ''}
             <div class="timeline-actions">
                 <button class="btn-action btn-edit" onclick="editActivity('${activity.id}')">编辑</button>
                 <button class="btn-action btn-delete" onclick="deleteActivity('${activity.id}')">删除</button>
@@ -847,30 +853,106 @@ function toggleTimelineOrder() {
 
 // 更新统计数据
 function updateStats() {
-    const mealCount = activities.filter(a => a.type === 'meal').length;
-    const medCount = activities.filter(a => a.type === 'medication').length;
     const exerciseCount = activities.filter(a => a.type === 'exercise').length;
     const exerciseMinutes = activities
         .filter(a => a.type === 'exercise')
-        .reduce((sum, a) => sum + (a.duration || 0), 0);
+        .reduce((sum, a) => sum + (getActivityDuration(a) || 0), 0);
 
-    document.getElementById('mealCount').textContent = mealCount;
-    document.getElementById('medCount').textContent = medCount;
     document.getElementById('exerciseCount').textContent = exerciseCount;
-
-    const hours = Math.floor(exerciseMinutes / 60);
-    const minutes = exerciseMinutes % 60;
-    if (hours > 0) {
-        document.getElementById('exerciseTime').textContent = `${hours}h${minutes}m`;
-    } else {
-        document.getElementById('exerciseTime').textContent = `${minutes}m`;
-    }
+    document.getElementById('exerciseTime').textContent = formatMinutesLabel(exerciseMinutes);
 }
 
 // 格式化时间
 function formatTime(time) {
+    if (!time) {
+        return '';
+    }
     const [hours, minutes] = time.split(':');
     return `${hours}:${minutes}`;
+}
+
+function addMinutesToTime(time, minutes) {
+    if (!time || !Number.isFinite(minutes)) {
+        return time || '';
+    }
+
+    const [hours, mins] = time.split(':').map(Number);
+    const total = ((hours * 60 + mins + minutes) % 1440 + 1440) % 1440;
+    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+function calculateDurationBetweenTimes(startTime, endTime, allowOvernight = false) {
+    if (!startTime || !endTime) {
+        return null;
+    }
+
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const [endHour, endMinute] = endTime.split(':').map(Number);
+    const startTotal = startHour * 60 + startMinute;
+    let endTotal = endHour * 60 + endMinute;
+
+    if (allowOvernight && endTotal < startTotal) {
+        endTotal += 24 * 60;
+    }
+
+    if (endTotal < startTotal) {
+        return null;
+    }
+
+    return endTotal - startTotal;
+}
+
+function normalizeActivity(activity) {
+    const startTime = activity.startTime || activity.time || '';
+    const endTime = activity.endTime || (
+        Number.isFinite(activity.duration) && startTime
+            ? addMinutesToTime(startTime, activity.duration)
+            : ''
+    );
+    const duration = Number.isFinite(activity.duration)
+        ? activity.duration
+        : calculateDurationBetweenTimes(startTime, endTime, activity.type === 'sleep');
+
+    return {
+        ...activity,
+        time: startTime,
+        startTime,
+        endTime,
+        duration: duration ?? null
+    };
+}
+
+function getActivitySortTime(activity) {
+    return normalizeActivity(activity).startTime || '00:00';
+}
+
+function getActivityTimeRangeText(activity) {
+    const normalized = normalizeActivity(activity);
+    if (normalized.startTime && normalized.endTime) {
+        return `${formatTime(normalized.startTime)} - ${formatTime(normalized.endTime)}`;
+    }
+    if (normalized.startTime) {
+        return formatTime(normalized.startTime);
+    }
+    return '无时间';
+}
+
+function getActivityDuration(activity) {
+    const normalized = normalizeActivity(activity);
+    if (Number.isFinite(normalized.duration)) {
+        return normalized.duration;
+    }
+    return calculateDurationBetweenTimes(normalized.startTime, normalized.endTime, normalized.type === 'sleep');
+}
+
+function formatMinutesLabel(totalMinutes) {
+    if (!totalMinutes) {
+        return '0m';
+    }
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
 }
 
 // 打开模态框
@@ -883,13 +965,15 @@ function openModal(activity = null) {
     resetImageInputs();
 
     if (activity) {
+        const normalized = normalizeActivity(activity);
         editingId = activity.id;
         title.textContent = '编辑活动';
-        document.getElementById('activityTime').value = activity.time;
-        document.getElementById('activityType').value = activity.type;
-        document.getElementById('activityContent').value = activity.content;
-        document.getElementById('activityFeeling').value = activity.feeling || '';
-        document.getElementById('activityDuration').value = activity.duration || '';
+        document.getElementById('activityStartTime').value = normalized.startTime;
+        document.getElementById('activityEndTime').value = normalized.endTime || normalized.startTime;
+        document.getElementById('activityType').value = normalized.type;
+        document.getElementById('activityContent').value = normalized.content;
+        document.getElementById('activityFeeling').value = normalized.feeling || '';
+        document.getElementById('activityDuration').value = normalized.duration || '';
         pendingActivityImage = activity.image || null;
     } else {
         editingId = null;
@@ -898,9 +982,12 @@ function openModal(activity = null) {
         // 设置默认时间
         const now = new Date();
         const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        document.getElementById('activityTime').value = time;
+        document.getElementById('activityStartTime').value = time;
+        document.getElementById('activityEndTime').value = time;
+        document.getElementById('activityDuration').value = '';
     }
 
+    updateActivityDurationField();
     updateActivityImagePreview();
     renderActivityTemplates();
     modal.style.display = 'block';
@@ -963,6 +1050,62 @@ function validateEntryTime(dateKey, time, label) {
     const diffDays = Math.abs(now - entryDateTime) / (1000 * 60 * 60 * 24);
     if (diffDays > 30) {
         return confirm(`${label}时间距今天已超过 30 天，是否继续保存？`);
+    }
+
+    return true;
+}
+
+function getActivityDateTimes(dateKey, startTime, endTime, type) {
+    const startDateTime = new Date(`${dateKey}T${startTime}:00`);
+    const endDateTime = new Date(`${dateKey}T${endTime}:00`);
+
+    if (type === 'sleep' && endDateTime < startDateTime) {
+        startDateTime.setDate(startDateTime.getDate() - 1);
+    }
+
+    return { startDateTime, endDateTime };
+}
+
+function updateActivityDurationField() {
+    const startTime = document.getElementById('activityStartTime')?.value;
+    const endTime = document.getElementById('activityEndTime')?.value;
+    const type = document.getElementById('activityType')?.value;
+    const durationInput = document.getElementById('activityDuration');
+
+    if (!durationInput) return;
+
+    const duration = calculateDurationBetweenTimes(startTime, endTime, type === 'sleep');
+    durationInput.value = duration ?? '';
+}
+
+function validateActivityTimeRange(dateKey, startTime, endTime, type) {
+    if (!startTime || !endTime) {
+        showToast('请填写开始时间和结束时间');
+        return false;
+    }
+
+    const duration = calculateDurationBetweenTimes(startTime, endTime, type === 'sleep');
+    if (duration === null) {
+        showToast(type === 'sleep' ? '睡眠记录的结束时间需晚于开始时间，或跨天结束' : '结束时间不能早于开始时间');
+        return false;
+    }
+
+    const { startDateTime, endDateTime } = getActivityDateTimes(dateKey, startTime, endTime, type);
+    const now = new Date();
+
+    if (endDateTime > now) {
+        showToast('结束时间不能晚于当前时间');
+        return false;
+    }
+
+    const diffDays = Math.abs(now - endDateTime) / (1000 * 60 * 60 * 24);
+    if (diffDays > 30) {
+        return confirm('活动时间距今天已超过 30 天，是否继续保存？');
+    }
+
+    if (startDateTime > endDateTime) {
+        showToast('开始时间不能晚于结束时间');
+        return false;
     }
 
     return true;
@@ -1031,33 +1174,36 @@ async function handleFormSubmit(e) {
     e.preventDefault();
     if (submitLocks.activity) return;
 
-    const time = document.getElementById('activityTime').value;
+    const startTime = document.getElementById('activityStartTime').value;
+    const endTime = document.getElementById('activityEndTime').value;
     const type = document.getElementById('activityType').value;
     const content = document.getElementById('activityContent').value.trim();
     const feeling = document.getElementById('activityFeeling').value.trim();
-    const duration = parseInt(document.getElementById('activityDuration').value, 10) || null;
+    const duration = calculateDurationBetweenTimes(startTime, endTime, type === 'sleep');
 
     if (!content) {
         showToast('请填写活动内容');
         return;
     }
 
-    if (!validateEntryTime(getDateKey(currentDate), time, '活动记录')) {
+    if (!validateActivityTimeRange(getDateKey(currentDate), startTime, endTime, type)) {
         return;
     }
 
-    if (!editingId && isDuplicateActivity({ time, type, content })) {
+    if (!editingId && isDuplicateActivity({ time: startTime, type, content })) {
         showToast('检测到重复活动，请勿重复提交');
         return;
     }
 
     const activity = {
         id: editingId || Date.now().toString(),
-        time,
+        time: startTime,
+        startTime,
+        endTime,
         type,
         content,
         feeling,
-        duration,
+        duration: duration ?? null,
         image: pendingActivityImage,
         createdAt: editingId ? activities.find(a => a.id === editingId)?.createdAt : new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -1073,7 +1219,8 @@ async function handleFormSubmit(e) {
         activities.push(activity);
     }
 
-    activities.sort((a, b) => a.time.localeCompare(b.time));
+    activities = activities.map(normalizeActivity);
+    activities.sort((a, b) => getActivitySortTime(a).localeCompare(getActivitySortTime(b)));
 
     try {
         await saveActivities();
@@ -1513,7 +1660,7 @@ function getExportData() {
 
     if (exportRange === 'current') {
         const dateKey = getDateKey(currentDate);
-        activities = allActivitiesData[dateKey] || [];
+        activities = (allActivitiesData[dateKey] || []).map(normalizeActivity);
         healthRecords = allHealthRecordsData[dateKey] || [];
         dateRange = dateKey;
     } else if (exportRange === 'range') {
@@ -1527,7 +1674,7 @@ function getExportData() {
             for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
                 const dateKey = getDateKey(date);
                 if (allActivitiesData[dateKey]) {
-                    activities = activities.concat(allActivitiesData[dateKey]);
+                    activities = activities.concat(allActivitiesData[dateKey].map(normalizeActivity));
                 }
                 if (allHealthRecordsData[dateKey]) {
                     healthRecords = healthRecords.concat(allHealthRecordsData[dateKey]);
@@ -1539,7 +1686,7 @@ function getExportData() {
         // 全部数据
         Object.keys(allActivitiesData).forEach(dateKey => {
             if (allActivitiesData[dateKey]) {
-                activities = activities.concat(allActivitiesData[dateKey]);
+                activities = activities.concat(allActivitiesData[dateKey].map(normalizeActivity));
             }
         });
         Object.keys(allHealthRecordsData).forEach(dateKey => {
@@ -1557,15 +1704,16 @@ function getExportData() {
 // 导出CSV
 function exportCsv() {
     const { activities, healthRecords, dateRange } = getExportData();
-    const headers = ['日期', '记录类别', '时间', '类型', '内容/数值', '补充信息', '时长(分钟)', '单位'];
+    const headers = ['日期', '记录类别', '开始时间', '结束时间', '类型', '内容/数值', '补充信息', '时长(分钟)', '单位'];
     const activityRows = activities.map(a => [
         a._displayDate || getDateKey(currentDate),
         '活动',
-        a.time,
+        a.startTime || a.time || '',
+        a.endTime || '',
         typeLabels[a.type],
         a.content,
         a.feeling || '',
-        a.duration || '',
+        getActivityDuration(a) || '',
         ''
     ]);
 
@@ -1573,6 +1721,7 @@ function exportCsv() {
         r._displayDate || getDateKey(currentDate),
         '健康数据',
         r.time,
+        '',
         healthTypeLabels[r.type],
         r.value,
         r.notes || '',
@@ -2701,8 +2850,8 @@ async function confirmImport(strategy) {
             reminders = normalizeReminders(pendingImportData.reminders);
             profile = pendingImportData.profile || {};
         } else {
-            allActivitiesData = mergeDateBuckets(allActivitiesData, pendingImportData.activitiesByDate);
-            allHealthRecordsData = mergeDateBuckets(allHealthRecordsData, pendingImportData.healthRecordsByDate);
+            allActivitiesData = mergeDateBuckets(allActivitiesData, pendingImportData.activitiesByDate, normalizeActivity, getActivitySortTime);
+            allHealthRecordsData = mergeDateBuckets(allHealthRecordsData, pendingImportData.healthRecordsByDate, item => item, item => item.time || '00:00');
             reminders = mergeReminders(reminders, pendingImportData.reminders);
             profile = {
                 ...profile,
@@ -2737,11 +2886,12 @@ async function confirmImport(strategy) {
     }
 }
 
-function mergeDateBuckets(existing, incoming) {
+function mergeDateBuckets(existing, incoming, normalizeItem = item => item, getSortValue = item => item.time || '00:00') {
     const merged = { ...existing };
     Object.entries(incoming || {}).forEach(([dateKey, list]) => {
-        merged[dateKey] = [...(merged[dateKey] || []).filter(item => !list.some(incomingItem => incomingItem.id === item.id)), ...list];
-        merged[dateKey].sort((a, b) => a.time.localeCompare(b.time));
+        const normalizedList = list.map(normalizeItem);
+        merged[dateKey] = [...(merged[dateKey] || []).filter(item => !normalizedList.some(incomingItem => incomingItem.id === item.id)), ...normalizedList];
+        merged[dateKey].sort((a, b) => getSortValue(a).localeCompare(getSortValue(b)));
     });
     return merged;
 }
@@ -2846,45 +2996,27 @@ function setupStatsTabs() {
 // 渲染统计数据
 function renderStats() {
     const { startDate, endDate } = getDateRangeForPeriod(currentStatsPeriod);
-    const currentPeriodStats = calculatePeriodStats(startDate, endDate);
-    const previousPeriodStats = getPreviousPeriodStats(currentStatsPeriod);
-
-    // 更新活动统计
-    updateActivityStatsCards(currentPeriodStats.activities, previousPeriodStats.activities);
-
-    // 更新健康数据统计
-    updateHealthStatsCards(currentPeriodStats.health, previousPeriodStats.health);
-
-    // 更新提醒统计
-    updateReminderStatsCards(currentPeriodStats.reminders);
-
     // 渲染图表
     renderCharts(startDate, endDate);
 
     // 检查空状态
-    checkStatsEmptyState(currentPeriodStats);
+    checkStatsEmptyState(startDate, endDate);
 }
 
 // 图表实例
-let activityTypeChart = null;
 let activityTrendChart = null;
 let exerciseTrendChart = null;
-let healthTrendChart = null;
+let sleepTrendChart = null;
 
 // 渲染所有图表
 function renderCharts(startDate, endDate) {
-    renderActivityTypeChart(startDate, endDate);
     renderActivityTrendChart(startDate, endDate);
     renderExerciseTrendChart(startDate, endDate);
-    renderHealthTrendChart(startDate, endDate);
+    renderSleepTrendChart(startDate, endDate);
 }
 
 // 销毁所有图表
 function destroyAllCharts() {
-    if (activityTypeChart) {
-        activityTypeChart.destroy();
-        activityTypeChart = null;
-    }
     if (activityTrendChart) {
         activityTrendChart.destroy();
         activityTrendChart = null;
@@ -2893,90 +3025,25 @@ function destroyAllCharts() {
         exerciseTrendChart.destroy();
         exerciseTrendChart = null;
     }
-    if (healthTrendChart) {
-        healthTrendChart.destroy();
-        healthTrendChart = null;
+    if (sleepTrendChart) {
+        sleepTrendChart.destroy();
+        sleepTrendChart = null;
     }
 }
 
-// 渲染活动类型分布饼图
-function renderActivityTypeChart(startDate, endDate) {
-    const ctx = document.getElementById('activityTypeChart');
-    if (!ctx) return;
-
-    const typeCounts = {
-        meal: 0,
-        medication: 0,
-        exercise: 0,
-        sleep: 0,
-        work: 0,
-        other: 0
-    };
-
-    // 统计各类活动数量
-    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-        const dateKey = getDateKey(date);
-        const dayActivities = allActivitiesData[dateKey] || [];
-        dayActivities.forEach(activity => {
-            if (typeCounts[activity.type] !== undefined) {
-                typeCounts[activity.type]++;
-            }
-        });
-    }
-
-    const labels = ['用餐', '用药', '运动', '睡眠', '工作', '其他'];
-    const data = [typeCounts.meal, typeCounts.medication, typeCounts.exercise, typeCounts.sleep, typeCounts.work, typeCounts.other];
-    const colors = ['#4CAF50', '#FF9800', '#2196F3', '#9C27B0', '#607D8B', '#9E9E9E'];
-
-    if (activityTypeChart) {
-        activityTypeChart.destroy();
-    }
-
-    activityTypeChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: data,
-                backgroundColor: colors,
-                borderWidth: 2,
-                borderColor: '#fff'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: {
-                        boxWidth: 12,
-                        padding: 10,
-                        font: { size: 11 }
-                    }
-                }
-            }
-        }
-    });
-}
-
-// 渲染每日活动次数趋势图
+// 渲染运动次数趋势图
 function renderActivityTrendChart(startDate, endDate) {
     const ctx = document.getElementById('activityTrendChart');
     if (!ctx) return;
 
     const labels = [];
-    const mealData = [];
-    const medicationData = [];
     const exerciseData = [];
 
     for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
         const dateKey = getDateKey(date);
-        const dayActivities = allActivitiesData[dateKey] || [];
+        const dayActivities = (allActivitiesData[dateKey] || []).map(normalizeActivity);
 
         labels.push(date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }));
-        mealData.push(dayActivities.filter(a => a.type === 'meal').length);
-        medicationData.push(dayActivities.filter(a => a.type === 'medication').length);
         exerciseData.push(dayActivities.filter(a => a.type === 'exercise').length);
     }
 
@@ -2988,32 +3055,14 @@ function renderActivityTrendChart(startDate, endDate) {
         type: 'line',
         data: {
             labels: labels,
-            datasets: [
-                {
-                    label: '用餐',
-                    data: mealData,
-                    borderColor: '#4CAF50',
-                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                    tension: 0.3,
-                    fill: true
-                },
-                {
-                    label: '用药',
-                    data: medicationData,
-                    borderColor: '#FF9800',
-                    backgroundColor: 'rgba(255, 152, 0, 0.1)',
-                    tension: 0.3,
-                    fill: true
-                },
-                {
-                    label: '运动',
-                    data: exerciseData,
-                    borderColor: '#2196F3',
-                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                    tension: 0.3,
-                    fill: true
-                }
-            ]
+            datasets: [{
+                label: '运动次数',
+                data: exerciseData,
+                borderColor: '#2196F3',
+                backgroundColor: 'rgba(33, 150, 243, 0.12)',
+                tension: 0.3,
+                fill: true
+            }]
         },
         options: {
             responsive: true,
@@ -3040,7 +3089,7 @@ function renderActivityTrendChart(startDate, endDate) {
     });
 }
 
-// 渲染运动时长趋势图
+// 渲染单次运动时长趋势图
 function renderExerciseTrendChart(startDate, endDate) {
     const ctx = document.getElementById('exerciseTrendChart');
     if (!ctx) return;
@@ -3050,13 +3099,16 @@ function renderExerciseTrendChart(startDate, endDate) {
 
     for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
         const dateKey = getDateKey(date);
-        const dayActivities = allActivitiesData[dateKey] || [];
+        const dayActivities = (allActivitiesData[dateKey] || []).map(normalizeActivity);
         const exerciseActivities = dayActivities.filter(a => a.type === 'exercise');
 
-        const totalMinutes = exerciseActivities.reduce((sum, a) => sum + (a.duration || 0), 0);
+        const totalMinutes = exerciseActivities.reduce((sum, a) => sum + (getActivityDuration(a) || 0), 0);
+        const averageMinutes = exerciseActivities.length > 0
+            ? Number((totalMinutes / exerciseActivities.length).toFixed(1))
+            : 0;
 
         labels.push(date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }));
-        data.push(totalMinutes);
+        data.push(averageMinutes);
     }
 
     if (exerciseTrendChart) {
@@ -3068,7 +3120,7 @@ function renderExerciseTrendChart(startDate, endDate) {
         data: {
             labels: labels,
             datasets: [{
-                label: '运动时长（分钟）',
+                label: '单次运动时长（分钟/次）',
                 data: data,
                 backgroundColor: 'rgba(33, 150, 243, 0.7)',
                 borderColor: '#2196F3',
@@ -3089,7 +3141,7 @@ function renderExerciseTrendChart(startDate, endDate) {
                     beginAtZero: true,
                     ticks: {
                         callback: function(value) {
-                            return value + 'm';
+                            return `${value}m`;
                         }
                     }
                 }
@@ -3098,147 +3150,61 @@ function renderExerciseTrendChart(startDate, endDate) {
     });
 }
 
-// 渲染健康数据趋势图
-function renderHealthTrendChart(startDate, endDate) {
-    const ctx = document.getElementById('healthTrendChart');
+function renderSleepTrendChart(startDate, endDate) {
+    const ctx = document.getElementById('sleepTrendChart');
     if (!ctx) return;
 
     const labels = [];
-    const bpData = []; // 血压
-    const hrData = []; // 心率
-    const bsData = []; // 血糖
+    const data = [];
 
     for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
         const dateKey = getDateKey(date);
-        const dayHealthRecords = allHealthRecordsData[dateKey] || [];
+        const dayActivities = (allActivitiesData[dateKey] || []).map(normalizeActivity);
+        const sleepActivities = dayActivities.filter(a => a.type === 'sleep');
+        const totalMinutes = sleepActivities.reduce((sum, a) => sum + (getActivityDuration(a) || 0), 0);
 
         labels.push(date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }));
-
-        // 获取当天的血压平均值（收缩压）
-        const bpRecords = dayHealthRecords.filter(r => r.type === 'bloodPressure');
-        if (bpRecords.length > 0) {
-            const avgSys = bpRecords.reduce((sum, r) => {
-                const match = r.value.match(/(\d+)\//);
-                return sum + (match ? parseInt(match[1], 10) : 0);
-            }, 0) / bpRecords.length;
-            bpData.push(avgSys.toFixed(0));
-        } else {
-            bpData.push(null);
-        }
-
-        // 获取当天的心率平均值
-        const hrRecords = dayHealthRecords.filter(r => r.type === 'heartRate');
-        if (hrRecords.length > 0) {
-            const avgHr = hrRecords.reduce((sum, r) => sum + parseFloat(r.value), 0) / hrRecords.length;
-            hrData.push(avgHr.toFixed(0));
-        } else {
-            hrData.push(null);
-        }
-
-        // 获取当天的血糖平均值
-        const bsRecords = dayHealthRecords.filter(r => r.type === 'bloodSugar');
-        if (bsRecords.length > 0) {
-            const avgBs = bsRecords.reduce((sum, r) => sum + parseFloat(r.value), 0) / bsRecords.length;
-            bsData.push(avgBs.toFixed(1));
-        } else {
-            bsData.push(null);
-        }
+        data.push(Number((totalMinutes / 60).toFixed(1)));
     }
 
-    if (healthTrendChart) {
-        healthTrendChart.destroy();
+    if (sleepTrendChart) {
+        sleepTrendChart.destroy();
     }
 
-    healthTrendChart = new Chart(ctx, {
-        type: 'line',
+    sleepTrendChart = new Chart(ctx, {
+        type: 'bar',
         data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: '收缩压',
-                    data: bpData,
-                    borderColor: '#F44336',
-                    backgroundColor: 'rgba(244, 67, 54, 0.1)',
-                    tension: 0.3,
-                    yAxisID: 'y'
-                },
-                {
-                    label: '心率',
-                    data: hrData,
-                    borderColor: '#FF9800',
-                    backgroundColor: 'rgba(255, 152, 0, 0.1)',
-                    tension: 0.3,
-                    yAxisID: 'y1'
-                },
-                {
-                    label: '血糖',
-                    data: bsData,
-                    borderColor: '#2196F3',
-                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                    tension: 0.3,
-                    yAxisID: 'y2'
-                }
-            ]
+            labels,
+            datasets: [{
+                label: '睡眠时长（小时）',
+                data,
+                backgroundColor: 'rgba(95, 132, 219, 0.72)',
+                borderColor: '#5f84db',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
             plugins: {
                 legend: {
-                    position: 'top',
-                    labels: {
-                        boxWidth: 12,
-                        padding: 8,
-                        font: { size: 11 }
-                    }
+                    display: false
                 }
             },
             scales: {
                 y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: {
-                        display: true,
-                        text: '血压 (mmHg)',
-                        font: { size: 10 }
-                    },
+                    beginAtZero: true,
                     ticks: {
-                        font: { size: 10 }
+                        callback: function(value) {
+                            return `${value}h`;
+                        }
                     }
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    title: {
-                        display: true,
-                        text: '心率 (bpm)',
-                        font: { size: 10 }
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    },
-                    ticks: {
-                        font: { size: 10 }
-                    }
-                },
-                y2: {
-                    type: 'linear',
-                    display: false,
-                    min: 0,
-                    max: 20
                 }
             }
         }
     });
 }
-
-// 修改 renderStats 函数以包含图表渲染
 
 // 获取日期范围
 function getDateRangeForPeriod(period) {
@@ -3258,197 +3224,20 @@ function getDateRangeForPeriod(period) {
     }
 }
 
-// 获取上期统计数据
-function getPreviousPeriodStats(currentPeriod) {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    let startDate, endDate;
-    if (currentPeriod === 'week') {
-        // 上周：从上周一到上周日
-        const dayOfWeek = today.getDay();
-        const thisMonday = new Date(today);
-        thisMonday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-        const lastMonday = new Date(thisMonday);
-        lastMonday.setDate(thisMonday.getDate() - 7);
-        const lastSunday = new Date(thisMonday);
-        lastSunday.setDate(thisMonday.getDate() - 1);
-        startDate = lastMonday;
-        endDate = lastSunday;
-    } else {
-        // 上月
-        const firstDayOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-        startDate = firstDayOfLastMonth;
-        endDate = lastDayOfLastMonth;
-    }
-
-    return calculatePeriodStats(startDate, endDate);
-}
-
-// 计算指定日期范围的统计数据
-function calculatePeriodStats(startDate, endDate) {
-    const result = {
-        activities: { meal: 0, medication: 0, exercise: 0, sleep: 0, work: 0, other: 0, exerciseTime: 0 },
-        health: { bloodPressure: 0, heartRate: 0, bloodSugar: 0, bloodLipid: 0, uricAcid: 0, other: 0 },
-        reminders: { completed: 0, pending: 0 }
-    };
-
-    // 统计活动数据
-    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-        const dateKey = getDateKey(date);
-        const dayActivities = allActivitiesData[dateKey] || [];
-        const dayHealthRecords = allHealthRecordsData[dateKey] || [];
-
-        // 活动统计
-        dayActivities.forEach(activity => {
-            if (result.activities[activity.type] !== undefined) {
-                result.activities[activity.type]++;
-            }
-            if (activity.type === 'exercise' && activity.duration) {
-                result.activities.exerciseTime += activity.duration;
-            }
-        });
-
-        // 健康数据统计
-        dayHealthRecords.forEach(record => {
-            if (result.health[record.type] !== undefined) {
-                result.health[record.type]++;
-            }
-        });
-    }
-
-    // 提醒统计（统计在该时间范围内触发的提醒）
-    const startDateTime = startDate.getTime();
-    const endDateTime = endDate.getTime() + 24 * 60 * 60 * 1000 - 1;
-
-    reminders.forEach(reminder => {
-        const reminderDateTime = new Date(reminder.date + 'T' + reminder.time).getTime();
-        if (reminderDateTime >= startDateTime && reminderDateTime <= endDateTime) {
-            if (reminder.completed) {
-                result.reminders.completed++;
-            } else {
-                result.reminders.pending++;
-            }
-        }
-    });
-
-    return result;
-}
-
-// 更新活动统计卡片
-function updateActivityStatsCards(current, previous) {
-    // 用餐
-    updateStatCard('statsMealCount', current.meal, previous.meal, '次');
-    updateStatCard('statsMedCount', current.medication, previous.medication, '次');
-    updateStatCard('statsExerciseCount', current.exercise, previous.exercise, '次');
-    updateExerciseTimeCard(current.exerciseTime, previous.exerciseTime);
-    updateStatCard('statsSleepCount', current.sleep, previous.sleep, '次');
-    updateStatCard('statsWorkCount', current.work, previous.work, '次');
-}
-
-// 更新运动时长卡片
-function updateExerciseTimeCard(currentMinutes, previousMinutes) {
-    const element = document.getElementById('statsExerciseTime');
-    const changeElement = document.getElementById('statsExerciseTimeChange');
-
-    if (!element) return;
-
-    // 格式化当前时长
-    if (currentMinutes > 0) {
-        const hours = Math.floor(currentMinutes / 60);
-        const minutes = currentMinutes % 60;
-        element.textContent = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
-    } else {
-        element.textContent = '0m';
-    }
-
-    // 计算变化
-    if (changeElement && previousMinutes !== undefined) {
-        const diff = currentMinutes - previousMinutes;
-        if (diff > 0) {
-            const hours = Math.floor(diff / 60);
-            const minutes = diff % 60;
-            const diffText = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
-            changeElement.textContent = `↑ ${diffText}`;
-            changeElement.className = 'stats-card-change positive';
-        } else if (diff < 0) {
-            const hours = Math.floor(Math.abs(diff) / 60);
-            const minutes = Math.abs(diff) % 60;
-            const diffText = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
-            changeElement.textContent = `↓ ${diffText}`;
-            changeElement.className = 'stats-card-change negative';
-        } else {
-            changeElement.textContent = '持平';
-            changeElement.className = 'stats-card-change neutral';
-        }
-    }
-}
-
-// 更新单个统计卡片
-function updateStatCard(elementId, currentValue, previousValue, suffix = '') {
-    const element = document.getElementById(elementId);
-    const changeElementId = elementId.replace('Count', 'Change').replace('Value', 'Change');
-    const changeElement = document.getElementById(changeElementId);
-
-    if (!element) return;
-
-    element.textContent = currentValue + suffix;
-
-    if (changeElement && previousValue !== undefined) {
-        const diff = currentValue - previousValue;
-        if (diff > 0) {
-            changeElement.textContent = `↑ +${diff}`;
-            changeElement.className = 'stats-card-change positive';
-        } else if (diff < 0) {
-            changeElement.textContent = `↓ ${diff}`;
-            changeElement.className = 'stats-card-change negative';
-        } else {
-            changeElement.textContent = '持平';
-            changeElement.className = 'stats-card-change neutral';
-        }
-    }
-}
-
-// 更新健康数据统计卡片
-function updateHealthStatsCards(current, previous) {
-    updateStatCard('statsBPCount', current.bloodPressure, previous.bloodPressure, '次');
-    updateStatCard('statsHRCount', current.heartRate, previous.heartRate, '次');
-    updateStatCard('statsBSCount', current.bloodSugar, previous.bloodSugar, '次');
-    updateStatCard('statsBLCount', current.bloodLipid, previous.bloodLipid, '次');
-    updateStatCard('statsUACount', current.uricAcid, previous.uricAcid, '次');
-}
-
-// 更新提醒统计卡片
-function updateReminderStatsCards(current) {
-    const completedElement = document.getElementById('statsReminderCompleted');
-    const pendingElement = document.getElementById('statsReminderPending');
-    const rateElement = document.getElementById('statsReminderRate');
-
-    if (completedElement) completedElement.textContent = current.completed;
-    if (pendingElement) pendingElement.textContent = current.pending;
-
-    if (rateElement) {
-        const total = current.completed + current.pending;
-        const rate = total > 0 ? Math.round((current.completed / total) * 100) : 0;
-        rateElement.textContent = rate + '%';
-    }
-}
-
 // 检查统计空状态
-function checkStatsEmptyState(stats) {
+function checkStatsEmptyState(startDate, endDate) {
     const emptyState = document.getElementById('statsEmptyState');
     if (!emptyState) return;
 
-    const hasData =
-        stats.activities.meal > 0 ||
-        stats.activities.medication > 0 ||
-        stats.activities.exercise > 0 ||
-        stats.health.bloodPressure > 0 ||
-        stats.health.heartRate > 0 ||
-        stats.reminders.completed > 0 ||
-        stats.reminders.pending > 0;
+    let hasData = false;
+    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        const dateKey = getDateKey(date);
+        const dayActivities = (allActivitiesData[dateKey] || []).map(normalizeActivity);
+        if (dayActivities.some(activity => activity.type === 'exercise' || activity.type === 'sleep')) {
+            hasData = true;
+            break;
+        }
+    }
 
     if (hasData) {
         emptyState.classList.add('hidden');
@@ -3541,7 +3330,7 @@ function renderFilteredTimeline(searchTerm, typeFilter, startDate, endDate) {
         if (end && date > end) return;
 
         // 获取当天的活动
-        const dayActivities = allActivitiesData[dateKey] || [];
+        const dayActivities = (allActivitiesData[dateKey] || []).map(normalizeActivity);
 
         dayActivities.forEach(activity => {
             // 类型筛选
@@ -3566,7 +3355,7 @@ function renderFilteredTimeline(searchTerm, typeFilter, startDate, endDate) {
     filteredActivities.sort((a, b) => {
         const dateCompare = a._displayDate.localeCompare(b._displayDate);
         if (dateCompare !== 0) return dateCompare;
-        return a.time.localeCompare(b.time);
+        return getActivitySortTime(a).localeCompare(getActivitySortTime(b));
     });
 
     // 如果使用倒序
@@ -3635,13 +3424,15 @@ function renderActivityItem(activity, datePrefix = '') {
         other: '其他'
     };
 
-    const timeClass = activity.time ? 'activity-time' : 'activity-time-none';
+    const timeText = getActivityTimeRangeText(activity);
+    const duration = getActivityDuration(activity);
+    const timeClass = timeText !== '无时间' ? 'activity-time' : 'activity-time-none';
 
     return `
         <div class="activity-item" data-id="${activity.id}">
             <div class="activity-header">
                 <div class="activity-left">
-                    ${activity.time ? `<span class="${timeClass}">${activity.time}</span>` : '<span class="activity-time-none">无时间</span>'}
+                    <span class="${timeClass}">${timeText}</span>
                     ${datePrefix ? `<span class="activity-date-prefix">${datePrefix}</span>` : ''}
                     <span class="activity-type">${typeLabels[activity.type] || activity.type}</span>
                 </div>
@@ -3652,7 +3443,7 @@ function renderActivityItem(activity, datePrefix = '') {
             </div>
             <div class="activity-content">${escapeHtml(activity.content)}</div>
             ${activity.feeling ? `<div class="activity-feeling">${escapeHtml(activity.feeling)}</div>` : ''}
-            ${activity.duration ? `<div class="activity-duration">⏱️ ${activity.duration} 分钟</div>` : ''}
+            ${duration ? `<div class="activity-duration">⏱️ ${duration} 分钟</div>` : ''}
             ${activity.image ? `<div class="activity-image"><img src="${activity.image}" alt="活动图片"></div>` : ''}
         </div>
     `;
@@ -3710,10 +3501,13 @@ function applyTemplate(templateId) {
     if (!template) return;
 
     // 填充表单
+    const startTime = document.getElementById('activityStartTime').value || `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
     document.getElementById('activityType').value = template.type;
     document.getElementById('activityContent').value = template.content;
     document.getElementById('activityFeeling').value = template.feeling || '';
-    document.getElementById('activityDuration').value = template.duration || '';
+    document.getElementById('activityStartTime').value = startTime;
+    document.getElementById('activityEndTime').value = template.duration ? addMinutesToTime(startTime, template.duration) : startTime;
+    updateActivityDurationField();
 
     // 高亮选中的模板
     document.querySelectorAll('.template-item').forEach(item => {
@@ -4286,14 +4080,14 @@ function collectAnalysisData(startDate, endDate) {
         for (let d = new Date(startDate); d <= new Date(endDate); d.setDate(d.getDate() + 1)) {
             const dateKey = formatDateKey(d);
             if (allActivitiesData[dateKey]) {
-                allActivitiesData[dateKey].forEach(activity => {
+                allActivitiesData[dateKey].map(normalizeActivity).forEach(activity => {
                     data.activities.push({
                         date: dateKey,
-                        time: activity.time,
+                        time: getActivityTimeRangeText(activity),
                         type: activity.type,
                         content: activity.content,
                         feeling: activity.feeling,
-                        duration: activity.duration
+                        duration: getActivityDuration(activity)
                     });
                 });
             }
@@ -4397,9 +4191,9 @@ function buildAnalysisPrompt(data) {
         }
 
         // 运动统计
-        const exerciseRecords = data.activities.filter(a => a.type === 'exercise' && a.duration);
+        const exerciseRecords = data.activities.filter(a => a.type === 'exercise' && getActivityDuration(a));
         if (exerciseRecords.length > 0) {
-            const totalDuration = exerciseRecords.reduce((sum, r) => sum + (r.duration || 0), 0);
+            const totalDuration = exerciseRecords.reduce((sum, r) => sum + (getActivityDuration(r) || 0), 0);
             prompt += `\n运动统计：共${exerciseRecords.length}次运动，总计${totalDuration}分钟\n`;
         }
 

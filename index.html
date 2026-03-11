@@ -38,24 +38,10 @@
             <!-- 统计卡片 -->
             <section class="stats-section">
                 <div class="stat-card">
-                    <span class="stat-icon">🍽️</span>
-                    <div class="stat-info">
-                        <div class="stat-value" id="mealCount">0</div>
-                        <div class="stat-label">用餐</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-icon">💊</span>
-                    <div class="stat-info">
-                        <div class="stat-value" id="medCount">0</div>
-                        <div class="stat-label">用药</div>
-                    </div>
-                </div>
-                <div class="stat-card">
                     <span class="stat-icon">🏃</span>
                     <div class="stat-info">
                         <div class="stat-value" id="exerciseCount">0</div>
-                        <div class="stat-label">运动</div>
+                        <div class="stat-label">运动次数</div>
                     </div>
                 </div>
                 <div class="stat-card">
@@ -169,8 +155,17 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="activityTime">时间</label>
-                        <input type="time" id="activityTime" required>
+                        <label>活动时间</label>
+                        <div class="time-range-grid">
+                            <div>
+                                <label for="activityStartTime" class="field-label-secondary">开始时间</label>
+                                <input type="time" id="activityStartTime" required step="60">
+                            </div>
+                            <div>
+                                <label for="activityEndTime" class="field-label-secondary">结束时间</label>
+                                <input type="time" id="activityEndTime" required step="60">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -197,7 +192,7 @@
 
                     <div class="form-group">
                         <label for="activityDuration">时长（分钟）</label>
-                        <input type="number" id="activityDuration" min="0" placeholder="可选">
+                        <input type="number" id="activityDuration" min="0" placeholder="根据起止时间自动计算" readonly>
                     </div>
 
                     <div class="form-group">
@@ -239,127 +234,27 @@
 
                     <!-- 统计内容区域 -->
                     <div id="statsContent" class="stats-content">
-                        <!-- 活动统计 -->
                         <div class="stats-section">
-                            <h3 class="stats-section-title">活动统计</h3>
-                            <div class="stats-cards">
-                                <div class="stats-card">
-                                    <div class="stats-card-label">用餐次数</div>
-                                    <div class="stats-card-value" id="statsMealCount">0</div>
-                                    <div class="stats-card-change" id="statsMealChange">-</div>
-                                </div>
-                                <div class="stats-card">
-                                    <div class="stats-card-label">用药次数</div>
-                                    <div class="stats-card-value" id="statsMedCount">0</div>
-                                    <div class="stats-card-change" id="statsMedChange">-</div>
-                                </div>
-                                <div class="stats-card">
-                                    <div class="stats-card-label">运动次数</div>
-                                    <div class="stats-card-value" id="statsExerciseCount">0</div>
-                                    <div class="stats-card-change" id="statsExerciseChange">-</div>
-                                </div>
-                                <div class="stats-card">
-                                    <div class="stats-card-label">运动时长</div>
-                                    <div class="stats-card-value" id="statsExerciseTime">0m</div>
-                                    <div class="stats-card-change" id="statsExerciseTimeChange">-</div>
-                                </div>
-                                <div class="stats-card">
-                                    <div class="stats-card-label">睡眠次数</div>
-                                    <div class="stats-card-value" id="statsSleepCount">0</div>
-                                    <div class="stats-card-change" id="statsSleepChange">-</div>
-                                </div>
-                                <div class="stats-card">
-                                    <div class="stats-card-label">工作次数</div>
-                                    <div class="stats-card-value" id="statsWorkCount">0</div>
-                                    <div class="stats-card-change" id="statsWorkChange">-</div>
-                                </div>
-                            </div>
-                        </div>
+                            <h3 class="stats-section-title">运动与睡眠趋势</h3>
 
-                        <!-- 健康数据统计 -->
-                        <div class="stats-section">
-                            <h3 class="stats-section-title">健康数据记录</h3>
-                            <div class="stats-cards">
-                                <div class="stats-card">
-                                    <div class="stats-card-label">血压记录</div>
-                                    <div class="stats-card-value" id="statsBPCount">0</div>
-                                    <div class="stats-card-change" id="statsBPChange">-</div>
-                                </div>
-                                <div class="stats-card">
-                                    <div class="stats-card-label">心率记录</div>
-                                    <div class="stats-card-value" id="statsHRCount">0</div>
-                                    <div class="stats-card-change" id="statsHRChange">-</div>
-                                </div>
-                                <div class="stats-card">
-                                    <div class="stats-card-label">血糖记录</div>
-                                    <div class="stats-card-value" id="statsBSCount">0</div>
-                                    <div class="stats-card-change" id="statsBSChange">-</div>
-                                </div>
-                                <div class="stats-card">
-                                    <div class="stats-card-label">血脂记录</div>
-                                    <div class="stats-card-value" id="statsBLCount">0</div>
-                                    <div class="stats-card-change" id="statsBLChange">-</div>
-                                </div>
-                                <div class="stats-card">
-                                    <div class="stats-card-label">尿酸记录</div>
-                                    <div class="stats-card-value" id="statsUACount">0</div>
-                                    <div class="stats-card-change" id="statsUACHange">-</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 提醒统计 -->
-                        <div class="stats-section">
-                            <h3 class="stats-section-title">提醒统计</h3>
-                            <div class="stats-cards">
-                                <div class="stats-card">
-                                    <div class="stats-card-label">已完成提醒</div>
-                                    <div class="stats-card-value" id="statsReminderCompleted">0</div>
-                                </div>
-                                <div class="stats-card">
-                                    <div class="stats-card-label">待完成提醒</div>
-                                    <div class="stats-card-value" id="statsReminderPending">0</div>
-                                </div>
-                                <div class="stats-card">
-                                    <div class="stats-card-label">完成率</div>
-                                    <div class="stats-card-value" id="statsReminderRate">0%</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 数据可视化图表 -->
-                        <div class="stats-section">
-                            <h3 class="stats-section-title">数据趋势</h3>
-
-                            <!-- 活动类型分布饼图 -->
                             <div class="chart-container">
-                                <h4 class="chart-title">活动类型分布</h4>
-                                <div class="chart-wrapper">
-                                    <canvas id="activityTypeChart"></canvas>
-                                </div>
-                            </div>
-
-                            <!-- 每日活动次数趋势图 -->
-                            <div class="chart-container">
-                                <h4 class="chart-title">每日活动次数趋势</h4>
+                                <h4 class="chart-title">运动次数趋势</h4>
                                 <div class="chart-wrapper">
                                     <canvas id="activityTrendChart"></canvas>
                                 </div>
                             </div>
 
-                            <!-- 运动时长趋势图 -->
                             <div class="chart-container">
-                                <h4 class="chart-title">每日运动时长（分钟）</h4>
+                                <h4 class="chart-title">单次运动时长趋势（分钟/次）</h4>
                                 <div class="chart-wrapper">
                                     <canvas id="exerciseTrendChart"></canvas>
                                 </div>
                             </div>
 
-                            <!-- 健康数据趋势图 -->
                             <div class="chart-container">
-                                <h4 class="chart-title">健康数据趋势</h4>
+                                <h4 class="chart-title">单日睡眠时长趋势（小时）</h4>
                                 <div class="chart-wrapper">
-                                    <canvas id="healthTrendChart"></canvas>
+                                    <canvas id="sleepTrendChart"></canvas>
                                 </div>
                             </div>
                         </div>

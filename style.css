@@ -1886,6 +1886,19 @@ body.elder-mode .stats-card-value {
     font-style: italic;
 }
 
+.time-range-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.field-label-secondary {
+    display: block;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
 /* ==================== 快速模板样式 ==================== */
 .template-section {
     background: var(--card-bg);
@@ -2161,6 +2174,10 @@ body.elder-mode .stats-card-value {
 
     .stat-value {
         font-size: 1.5rem;
+    }
+
+    .time-range-grid {
+        grid-template-columns: 1fr;
     }
 
     .timeline-item {
