@@ -223,30 +223,6 @@ body.elder-mode .form-actions button {
     background: rgba(181, 42, 42, 0.28);
 }
 
-/* 在线状态指示器 */
-.online-status {
-    display: inline-flex;
-    align-items: center;
-    padding: 8px 14px;
-    border-radius: 999px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    backdrop-filter: blur(12px);
-    transition: all 0.3s ease;
-}
-
-.online-status.online {
-    background: rgba(76, 175, 80, 0.2);
-    color: #81c784;
-    border: 1px solid rgba(129, 199, 132, 0.4);
-}
-
-.online-status.offline {
-    background: rgba(244, 67, 54, 0.2);
-    color: #e57373;
-    border: 1px solid rgba(229, 115, 115, 0.4);
-}
-
 .date-selector {
     display: flex;
     justify-content: center;

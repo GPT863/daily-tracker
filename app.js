@@ -46,7 +46,6 @@ const defaultTemplates = [
     { id: 'tpl_4', name: '早餐', type: 'meal', content: '燕麦粥 + 鸡蛋', feeling: '吃饱了', duration: 15, icon: '🍽️' },
     { id: 'tpl_5', name: '午休', type: 'sleep', content: '午休30分钟', feeling: '下午精神好', duration: 30, icon: '😴' }
 ];
-let elderMode = localStorage.getItem('dailyTracker_elderMode') === 'true';
 let editingHealthId = null;
 let editingReminderId = null;
 let serviceWorkerRegistration = null;
@@ -133,7 +132,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadHealthRecords();
     loadReminders();
     loadProfile();
-    applyElderMode();
     setupEventListeners();
     setupReminderListeners();
     setupProfileListeners();
@@ -624,10 +622,6 @@ function setupEventListeners() {
     document.getElementById('timelineOrderBtn').addEventListener('click', toggleTimelineOrder);
     document.getElementById('timelineFilterBtn').addEventListener('click', toggleTimelineSearchFilter);
     document.getElementById('profileBtn').addEventListener('click', openProfileModal);
-    document.getElementById('elderModeBtn').addEventListener('click', toggleElderMode);
-
-    // 统计按钮
-    document.getElementById('statsBtn').addEventListener('click', openStatsModal);
 
     // AI诊断按钮
     const aiDiagnosisBtn = document.getElementById('aiDiagnosisBtn');
@@ -748,7 +742,6 @@ function changeDate(days) {
 // 更新显示
 function updateDisplay() {
     updateDateDisplay();
-    updateElderModeButton();
     updateTimelineOrderButton();
     updateHealthDisplay();
     updateTimeline();
@@ -853,13 +846,19 @@ function toggleTimelineOrder() {
 
 // 更新统计数据
 function updateStats() {
+    const exerciseCountElement = document.getElementById('exerciseCount');
+    const exerciseTimeElement = document.getElementById('exerciseTime');
+    if (!exerciseCountElement || !exerciseTimeElement) {
+        return;
+    }
+
     const exerciseCount = activities.filter(a => a.type === 'exercise').length;
     const exerciseMinutes = activities
         .filter(a => a.type === 'exercise')
         .reduce((sum, a) => sum + (getActivityDuration(a) || 0), 0);
 
-    document.getElementById('exerciseCount').textContent = exerciseCount;
-    document.getElementById('exerciseTime').textContent = formatMinutesLabel(exerciseMinutes);
+    exerciseCountElement.textContent = exerciseCount;
+    exerciseTimeElement.textContent = formatMinutesLabel(exerciseMinutes);
 }
 
 // 格式化时间
@@ -1801,34 +1800,6 @@ async function registerServiceWorker() {
         console.error('Service Worker registration failed', error);
     }
 
-    // 监听网络状态变化
-    setupNetworkStatusListener();
-}
-
-// 设置网络状态监听
-function setupNetworkStatusListener() {
-    const updateOnlineStatus = () => {
-        const isOnline = navigator.onLine;
-        const statusElement = document.getElementById('onlineStatus');
-
-        if (statusElement) {
-            statusElement.className = isOnline ? 'online-status online' : 'online-status offline';
-            statusElement.textContent = isOnline ? '🟢 在线' : '🔴 离线';
-        }
-
-        if (isOnline) {
-            showToast('网络已连接，数据将自动同步');
-        } else {
-            showToast('网络已断开，当前为离线模式');
-        }
-    };
-
-    // 初始化状态
-    updateOnlineStatus();
-
-    // 监听网络状态变化
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
 }
 
 // 获取 Service Worker 缓存信息
@@ -2580,26 +2551,6 @@ function closeModal(modal) {
     }
 
     modal.style.display = 'none';
-}
-
-function applyElderMode() {
-    document.body.classList.toggle('elder-mode', elderMode);
-    updateElderModeButton();
-}
-
-function updateElderModeButton() {
-    const btn = document.getElementById('elderModeBtn');
-    if (!btn) return;
-
-    btn.textContent = elderMode ? '标准模式' : '长辈模式';
-    btn.classList.toggle('active', elderMode);
-}
-
-function toggleElderMode() {
-    elderMode = !elderMode;
-    localStorage.setItem('dailyTracker_elderMode', String(elderMode));
-    applyElderMode();
-    showToast(elderMode ? '已开启长辈模式' : '已切换为标准模式');
 }
 
 function snoozeActiveReminder() {
