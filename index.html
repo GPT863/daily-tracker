@@ -63,42 +63,13 @@
                     <h2>📝 时间线</h2>
                     <div class="section-tools">
                         <button id="timelineOrderBtn" class="section-order-btn">倒序显示</button>
-                        <button id="timelineFilterBtn" class="section-filter-btn">筛选</button>
                         <button id="timelineExportBtn" class="section-export-btn">导出今日记录</button>
-                    </div>
-                </div>
-                <!-- 搜索和筛选区域 -->
-                <div id="timelineSearchFilter" class="timeline-search-filter hidden">
-                    <div class="search-filter-row">
-                        <div class="search-input-wrapper">
-                            <input type="text" id="timelineSearchInput" placeholder="搜索活动内容或感受...">
-                            <button id="clearSearchBtn" class="clear-search-btn hidden">×</button>
-                        </div>
-                    </div>
-                    <div class="filter-controls">
-                        <select id="activityTypeFilter" class="filter-select">
-                            <option value="all">所有类型</option>
-                            <option value="meal">🍽️ 用餐</option>
-                            <option value="medication">💊 用药</option>
-                            <option value="exercise">🏃 运动</option>
-                            <option value="sleep">😴 睡眠</option>
-                            <option value="work">💼 工作</option>
-                            <option value="other">📌 其他</option>
-                        </select>
-                        <input type="date" id="startDateFilter" class="filter-date">
-                        <span class="date-separator">至</span>
-                        <input type="date" id="endDateFilter" class="filter-date">
-                        <button id="clearFiltersBtn" class="clear-filters-btn">清除筛选</button>
                     </div>
                 </div>
                 <div id="timeline" class="timeline"></div>
                 <div id="emptyState" class="empty-state">
                     <p>今天还没有记录哦</p>
                     <p>点击下方按钮添加活动吧！</p>
-                </div>
-                <div id="noSearchResults" class="empty-state hidden">
-                    <p>没有找到匹配的活动记录</p>
-                    <p>请尝试调整搜索条件</p>
                 </div>
             </section>
         </main>

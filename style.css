@@ -1612,26 +1612,6 @@ body.elder-mode .stats-card-value {
     border-color: var(--text-muted);
 }
 
-.section-filter-btn {
-    padding: 8px 14px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.3s;
-}
-
-.section-filter-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.section-filter-btn.active {
-    background: var(--forest-color);
-    border-color: var(--forest-color);
-}
-
 /* ==================== 导出选项样式 ==================== */
 .export-section {
     background: var(--card-bg);
