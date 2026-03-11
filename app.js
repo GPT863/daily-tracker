@@ -2193,19 +2193,19 @@ function setupReminderListeners() {
     document.getElementById('completeReminderBtn').addEventListener('click', completeActiveReminder);
     document.getElementById('dismissAlertBtn').addEventListener('click', closeReminderAlertModal);
 
-    // 提醒历史搜索和筛选
+    // 全部提醒搜索和筛选
     const searchInput = document.getElementById('reminderSearchInput');
     const typeFilter = document.getElementById('reminderTypeFilter');
     const statusFilter = document.getElementById('reminderStatusFilter');
 
     if (searchInput) {
-        searchInput.addEventListener('input', debounce(renderReminderHistory, 300));
+        searchInput.addEventListener('input', debounce(renderAllReminders, 300));
     }
     if (typeFilter) {
-        typeFilter.addEventListener('change', renderReminderHistory);
+        typeFilter.addEventListener('change', renderAllReminders);
     }
     if (statusFilter) {
-        statusFilter.addEventListener('change', renderReminderHistory);
+        statusFilter.addEventListener('change', renderAllReminders);
     }
 }
 
@@ -2257,9 +2257,6 @@ function renderReminderTabs(tab) {
             break;
         case 'all':
             renderAllReminders();
-            break;
-        case 'history':
-            renderReminderHistory();
             break;
         case 'add':
             populateReminderForm();
@@ -2336,14 +2333,18 @@ function renderUpcomingReminders() {
 
 // 渲染所有提醒
 function renderAllReminders() {
-    const allReminders = [...reminders].sort((a, b) => {
+    const allReminders = getFilteredReminderHistory().sort((a, b) => {
         return new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time);
     });
 
     const container = document.getElementById('allReminderList');
     container.innerHTML = allReminders.length === 0
-        ? '<p class="text-secondary">还没有任何提醒</p>'
-        : allReminders.map(r => renderReminderItem(r, true)).join('');
+        ? `<div class="reminder-empty-state">
+                <div class="reminder-empty-state-icon">📋</div>
+                <div class="reminder-empty-state-text">没有找到符合条件的提醒</div>
+                <div class="reminder-empty-state-hint">请尝试调整筛选条件或搜索关键词</div>
+           </div>`
+        : allReminders.map(r => renderReminderHistoryItem(r)).join('');
 }
 
 // 获取筛选后的提醒历史
@@ -2379,30 +2380,6 @@ function getFilteredReminderHistory() {
     }
 
     return filtered;
-}
-
-// 渲染提醒历史
-function renderReminderHistory() {
-    const filtered = getFilteredReminderHistory();
-    const container = document.getElementById('reminderHistoryList');
-
-    if (filtered.length === 0) {
-        const searchTerm = document.getElementById('reminderSearchInput')?.value?.trim();
-        const hasFilters = document.getElementById('reminderTypeFilter')?.value !== 'all' ||
-                           document.getElementById('reminderStatusFilter')?.value !== 'all' ||
-                           searchTerm;
-
-        container.innerHTML = `
-            <div class="reminder-empty-state">
-                <div class="reminder-empty-state-icon">📋</div>
-                <div class="reminder-empty-state-text">${hasFilters ? '没有找到符合条件的提醒' : '提醒历史为空'}</div>
-                <div class="reminder-empty-state-hint">${hasFilters ? '请尝试调整筛选条件或搜索关键词' : '完成的提醒会显示在这里'}</div>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = filtered.map(r => renderReminderHistoryItem(r)).join('');
 }
 
 // 渲染提醒历史项（包含操作历史）
