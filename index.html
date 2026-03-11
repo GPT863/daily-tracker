@@ -9,6 +9,7 @@
     <title>日常活动记录器</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -16,6 +17,9 @@
             <div class="header-top">
                 <h1>📅 今日活动记录</h1>
                 <div class="header-tools">
+                    <span id="onlineStatus" class="online-status online">🟢 在线</span>
+                    <button id="statsBtn" class="header-tool-btn">📊 统计</button>
+                    <button id="aiDiagnosisBtn" class="header-tool-btn">🤖 AI诊断</button>
                     <button id="elderModeBtn" class="header-tool-btn">长辈模式</button>
                     <button id="profileBtn" class="header-tool-btn">个人信息</button>
                     <button id="seedDemoBtn" class="header-tool-btn">示例数据</button>
@@ -65,7 +69,7 @@
 
             <section class="health-section">
                 <div class="section-heading">
-                    <h2>🩺 健康数据</h2>
+                    <h2>📋 健康数据</h2>
                     <div class="section-tools">
                         <button id="addHealthBtnInline" class="section-order-btn">记录健康数据</button>
                     </div>
@@ -94,7 +98,32 @@
                     <h2>📝 时间线</h2>
                     <div class="section-tools">
                         <button id="timelineOrderBtn" class="section-order-btn">倒序显示</button>
+                        <button id="timelineFilterBtn" class="section-filter-btn">筛选</button>
                         <button id="timelineExportBtn" class="section-export-btn">导出今日记录</button>
+                    </div>
+                </div>
+                <!-- 搜索和筛选区域 -->
+                <div id="timelineSearchFilter" class="timeline-search-filter hidden">
+                    <div class="search-filter-row">
+                        <div class="search-input-wrapper">
+                            <input type="text" id="timelineSearchInput" placeholder="搜索活动内容或感受...">
+                            <button id="clearSearchBtn" class="clear-search-btn hidden">×</button>
+                        </div>
+                    </div>
+                    <div class="filter-controls">
+                        <select id="activityTypeFilter" class="filter-select">
+                            <option value="all">所有类型</option>
+                            <option value="meal">🍽️ 用餐</option>
+                            <option value="medication">💊 用药</option>
+                            <option value="exercise">🏃 运动</option>
+                            <option value="sleep">😴 睡眠</option>
+                            <option value="work">💼 工作</option>
+                            <option value="other">📌 其他</option>
+                        </select>
+                        <input type="date" id="startDateFilter" class="filter-date">
+                        <span class="date-separator">至</span>
+                        <input type="date" id="endDateFilter" class="filter-date">
+                        <button id="clearFiltersBtn" class="clear-filters-btn">清除筛选</button>
                     </div>
                 </div>
                 <div id="timeline" class="timeline"></div>
@@ -102,13 +131,17 @@
                     <p>今天还没有记录哦</p>
                     <p>点击下方按钮添加活动吧！</p>
                 </div>
+                <div id="noSearchResults" class="empty-state hidden">
+                    <p>没有找到匹配的活动记录</p>
+                    <p>请尝试调整搜索条件</p>
+                </div>
             </section>
         </main>
 
         <!-- 底部导航按钮 -->
         <div class="bottom-actions">
             <button id="addBtn" class="fab-add">+</button>
-            <button id="healthBtn" class="fab-health">🩺</button>
+            <button id="healthBtn" class="fab-health">📋</button>
             <button id="reminderBtn" class="fab-reminder">🔔</button>
             <button id="quickExportBtn" class="fab-export">⇩</button>
         </div>
@@ -122,7 +155,19 @@
                 </div>
                 <form id="activityForm" class="activity-form">
                     <input type="hidden" id="activityId">
-                    
+
+                    <!-- 快速模板选择 -->
+                    <div class="template-section">
+                        <div class="template-header">
+                            <span class="template-label">📋 快速模板</span>
+                            <button type="button" id="saveAsTemplateBtn" class="save-template-btn">💾 存为模板</button>
+                        </div>
+                        <div id="templateList" class="template-list">
+                            <!-- 模板会动态生成 -->
+                        </div>
+                        <button type="button" id="addTemplateBtn" class="add-template-btn">+ 添加新模板</button>
+                    </div>
+
                     <div class="form-group">
                         <label for="activityTime">时间</label>
                         <input type="time" id="activityTime" required>
@@ -178,9 +223,245 @@
             </div>
         </div>
 
+        <!-- 统计模态框 -->
+        <div id="statsModal" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h2>📊 数据统计</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="stats-container">
+                    <!-- 统计周期选择 -->
+                    <div class="stats-period-tabs">
+                        <button class="stats-tab-btn active" data-period="week">本周统计</button>
+                        <button class="stats-tab-btn" data-period="month">本月统计</button>
+                    </div>
+
+                    <!-- 统计内容区域 -->
+                    <div id="statsContent" class="stats-content">
+                        <!-- 活动统计 -->
+                        <div class="stats-section">
+                            <h3 class="stats-section-title">活动统计</h3>
+                            <div class="stats-cards">
+                                <div class="stats-card">
+                                    <div class="stats-card-label">用餐次数</div>
+                                    <div class="stats-card-value" id="statsMealCount">0</div>
+                                    <div class="stats-card-change" id="statsMealChange">-</div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stats-card-label">用药次数</div>
+                                    <div class="stats-card-value" id="statsMedCount">0</div>
+                                    <div class="stats-card-change" id="statsMedChange">-</div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stats-card-label">运动次数</div>
+                                    <div class="stats-card-value" id="statsExerciseCount">0</div>
+                                    <div class="stats-card-change" id="statsExerciseChange">-</div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stats-card-label">运动时长</div>
+                                    <div class="stats-card-value" id="statsExerciseTime">0m</div>
+                                    <div class="stats-card-change" id="statsExerciseTimeChange">-</div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stats-card-label">睡眠次数</div>
+                                    <div class="stats-card-value" id="statsSleepCount">0</div>
+                                    <div class="stats-card-change" id="statsSleepChange">-</div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stats-card-label">工作次数</div>
+                                    <div class="stats-card-value" id="statsWorkCount">0</div>
+                                    <div class="stats-card-change" id="statsWorkChange">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 健康数据统计 -->
+                        <div class="stats-section">
+                            <h3 class="stats-section-title">健康数据记录</h3>
+                            <div class="stats-cards">
+                                <div class="stats-card">
+                                    <div class="stats-card-label">血压记录</div>
+                                    <div class="stats-card-value" id="statsBPCount">0</div>
+                                    <div class="stats-card-change" id="statsBPChange">-</div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stats-card-label">心率记录</div>
+                                    <div class="stats-card-value" id="statsHRCount">0</div>
+                                    <div class="stats-card-change" id="statsHRChange">-</div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stats-card-label">血糖记录</div>
+                                    <div class="stats-card-value" id="statsBSCount">0</div>
+                                    <div class="stats-card-change" id="statsBSChange">-</div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stats-card-label">血脂记录</div>
+                                    <div class="stats-card-value" id="statsBLCount">0</div>
+                                    <div class="stats-card-change" id="statsBLChange">-</div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stats-card-label">尿酸记录</div>
+                                    <div class="stats-card-value" id="statsUACount">0</div>
+                                    <div class="stats-card-change" id="statsUACHange">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 提醒统计 -->
+                        <div class="stats-section">
+                            <h3 class="stats-section-title">提醒统计</h3>
+                            <div class="stats-cards">
+                                <div class="stats-card">
+                                    <div class="stats-card-label">已完成提醒</div>
+                                    <div class="stats-card-value" id="statsReminderCompleted">0</div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stats-card-label">待完成提醒</div>
+                                    <div class="stats-card-value" id="statsReminderPending">0</div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stats-card-label">完成率</div>
+                                    <div class="stats-card-value" id="statsReminderRate">0%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 数据可视化图表 -->
+                        <div class="stats-section">
+                            <h3 class="stats-section-title">数据趋势</h3>
+
+                            <!-- 活动类型分布饼图 -->
+                            <div class="chart-container">
+                                <h4 class="chart-title">活动类型分布</h4>
+                                <div class="chart-wrapper">
+                                    <canvas id="activityTypeChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- 每日活动次数趋势图 -->
+                            <div class="chart-container">
+                                <h4 class="chart-title">每日活动次数趋势</h4>
+                                <div class="chart-wrapper">
+                                    <canvas id="activityTrendChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- 运动时长趋势图 -->
+                            <div class="chart-container">
+                                <h4 class="chart-title">每日运动时长（分钟）</h4>
+                                <div class="chart-wrapper">
+                                    <canvas id="exerciseTrendChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- 健康数据趋势图 -->
+                            <div class="chart-container">
+                                <h4 class="chart-title">健康数据趋势</h4>
+                                <div class="chart-wrapper">
+                                    <canvas id="healthTrendChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 空状态 -->
+                        <div id="statsEmptyState" class="stats-empty-state hidden">
+                            <div class="stats-empty-icon">📊</div>
+                            <div class="stats-empty-text">该时间段暂无数据</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模板管理模态框 -->
+        <div id="templateModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>📋 模板管理</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="template-manager-content">
+                    <div id="templateManagerList" class="template-manager-list">
+                        <!-- 模板列表会动态生成 -->
+                    </div>
+                    <div id="templateEmptyState" class="template-empty-state">
+                        <p>还没有保存任何模板</p>
+                        <p>点击下方按钮创建第一个模板吧！</p>
+                    </div>
+                    <button id="createTemplateBtn" class="create-template-btn">+ 创建新模板</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加/编辑模板模态框 -->
+        <div id="templateEditModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="templateEditTitle">创建模板</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <form id="templateForm" class="activity-form">
+                    <input type="hidden" id="templateId">
+
+                    <div class="form-group">
+                        <label for="templateName">模板名称 *</label>
+                        <input type="text" id="templateName" placeholder="例如：降压药、晨跑" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="templateType">活动类型 *</label>
+                        <select id="templateType" required>
+                            <option value="meal">🍽️ 用餐</option>
+                            <option value="medication">💊 用药</option>
+                            <option value="exercise">🏃 运动</option>
+                            <option value="sleep">😴 睡眠</option>
+                            <option value="work">💼 工作</option>
+                            <option value="other">📌 其他</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="templateContent">内容 *</label>
+                        <input type="text" id="templateContent" placeholder="例如：降压药 1片" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="templateFeeling">感受（可选）</label>
+                        <input type="text" id="templateFeeling" placeholder="例如：无不适">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="templateDuration">时长（分钟，可选）</label>
+                        <input type="number" id="templateDuration" min="0" placeholder="例如：30">
+                    </div>
+
+                    <div class="form-group">
+                        <label>模板图标</label>
+                        <div class="template-icon-selector">
+                            <button type="button" class="template-icon-option" data-icon="💊" data-selected="false">💊</button>
+                            <button type="button" class="template-icon-option" data-icon="🏃" data-selected="false">🏃</button>
+                            <button type="button" class="template-icon-option" data-icon="🍽️" data-selected="false">🍽️</button>
+                            <button type="button" class="template-icon-option" data-icon="😴" data-selected="false">😴</button>
+                            <button type="button" class="template-icon-option" data-icon="💼" data-selected="false">💼</button>
+                            <button type="button" class="template-icon-option" data-icon="📌" data-selected="false">📌</button>
+                            <button type="button" class="template-icon-option" data-icon="⭐" data-selected="false">⭐</button>
+                            <button type="button" class="template-icon-option" data-icon="❤️" data-selected="false">❤️</button>
+                        </div>
+                        <input type="hidden" id="templateIcon" value="💊">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel">取消</button>
+                        <button type="submit" class="btn-submit">保存模板</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- 导出模态框 -->
         <div id="exportModal" class="modal">
-            <div class="modal-content">
+            <div class="modal-content large">
                 <div class="modal-header">
                     <h2>数据管理</h2>
                     <span class="close">&times;</span>
@@ -197,15 +478,224 @@
                         </div>
                         <div id="backupReminderText" class="storage-helper-text"></div>
                     </div>
-                    <button id="importJsonBtn" class="export-btn secondary">📥 导入JSON备份</button>
-                    <button id="exportJson" class="export-btn">📄 导出JSON</button>
-                    <button id="exportCsv" class="export-btn">📊 导出CSV</button>
+
+                    <!-- 导出选项 -->
+                    <div class="export-section">
+                        <h3 class="export-section-title">导出选项</h3>
+                        <div class="export-range-options">
+                            <label class="export-range-option">
+                                <input type="radio" name="exportRange" value="current" checked>
+                                <span>当前日期</span>
+                            </label>
+                            <label class="export-range-option">
+                                <input type="radio" name="exportRange" value="range">
+                                <span>日期范围</span>
+                            </label>
+                            <label class="export-range-option">
+                                <input type="radio" name="exportRange" value="all">
+                                <span>全部数据</span>
+                            </label>
+                        </div>
+
+                        <div id="dateRangeInputs" class="date-range-inputs hidden">
+                            <div class="date-range-row">
+                                <label>开始日期</label>
+                                <input type="date" id="exportStartDate">
+                            </div>
+                            <div class="date-range-row">
+                                <label>结束日期</label>
+                                <input type="date" id="exportEndDate">
+                            </div>
+                        </div>
+
+                        <!-- 导出预览 -->
+                        <div id="exportPreview" class="export-preview">
+                            <h4>导出预览</h4>
+                            <div id="exportPreviewStats" class="export-preview-stats">
+                                <div class="preview-stat">
+                                    <span class="preview-label">活动记录</span>
+                                    <span class="preview-value" id="previewActivityCount">0</span>
+                                </div>
+                                <div class="preview-stat">
+                                    <span class="preview-label">健康数据</span>
+                                    <span class="preview-value" id="previewHealthCount">0</span>
+                                </div>
+                                <div class="preview-stat">
+                                    <span class="preview-label">提醒数据</span>
+                                    <span class="preview-value" id="previewReminderCount">0</span>
+                                </div>
+                            </div>
+                            <div id="exportDateRangeText" class="export-date-range-text"></div>
+                        </div>
+                    </div>
+
+                    <!-- 导入导出按钮 -->
+                    <div class="export-buttons">
+                        <button id="importJsonBtn" class="export-btn secondary">📥 导入JSON备份</button>
+                        <button id="exportJson" class="export-btn">📄 导出JSON</button>
+                        <button id="exportCsv" class="export-btn">📊 导出CSV</button>
+                    </div>
+
                     <input type="file" id="importJsonInput" accept="application/json,.json" hidden>
                     <div id="importPreview" class="import-preview hidden">
                         <div id="importPreviewText" class="storage-helper-text"></div>
                         <div class="import-actions">
                             <button id="confirmImportMerge" type="button" class="btn-submit">合并导入</button>
                             <button id="confirmImportReplace" type="button" class="section-order-btn">替换导入</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI诊断模态框 -->
+        <div id="aiDiagnosisModal" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h2>🤖 AI健康诊断</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="ai-diagnosis-content">
+                    <!-- API配置 -->
+                    <div class="ai-config-section">
+                        <h3 class="ai-section-title">API配置</h3>
+                        <div class="ai-config-form">
+                            <div class="form-group">
+                                <label for="aiProvider">AI服务提供商</label>
+                                <select id="aiProvider">
+                                    <option value="openai">OpenAI (GPT-4/GPT-3.5)</option>
+                                    <option value="anthropic">Anthropic (Claude)</option>
+                                    <option value="deepseek">DeepSeek</option>
+                                    <option value="tongyi">通义千问</option>
+                                    <option value="custom">自定义API</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="aiApiKey">API密钥</label>
+                                <input type="password" id="aiApiKey" placeholder="请输入您的API密钥">
+                                <small class="form-hint">密钥仅存储在本地浏览器中，不会上传到服务器</small>
+                            </div>
+                            <div class="form-group hidden" id="customApiEndpointGroup">
+                                <label for="customApiEndpoint">自定义API端点</label>
+                                <input type="text" id="customApiEndpoint" placeholder="https://api.example.com/v1/chat">
+                            </div>
+                            <div class="form-group">
+                                <label for="aiModel">模型（可选）</label>
+                                <input type="text" id="aiModel" placeholder="留空使用默认模型">
+                                <small class="form-hint">例如: gpt-4, claude-3-opus-20240229</small>
+                            </div>
+                            <button type="button" id="saveAiConfigBtn" class="btn-submit">保存配置</button>
+                        </div>
+                    </div>
+
+                    <!-- 数据范围选择 -->
+                    <div class="ai-data-section">
+                        <h3 class="ai-section-title">选择分析数据范围</h3>
+                        <div class="ai-range-options">
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiRange" value="week" checked>
+                                <span>最近7天</span>
+                            </label>
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiRange" value="month">
+                                <span>最近30天</span>
+                            </label>
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiRange" value="quarter">
+                                <span>最近90天</span>
+                            </label>
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiRange" value="custom">
+                                <span>自定义范围</span>
+                            </label>
+                        </div>
+                        <div id="aiDateRangeInputs" class="ai-date-range-inputs hidden">
+                            <div class="date-range-row">
+                                <label>开始日期</label>
+                                <input type="date" id="aiStartDate">
+                            </div>
+                            <div class="date-range-row">
+                                <label>结束日期</label>
+                                <input type="date" id="aiEndDate">
+                            </div>
+                        </div>
+                        <div id="aiDataPreview" class="ai-data-preview">
+                            <h4>数据预览</h4>
+                            <div id="aiDataStats" class="ai-data-stats">
+                                <div class="ai-stat-item">
+                                    <span class="ai-stat-label">活动记录</span>
+                                    <span class="ai-stat-value" id="aiActivityCount">0</span>
+                                </div>
+                                <div class="ai-stat-item">
+                                    <span class="ai-stat-label">健康数据</span>
+                                    <span class="ai-stat-value" id="aiHealthCount">0</span>
+                                </div>
+                                <div class="ai-stat-item">
+                                    <span class="ai-stat-label">分析天数</span>
+                                    <span class="ai-stat-value" id="aiDayCount">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 诊断选项 -->
+                    <div class="ai-options-section">
+                        <h3 class="ai-section-title">诊断选项</h3>
+                        <div class="ai-option-checks">
+                            <label class="ai-option-check">
+                                <input type="checkbox" id="aiIncludeActivities" checked>
+                                <span>分析活动记录（饮食、运动、睡眠等）</span>
+                            </label>
+                            <label class="ai-option-check">
+                                <input type="checkbox" id="aiIncludeHealth" checked>
+                                <span>分析健康数据（血压、心率、血糖等）</span>
+                            </label>
+                            <label class="ai-option-check">
+                                <input type="checkbox" id="aiIncludeProfile" checked>
+                                <span>结合个人信息（年龄、病史、用药等）</span>
+                            </label>
+                            <label class="ai-option-check">
+                                <input type="checkbox" id="aiIncludeMedication" checked>
+                                <span>分析用药情况</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="aiCustomPrompt">额外关注的问题（可选）</label>
+                            <textarea id="aiCustomPrompt" rows="2" placeholder="例如：最近血压偏高，想了解原因和建议"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 开始诊断按钮 -->
+                    <div class="ai-action-section">
+                        <button type="button" id="startAiDiagnosisBtn" class="btn-submit btn-large">
+                            <span class="btn-text">开始AI诊断</span>
+                            <span class="btn-loading hidden">分析中...</span>
+                        </button>
+                    </div>
+
+                    <!-- 分析过程文本框 -->
+                    <div id="aiTraceSection" class="ai-process-section hidden">
+                        <h3 class="ai-section-title">诊断过程与分析依据</h3>
+                        <textarea id="aiTraceOutput" class="ai-trace-output" readonly placeholder="开始诊断后，这里会显示诊断过程和分析依据摘要。"></textarea>
+                    </div>
+
+                    <!-- 诊断结果 -->
+                    <div id="aiResultSection" class="ai-result-section hidden">
+                        <h3 class="ai-section-title">
+                            诊断结果
+                            <button type="button" id="copyAiResultBtn" class="copy-btn">📋 复制</button>
+                        </h3>
+                        <div id="aiResultContent" class="ai-result-content"></div>
+                    </div>
+
+                    <div id="aiChatSection" class="ai-chat-section hidden">
+                        <h3 class="ai-section-title">继续追问</h3>
+                        <div id="aiChatMessages" class="ai-chat-messages"></div>
+                        <div class="ai-chat-composer">
+                            <textarea id="aiFollowupInput" rows="3" placeholder="例如：血压偏高最可能和哪些生活习惯有关？"></textarea>
+                            <div class="ai-chat-actions">
+                                <button type="button" id="sendAiFollowupBtn" class="btn-submit">发送追问</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -224,6 +714,7 @@
                         <button class="tab-btn active" data-tab="today">今日提醒</button>
                         <button class="tab-btn" data-tab="upcoming">即将到来</button>
                         <button class="tab-btn" data-tab="all">全部提醒</button>
+                        <button class="tab-btn" data-tab="history">提醒历史</button>
                         <button class="tab-btn" data-tab="add">添加提醒</button>
                     </div>
 
@@ -237,6 +728,30 @@
 
                     <div id="tab-all" class="tab-content">
                         <div id="allReminderList" class="reminder-detail-list"></div>
+                    </div>
+
+                    <div id="tab-history" class="tab-content">
+                        <div class="reminder-history-header">
+                            <div class="reminder-search-box">
+                                <input type="text" id="reminderSearchInput" placeholder="搜索提醒内容或备注...">
+                            </div>
+                            <div class="reminder-filter-box">
+                                <select id="reminderTypeFilter">
+                                    <option value="all">所有类型</option>
+                                    <option value="meal">🍽️ 用餐</option>
+                                    <option value="medication">💊 用药</option>
+                                    <option value="exercise">🏃 运动</option>
+                                    <option value="sleep">😴 睡眠</option>
+                                    <option value="other">📌 其他</option>
+                                </select>
+                                <select id="reminderStatusFilter">
+                                    <option value="all">所有状态</option>
+                                    <option value="completed">已完成</option>
+                                    <option value="pending">未完成</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="reminderHistoryList" class="reminder-detail-list"></div>
                     </div>
 
                     <div id="tab-add" class="tab-content">

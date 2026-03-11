@@ -13,6 +13,39 @@ let pendingHealthImage = null;
 let profile = {};
 let metadata = {};
 let activeReminderAlertId = null;
+let templates = [];
+let selectedTemplateIcon = '💊';
+let aiConfig = {
+    provider: 'openai',
+    apiKey: '',
+    apiEndpoint: '',
+    model: ''
+};
+let aiConversationContext = null;
+let aiConversationHistory = [];
+let aiConversationBusy = false;
+
+// 获取类型标签
+function getTypeLabel(type) {
+    const labels = {
+        meal: '用餐',
+        medication: '用药',
+        exercise: '运动',
+        sleep: '睡眠',
+        work: '工作',
+        other: '其他'
+    };
+    return labels[type] || type;
+}
+
+// 默认模板
+const defaultTemplates = [
+    { id: 'tpl_1', name: '降压药', type: 'medication', content: '降压药 1片', feeling: '无不适', duration: null, icon: '💊' },
+    { id: 'tpl_2', name: '维生素D', type: 'medication', content: '维生素D 1粒', feeling: '', duration: null, icon: '💊' },
+    { id: 'tpl_3', name: '晨跑', type: 'exercise', content: '慢跑', feeling: '呼吸顺畅', duration: 30, icon: '🏃' },
+    { id: 'tpl_4', name: '早餐', type: 'meal', content: '燕麦粥 + 鸡蛋', feeling: '吃饱了', duration: 15, icon: '🍽️' },
+    { id: 'tpl_5', name: '午休', type: 'sleep', content: '午休30分钟', feeling: '下午精神好', duration: 30, icon: '😴' }
+];
 let elderMode = localStorage.getItem('dailyTracker_elderMode') === 'true';
 let editingHealthId = null;
 let editingReminderId = null;
@@ -309,6 +342,26 @@ async function initDB() {
         ...getDefaultMetadata(),
         ...(state.metadata || {})
     };
+
+    // 加载模板
+    loadTemplates();
+}
+
+// 加载模板
+function loadTemplates() {
+    const savedTemplates = getLocalStorageJSON('dailyTracker_templates', null);
+    if (savedTemplates && savedTemplates.length > 0) {
+        templates = savedTemplates;
+    } else {
+        // 使用默认模板
+        templates = [...defaultTemplates];
+        saveTemplates();
+    }
+}
+
+// 保存模板
+function saveTemplates() {
+    setLocalStorageJSON('dailyTracker_templates', templates);
 }
 
 function createMockActivities() {
@@ -540,6 +593,11 @@ function getDateKey(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
+// AI 模块沿用了 formatDateKey 命名，这里保持兼容，避免初始化时抛错。
+function formatDateKey(date) {
+    return getDateKey(date);
+}
+
 // 设置事件监听器
 function setupEventListeners() {
     // 日期导航
@@ -562,8 +620,25 @@ function setupEventListeners() {
         document.getElementById(id).addEventListener('click', openExportModal);
     });
     document.getElementById('timelineOrderBtn').addEventListener('click', toggleTimelineOrder);
+    document.getElementById('timelineFilterBtn').addEventListener('click', toggleTimelineSearchFilter);
     document.getElementById('profileBtn').addEventListener('click', openProfileModal);
     document.getElementById('elderModeBtn').addEventListener('click', toggleElderMode);
+
+    // 统计按钮
+    document.getElementById('statsBtn').addEventListener('click', openStatsModal);
+
+    // AI诊断按钮
+    const aiDiagnosisBtn = document.getElementById('aiDiagnosisBtn');
+    if (aiDiagnosisBtn) {
+        aiDiagnosisBtn.addEventListener('click', function(e) {
+            console.log('AI诊断按钮被点击');
+            e.preventDefault();
+            e.stopPropagation();
+            openAiDiagnosisModal();
+        });
+    } else {
+        console.error('AI诊断按钮未找到');
+    }
 
     // 数据辅助入口
     document.getElementById('seedDemoBtn').addEventListener('click', loadDemoData);
@@ -608,6 +683,13 @@ function setupEventListeners() {
     // 导出按钮
     document.getElementById('exportJson').addEventListener('click', exportJson);
     document.getElementById('exportCsv').addEventListener('click', exportCsv);
+
+    // 导出范围选择
+    document.querySelectorAll('input[name="exportRange"]').forEach(radio => {
+        radio.addEventListener('change', updateExportPreview);
+    });
+    document.getElementById('exportStartDate').addEventListener('change', updateExportPreview);
+    document.getElementById('exportEndDate').addEventListener('change', updateExportPreview);
     document.getElementById('importJsonBtn').addEventListener('click', () => {
         document.getElementById('importJsonInput').click();
     });
@@ -615,6 +697,39 @@ function setupEventListeners() {
     document.getElementById('confirmImportMerge').addEventListener('click', () => confirmImport('merge'));
     document.getElementById('confirmImportReplace').addEventListener('click', () => confirmImport('replace'));
     document.getElementById('snoozeMinutes').addEventListener('change', toggleCustomSnoozeField);
+
+    // 搜索和筛选
+    document.getElementById('timelineSearchInput').addEventListener('input', debounce(applyTimelineFilters, 300));
+    document.getElementById('clearSearchBtn').addEventListener('click', clearSearchInput);
+    document.getElementById('activityTypeFilter').addEventListener('change', applyTimelineFilters);
+    document.getElementById('startDateFilter').addEventListener('change', applyTimelineFilters);
+    document.getElementById('endDateFilter').addEventListener('change', applyTimelineFilters);
+    document.getElementById('clearFiltersBtn').addEventListener('click', clearTimelineFilters);
+
+    // 模板相关事件
+    document.getElementById('saveAsTemplateBtn').addEventListener('click', saveAsTemplate);
+    document.getElementById('addTemplateBtn').addEventListener('click', () => openTemplateEditModal());
+    document.getElementById('createTemplateBtn').addEventListener('click', () => openTemplateEditModal());
+    document.getElementById('templateForm').addEventListener('submit', handleTemplateFormSubmit);
+
+    // 模板列表点击事件（事件委托）
+    document.addEventListener('click', (e) => {
+        const templateItem = e.target.closest('.template-item');
+        if (templateItem) {
+            const templateId = templateItem.dataset.templateId;
+            applyTemplate(templateId);
+        }
+    });
+
+    // 模板图标选择
+    document.querySelectorAll('.template-icon-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            selectTemplateIcon(btn.dataset.icon);
+        });
+    });
+
+    // 初始化AI诊断事件
+    initAiDiagnosisEvents();
 }
 
 // 更改日期
@@ -787,6 +902,7 @@ function openModal(activity = null) {
     }
 
     updateActivityImagePreview();
+    renderActivityTemplates();
     modal.style.display = 'block';
 }
 
@@ -1226,15 +1342,60 @@ window.deleteActivity = function(id) {
 
 // 导出JSON
 async function exportJson() {
-    const snapshot = buildFullExportPayload();
+    const exportRange = document.querySelector('input[name="exportRange"]:checked').value;
+
+    let payload;
+    let filename;
+
+    if (exportRange === 'all') {
+        // 全量导出
+        payload = buildFullExportPayload();
+        filename = `daily-tracker-backup-all-${new Date().toISOString().split('T')[0]}.json`;
+    } else {
+        // 部分导出
+        const { activities, healthRecords, dateRange } = getExportData();
+
+        // 按日期组织数据
+        const activitiesByDate = {};
+        const healthRecordsByDate = {};
+
+        activities.forEach(a => {
+            const dateKey = a._displayDate || getDateKey(currentDate);
+            if (!activitiesByDate[dateKey]) {
+                activitiesByDate[dateKey] = [];
+            }
+            activitiesByDate[dateKey].push(a);
+        });
+
+        healthRecords.forEach(r => {
+            const dateKey = r._displayDate || getDateKey(currentDate);
+            if (!healthRecordsByDate[dateKey]) {
+                healthRecordsByDate[dateKey] = [];
+            }
+            healthRecordsByDate[dateKey].push(r);
+        });
+
+        payload = {
+            activitiesByDate,
+            healthRecordsByDate,
+            reminders,
+            profile,
+            metadata: {
+                ...metadata,
+                exportedAt: new Date().toISOString(),
+                exportRange: dateRange
+            }
+        };
+        filename = `daily-tracker-${dateRange}.json`;
+    }
+
     const data = {
-        ...snapshot,
+        ...payload,
         exportedAt: new Date().toISOString()
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const dateKey = getDateKey(currentDate);
-    downloadFile(blob, `daily-tracker-backup-${dateKey}.json`);
+    downloadFile(blob, filename);
     metadata.lastBackupAt = new Date().toISOString();
     await persistAppState();
     updateStorageStatus();
@@ -1264,12 +1425,141 @@ window.deleteHealthRecord = function(id) {
 function openExportModal() {
     document.getElementById('exportModal').style.display = 'block';
     updateStorageStatus();
+    updateExportPreview();
+}
+
+// 更新导出预览
+function updateExportPreview() {
+    const exportRange = document.querySelector('input[name="exportRange"]:checked').value;
+    const dateRangeInputs = document.getElementById('dateRangeInputs');
+    const exportDateRangeText = document.getElementById('exportDateRangeText');
+
+    let startDate, endDate;
+    let activities = [];
+    let healthRecords = [];
+    let reminderCount = 0;
+
+    if (exportRange === 'current') {
+        // 当前日期
+        const dateKey = getDateKey(currentDate);
+        activities = allActivitiesData[dateKey] || [];
+        healthRecords = allHealthRecordsData[dateKey] || [];
+        reminderCount = reminders.filter(r => r.date === dateKey).length;
+        exportDateRangeText.textContent = `导出日期: ${dateKey}`;
+    } else if (exportRange === 'range') {
+        // 日期范围
+        dateRangeInputs.classList.remove('hidden');
+        startDate = document.getElementById('exportStartDate').value;
+        endDate = document.getElementById('exportEndDate').value;
+
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+
+            for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+                const dateKey = getDateKey(date);
+                if (allActivitiesData[dateKey]) {
+                    activities = activities.concat(allActivitiesData[dateKey]);
+                }
+                if (allHealthRecordsData[dateKey]) {
+                    healthRecords = healthRecords.concat(allHealthRecordsData[dateKey]);
+                }
+            }
+
+            reminderCount = reminders.filter(r => {
+                const reminderDate = new Date(r.date);
+                return reminderDate >= start && reminderDate <= end;
+            }).length;
+
+            exportDateRangeText.textContent = `导出范围: ${startDate} 至 ${endDate}`;
+        } else {
+            exportDateRangeText.textContent = '请选择开始和结束日期';
+        }
+    } else {
+        // 全部数据
+        dateRangeInputs.classList.add('hidden');
+        Object.keys(allActivitiesData).forEach(dateKey => {
+            if (allActivitiesData[dateKey]) {
+                activities = activities.concat(allActivitiesData[dateKey]);
+            }
+        });
+        Object.keys(allHealthRecordsData).forEach(dateKey => {
+            if (allHealthRecordsData[dateKey]) {
+                healthRecords = healthRecords.concat(allHealthRecordsData[dateKey]);
+            }
+        });
+        reminderCount = reminders.length;
+
+        const dates = Object.keys(allActivitiesData).sort();
+        if (dates.length > 0) {
+            exportDateRangeText.textContent = `导出范围: ${dates[0]} 至 ${dates[dates.length - 1]} (全部数据)`;
+        } else {
+            exportDateRangeText.textContent = '暂无数据';
+        }
+    }
+
+    // 更新预览统计
+    document.getElementById('previewActivityCount').textContent = activities.length;
+    document.getElementById('previewHealthCount').textContent = healthRecords.length;
+    document.getElementById('previewReminderCount').textContent = reminderCount;
+}
+
+// 获取导出数据
+function getExportData() {
+    const exportRange = document.querySelector('input[name="exportRange"]:checked').value;
+    let activities = [];
+    let healthRecords = [];
+    let dateRange = '';
+
+    if (exportRange === 'current') {
+        const dateKey = getDateKey(currentDate);
+        activities = allActivitiesData[dateKey] || [];
+        healthRecords = allHealthRecordsData[dateKey] || [];
+        dateRange = dateKey;
+    } else if (exportRange === 'range') {
+        const startDate = document.getElementById('exportStartDate').value;
+        const endDate = document.getElementById('exportEndDate').value;
+
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+
+            for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+                const dateKey = getDateKey(date);
+                if (allActivitiesData[dateKey]) {
+                    activities = activities.concat(allActivitiesData[dateKey]);
+                }
+                if (allHealthRecordsData[dateKey]) {
+                    healthRecords = healthRecords.concat(allHealthRecordsData[dateKey]);
+                }
+            }
+            dateRange = `${startDate}_to_${endDate}`;
+        }
+    } else {
+        // 全部数据
+        Object.keys(allActivitiesData).forEach(dateKey => {
+            if (allActivitiesData[dateKey]) {
+                activities = activities.concat(allActivitiesData[dateKey]);
+            }
+        });
+        Object.keys(allHealthRecordsData).forEach(dateKey => {
+            if (allHealthRecordsData[dateKey]) {
+                healthRecords = healthRecords.concat(allHealthRecordsData[dateKey]);
+            }
+        });
+        const dates = Object.keys(allActivitiesData).sort();
+        dateRange = dates.length > 0 ? `all_${dates[0]}_${dates[dates.length - 1]}` : 'all';
+    }
+
+    return { activities, healthRecords, dateRange };
 }
 
 // 导出CSV
 function exportCsv() {
-    const headers = ['记录类别', '时间', '类型', '内容/数值', '补充信息', '时长(分钟)', '单位'];
+    const { activities, healthRecords, dateRange } = getExportData();
+    const headers = ['日期', '记录类别', '时间', '类型', '内容/数值', '补充信息', '时长(分钟)', '单位'];
     const activityRows = activities.map(a => [
+        a._displayDate || getDateKey(currentDate),
         '活动',
         a.time,
         typeLabels[a.type],
@@ -1280,6 +1570,7 @@ function exportCsv() {
     ]);
 
     const healthRows = healthRecords.map(r => [
+        r._displayDate || getDateKey(currentDate),
         '健康数据',
         r.time,
         healthTypeLabels[r.type],
@@ -1294,8 +1585,7 @@ function exportCsv() {
         .join('\n');
 
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-    const dateKey = getDateKey(currentDate);
-    downloadFile(blob, `daily-tracker-${dateKey}.csv`);
+    downloadFile(blob, `daily-tracker-${dateRange}.csv`);
     document.getElementById('exportModal').style.display = 'none';
     showToast('数据已导出！');
 }
@@ -1361,6 +1651,88 @@ async function registerServiceWorker() {
     } catch (error) {
         console.error('Service Worker registration failed', error);
     }
+
+    // 监听网络状态变化
+    setupNetworkStatusListener();
+}
+
+// 设置网络状态监听
+function setupNetworkStatusListener() {
+    const updateOnlineStatus = () => {
+        const isOnline = navigator.onLine;
+        const statusElement = document.getElementById('onlineStatus');
+
+        if (statusElement) {
+            statusElement.className = isOnline ? 'online-status online' : 'online-status offline';
+            statusElement.textContent = isOnline ? '🟢 在线' : '🔴 离线';
+        }
+
+        if (isOnline) {
+            showToast('网络已连接，数据将自动同步');
+        } else {
+            showToast('网络已断开，当前为离线模式');
+        }
+    };
+
+    // 初始化状态
+    updateOnlineStatus();
+
+    // 监听网络状态变化
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+}
+
+// 获取 Service Worker 缓存信息
+async function getServiceWorkerCacheInfo() {
+    if (!navigator.serviceWorker?.controller) {
+        return { available: false };
+    }
+
+    try {
+        const messageChannel = new MessageChannel();
+        const promise = new Promise(resolve => {
+            messageChannel.port1.onmessage = event => {
+                resolve(event.data);
+            };
+        });
+
+        navigator.serviceWorker.controller.postMessage({
+            type: 'GET_CACHE_SIZE'
+        }, [messageChannel.port2]);
+
+        const result = await promise;
+        return { available: true, ...result };
+    } catch (error) {
+        console.error('Failed to get cache info:', error);
+        return { available: false, error: error.message };
+    }
+}
+
+// 清理 Service Worker 缓存
+async function clearServiceWorkerCache() {
+    if (!navigator.serviceWorker?.controller) {
+        showToast('Service Worker 不可用');
+        return;
+    }
+
+    try {
+        const messageChannel = new MessageChannel();
+        const promise = new Promise(resolve => {
+            messageChannel.port1.onmessage = event => {
+                resolve(event.data);
+            };
+        });
+
+        navigator.serviceWorker.controller.postMessage({
+            type: 'CLEAR_CACHE'
+        }, [messageChannel.port2]);
+
+        await promise;
+        showToast('缓存已清理');
+    } catch (error) {
+        console.error('Failed to clear cache:', error);
+        showToast('清理缓存失败');
+    }
 }
 
 // 键盘快捷键
@@ -1417,6 +1789,34 @@ function setupReminderListeners() {
     document.getElementById('snoozeReminderBtn').addEventListener('click', snoozeActiveReminder);
     document.getElementById('completeReminderBtn').addEventListener('click', completeActiveReminder);
     document.getElementById('dismissAlertBtn').addEventListener('click', closeReminderAlertModal);
+
+    // 提醒历史搜索和筛选
+    const searchInput = document.getElementById('reminderSearchInput');
+    const typeFilter = document.getElementById('reminderTypeFilter');
+    const statusFilter = document.getElementById('reminderStatusFilter');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(renderReminderHistory, 300));
+    }
+    if (typeFilter) {
+        typeFilter.addEventListener('change', renderReminderHistory);
+    }
+    if (statusFilter) {
+        statusFilter.addEventListener('change', renderReminderHistory);
+    }
+}
+
+// 防抖函数
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
 function setupProfileListeners() {
@@ -1454,6 +1854,9 @@ function renderReminderTabs(tab) {
             break;
         case 'all':
             renderAllReminders();
+            break;
+        case 'history':
+            renderReminderHistory();
             break;
         case 'add':
             populateReminderForm();
@@ -1538,6 +1941,159 @@ function renderAllReminders() {
     container.innerHTML = allReminders.length === 0
         ? '<p class="text-secondary">还没有任何提醒</p>'
         : allReminders.map(r => renderReminderItem(r, true)).join('');
+}
+
+// 获取筛选后的提醒历史
+function getFilteredReminderHistory() {
+    const searchTerm = document.getElementById('reminderSearchInput')?.value?.toLowerCase().trim() || '';
+    const typeFilter = document.getElementById('reminderTypeFilter')?.value || 'all';
+    const statusFilter = document.getElementById('reminderStatusFilter')?.value || 'all';
+
+    let filtered = [...reminders].sort((a, b) => {
+        // 按时间倒序排列，最新的在前
+        return new Date(b.date + 'T' + b.time) - new Date(a.date + 'T' + a.time);
+    });
+
+    // 按状态筛选
+    if (statusFilter === 'completed') {
+        filtered = filtered.filter(r => r.completed);
+    } else if (statusFilter === 'pending') {
+        filtered = filtered.filter(r => !r.completed);
+    }
+
+    // 按类型筛选
+    if (typeFilter !== 'all') {
+        filtered = filtered.filter(r => r.type === typeFilter);
+    }
+
+    // 按关键词搜索
+    if (searchTerm) {
+        filtered = filtered.filter(r => {
+            const titleMatch = r.title?.toLowerCase().includes(searchTerm) || false;
+            const notesMatch = r.notes?.toLowerCase().includes(searchTerm) || false;
+            return titleMatch || notesMatch;
+        });
+    }
+
+    return filtered;
+}
+
+// 渲染提醒历史
+function renderReminderHistory() {
+    const filtered = getFilteredReminderHistory();
+    const container = document.getElementById('reminderHistoryList');
+
+    if (filtered.length === 0) {
+        const searchTerm = document.getElementById('reminderSearchInput')?.value?.trim();
+        const hasFilters = document.getElementById('reminderTypeFilter')?.value !== 'all' ||
+                           document.getElementById('reminderStatusFilter')?.value !== 'all' ||
+                           searchTerm;
+
+        container.innerHTML = `
+            <div class="reminder-empty-state">
+                <div class="reminder-empty-state-icon">📋</div>
+                <div class="reminder-empty-state-text">${hasFilters ? '没有找到符合条件的提醒' : '提醒历史为空'}</div>
+                <div class="reminder-empty-state-hint">${hasFilters ? '请尝试调整筛选条件或搜索关键词' : '完成的提醒会显示在这里'}</div>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = filtered.map(r => renderReminderHistoryItem(r)).join('');
+}
+
+// 渲染提醒历史项（包含操作历史）
+function renderReminderHistoryItem(reminder) {
+    const date = new Date(reminder.date + 'T' + reminder.time);
+    const dateStr = date.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' });
+    const timeStr = reminder.time;
+    const isCompleted = reminder.completed;
+    const completedAt = reminder.completedAt ? new Date(reminder.completedAt) : null;
+    const completedAtStr = completedAt ? completedAt.toLocaleString('zh-CN') : '';
+
+    // 获取类型标签
+    const typeLabels = {
+        meal: '🍽️ 用餐',
+        medication: '💊 用药',
+        exercise: '🏃 运动',
+        sleep: '😴 睡眠',
+        other: '📌 其他'
+    };
+
+    // 构建操作历史HTML
+    let historyHtml = '';
+    if (reminder.history && reminder.history.length > 0) {
+        const actionLabels = {
+            completed: '已完成',
+            reopened: '恢复未完成',
+            snoozed: '延后提醒'
+        };
+
+        historyHtml = `
+            <div class="reminder-history-actions-list">
+                <div class="reminder-history-actions-list-title">操作记录</div>
+                ${reminder.history.map(h => `
+                    <div class="reminder-history-action-item">
+                        <span>${actionLabels[h.action] || h.action}</span>
+                        ${h.minutes ? `<span>(${h.minutes}分钟)</span>` : ''}
+                        <span class="action-time">${new Date(h.at).toLocaleString('zh-CN')}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    return `
+        <div class="reminder-detail-item ${isCompleted ? 'completed' : ''}">
+            <div class="reminder-detail-header">
+                <div>
+                    <span class="reminder-detail-time">${timeStr}</span>
+                    <span class="reminder-detail-date">${dateStr}</span>
+                    ${reminder.repeat ? '<span style="margin-left:8px;font-size:0.8rem;">🔄</span>' : ''}
+                </div>
+                <div>
+                    ${typeLabels[reminder.type] || typeIcons[reminder.type]}
+                </div>
+            </div>
+            <div class="reminder-detail-title">${escapeHtml(reminder.title)}</div>
+            ${reminder.image ? `
+                <div class="reminder-detail-image-wrap">
+                    <img class="reminder-detail-image" src="${reminder.image}" alt="${escapeHtml(reminder.title)}">
+                </div>
+            ` : ''}
+            ${reminder.notes ? `<div class="reminder-detail-notes">${escapeHtml(reminder.notes)}</div>` : ''}
+
+            <div class="reminder-history-meta">
+                ${isCompleted ? `
+                    <div class="reminder-history-meta-item">
+                        <span>✓</span>
+                        <span>完成于 ${completedAtStr}</span>
+                    </div>
+                ` : `
+                    <div class="reminder-history-meta-item">
+                        <span>⏳</span>
+                        <span>未完成</span>
+                    </div>
+                `}
+                ${reminder.snoozeCount ? `
+                    <div class="reminder-history-meta-item">
+                        <span>⏰</span>
+                        <span>延后 ${reminder.snoozeCount} 次</span>
+                    </div>
+                ` : ''}
+            </div>
+
+            ${historyHtml}
+
+            <div class="reminder-detail-actions">
+                ${!isCompleted ? `<button class="btn-action btn-edit" onclick="editReminder('${reminder.id}')">编辑</button>` : ''}
+                <button class="btn-action btn-edit" onclick="completeReminder('${reminder.id}')">
+                    ${isCompleted ? '恢复未完成' : '标记完成'}
+                </button>
+                <button class="btn-action btn-delete" onclick="deleteReminder('${reminder.id}')">删除</button>
+            </div>
+        </div>
+    `;
 }
 
 // 渲染单个提醒项
@@ -1863,6 +2419,11 @@ function closeReminderAlertModal() {
 
 function closeModal(modal) {
     if (!modal) return;
+
+    // 如果关闭的是统计模态框，销毁图表
+    if (modal.id === 'statsModal') {
+        destroyAllCharts();
+    }
 
     if (modal.id === 'reminderAlertModal') {
         closeReminderAlertModal();
@@ -2257,3 +2818,1842 @@ async function syncRemindersToServiceWorker() {
         reminders
     });
 }
+
+// ==================== 统计功能 ====================
+
+let currentStatsPeriod = 'week';
+
+// 打开统计模态框
+function openStatsModal() {
+    document.getElementById('statsModal').style.display = 'block';
+    setupStatsTabs();
+    renderStats();
+}
+
+// 设置统计标签页事件
+function setupStatsTabs() {
+    const tabs = document.querySelectorAll('.stats-tab-btn');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentStatsPeriod = tab.dataset.period;
+            renderStats();
+        });
+    });
+}
+
+// 渲染统计数据
+function renderStats() {
+    const { startDate, endDate } = getDateRangeForPeriod(currentStatsPeriod);
+    const currentPeriodStats = calculatePeriodStats(startDate, endDate);
+    const previousPeriodStats = getPreviousPeriodStats(currentStatsPeriod);
+
+    // 更新活动统计
+    updateActivityStatsCards(currentPeriodStats.activities, previousPeriodStats.activities);
+
+    // 更新健康数据统计
+    updateHealthStatsCards(currentPeriodStats.health, previousPeriodStats.health);
+
+    // 更新提醒统计
+    updateReminderStatsCards(currentPeriodStats.reminders);
+
+    // 渲染图表
+    renderCharts(startDate, endDate);
+
+    // 检查空状态
+    checkStatsEmptyState(currentPeriodStats);
+}
+
+// 图表实例
+let activityTypeChart = null;
+let activityTrendChart = null;
+let exerciseTrendChart = null;
+let healthTrendChart = null;
+
+// 渲染所有图表
+function renderCharts(startDate, endDate) {
+    renderActivityTypeChart(startDate, endDate);
+    renderActivityTrendChart(startDate, endDate);
+    renderExerciseTrendChart(startDate, endDate);
+    renderHealthTrendChart(startDate, endDate);
+}
+
+// 销毁所有图表
+function destroyAllCharts() {
+    if (activityTypeChart) {
+        activityTypeChart.destroy();
+        activityTypeChart = null;
+    }
+    if (activityTrendChart) {
+        activityTrendChart.destroy();
+        activityTrendChart = null;
+    }
+    if (exerciseTrendChart) {
+        exerciseTrendChart.destroy();
+        exerciseTrendChart = null;
+    }
+    if (healthTrendChart) {
+        healthTrendChart.destroy();
+        healthTrendChart = null;
+    }
+}
+
+// 渲染活动类型分布饼图
+function renderActivityTypeChart(startDate, endDate) {
+    const ctx = document.getElementById('activityTypeChart');
+    if (!ctx) return;
+
+    const typeCounts = {
+        meal: 0,
+        medication: 0,
+        exercise: 0,
+        sleep: 0,
+        work: 0,
+        other: 0
+    };
+
+    // 统计各类活动数量
+    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        const dateKey = getDateKey(date);
+        const dayActivities = allActivitiesData[dateKey] || [];
+        dayActivities.forEach(activity => {
+            if (typeCounts[activity.type] !== undefined) {
+                typeCounts[activity.type]++;
+            }
+        });
+    }
+
+    const labels = ['用餐', '用药', '运动', '睡眠', '工作', '其他'];
+    const data = [typeCounts.meal, typeCounts.medication, typeCounts.exercise, typeCounts.sleep, typeCounts.work, typeCounts.other];
+    const colors = ['#4CAF50', '#FF9800', '#2196F3', '#9C27B0', '#607D8B', '#9E9E9E'];
+
+    if (activityTypeChart) {
+        activityTypeChart.destroy();
+    }
+
+    activityTypeChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors,
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 10,
+                        font: { size: 11 }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// 渲染每日活动次数趋势图
+function renderActivityTrendChart(startDate, endDate) {
+    const ctx = document.getElementById('activityTrendChart');
+    if (!ctx) return;
+
+    const labels = [];
+    const mealData = [];
+    const medicationData = [];
+    const exerciseData = [];
+
+    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        const dateKey = getDateKey(date);
+        const dayActivities = allActivitiesData[dateKey] || [];
+
+        labels.push(date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }));
+        mealData.push(dayActivities.filter(a => a.type === 'meal').length);
+        medicationData.push(dayActivities.filter(a => a.type === 'medication').length);
+        exerciseData.push(dayActivities.filter(a => a.type === 'exercise').length);
+    }
+
+    if (activityTrendChart) {
+        activityTrendChart.destroy();
+    }
+
+    activityTrendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '用餐',
+                    data: mealData,
+                    borderColor: '#4CAF50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: '用药',
+                    data: medicationData,
+                    borderColor: '#FF9800',
+                    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: '运动',
+                    data: exerciseData,
+                    borderColor: '#2196F3',
+                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 8,
+                        font: { size: 11 }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+}
+
+// 渲染运动时长趋势图
+function renderExerciseTrendChart(startDate, endDate) {
+    const ctx = document.getElementById('exerciseTrendChart');
+    if (!ctx) return;
+
+    const labels = [];
+    const data = [];
+
+    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        const dateKey = getDateKey(date);
+        const dayActivities = allActivitiesData[dateKey] || [];
+        const exerciseActivities = dayActivities.filter(a => a.type === 'exercise');
+
+        const totalMinutes = exerciseActivities.reduce((sum, a) => sum + (a.duration || 0), 0);
+
+        labels.push(date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }));
+        data.push(totalMinutes);
+    }
+
+    if (exerciseTrendChart) {
+        exerciseTrendChart.destroy();
+    }
+
+    exerciseTrendChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '运动时长（分钟）',
+                data: data,
+                backgroundColor: 'rgba(33, 150, 243, 0.7)',
+                borderColor: '#2196F3',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value + 'm';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// 渲染健康数据趋势图
+function renderHealthTrendChart(startDate, endDate) {
+    const ctx = document.getElementById('healthTrendChart');
+    if (!ctx) return;
+
+    const labels = [];
+    const bpData = []; // 血压
+    const hrData = []; // 心率
+    const bsData = []; // 血糖
+
+    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        const dateKey = getDateKey(date);
+        const dayHealthRecords = allHealthRecordsData[dateKey] || [];
+
+        labels.push(date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }));
+
+        // 获取当天的血压平均值（收缩压）
+        const bpRecords = dayHealthRecords.filter(r => r.type === 'bloodPressure');
+        if (bpRecords.length > 0) {
+            const avgSys = bpRecords.reduce((sum, r) => {
+                const match = r.value.match(/(\d+)\//);
+                return sum + (match ? parseInt(match[1], 10) : 0);
+            }, 0) / bpRecords.length;
+            bpData.push(avgSys.toFixed(0));
+        } else {
+            bpData.push(null);
+        }
+
+        // 获取当天的心率平均值
+        const hrRecords = dayHealthRecords.filter(r => r.type === 'heartRate');
+        if (hrRecords.length > 0) {
+            const avgHr = hrRecords.reduce((sum, r) => sum + parseFloat(r.value), 0) / hrRecords.length;
+            hrData.push(avgHr.toFixed(0));
+        } else {
+            hrData.push(null);
+        }
+
+        // 获取当天的血糖平均值
+        const bsRecords = dayHealthRecords.filter(r => r.type === 'bloodSugar');
+        if (bsRecords.length > 0) {
+            const avgBs = bsRecords.reduce((sum, r) => sum + parseFloat(r.value), 0) / bsRecords.length;
+            bsData.push(avgBs.toFixed(1));
+        } else {
+            bsData.push(null);
+        }
+    }
+
+    if (healthTrendChart) {
+        healthTrendChart.destroy();
+    }
+
+    healthTrendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '收缩压',
+                    data: bpData,
+                    borderColor: '#F44336',
+                    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                    tension: 0.3,
+                    yAxisID: 'y'
+                },
+                {
+                    label: '心率',
+                    data: hrData,
+                    borderColor: '#FF9800',
+                    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                    tension: 0.3,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: '血糖',
+                    data: bsData,
+                    borderColor: '#2196F3',
+                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                    tension: 0.3,
+                    yAxisID: 'y2'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 8,
+                        font: { size: 11 }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: '血压 (mmHg)',
+                        font: { size: 10 }
+                    },
+                    ticks: {
+                        font: { size: 10 }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: '心率 (bpm)',
+                        font: { size: 10 }
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                    ticks: {
+                        font: { size: 10 }
+                    }
+                },
+                y2: {
+                    type: 'linear',
+                    display: false,
+                    min: 0,
+                    max: 20
+                }
+            }
+        }
+    });
+}
+
+// 修改 renderStats 函数以包含图表渲染
+
+// 获取日期范围
+function getDateRangeForPeriod(period) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    if (period === 'week') {
+        // 本周：从周一到今天
+        const dayOfWeek = today.getDay();
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        return { startDate: monday, endDate: today };
+    } else {
+        // 本月：从1号到今天
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        return { startDate: firstDay, endDate: today };
+    }
+}
+
+// 获取上期统计数据
+function getPreviousPeriodStats(currentPeriod) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    let startDate, endDate;
+    if (currentPeriod === 'week') {
+        // 上周：从上周一到上周日
+        const dayOfWeek = today.getDay();
+        const thisMonday = new Date(today);
+        thisMonday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        const lastMonday = new Date(thisMonday);
+        lastMonday.setDate(thisMonday.getDate() - 7);
+        const lastSunday = new Date(thisMonday);
+        lastSunday.setDate(thisMonday.getDate() - 1);
+        startDate = lastMonday;
+        endDate = lastSunday;
+    } else {
+        // 上月
+        const firstDayOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+        startDate = firstDayOfLastMonth;
+        endDate = lastDayOfLastMonth;
+    }
+
+    return calculatePeriodStats(startDate, endDate);
+}
+
+// 计算指定日期范围的统计数据
+function calculatePeriodStats(startDate, endDate) {
+    const result = {
+        activities: { meal: 0, medication: 0, exercise: 0, sleep: 0, work: 0, other: 0, exerciseTime: 0 },
+        health: { bloodPressure: 0, heartRate: 0, bloodSugar: 0, bloodLipid: 0, uricAcid: 0, other: 0 },
+        reminders: { completed: 0, pending: 0 }
+    };
+
+    // 统计活动数据
+    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        const dateKey = getDateKey(date);
+        const dayActivities = allActivitiesData[dateKey] || [];
+        const dayHealthRecords = allHealthRecordsData[dateKey] || [];
+
+        // 活动统计
+        dayActivities.forEach(activity => {
+            if (result.activities[activity.type] !== undefined) {
+                result.activities[activity.type]++;
+            }
+            if (activity.type === 'exercise' && activity.duration) {
+                result.activities.exerciseTime += activity.duration;
+            }
+        });
+
+        // 健康数据统计
+        dayHealthRecords.forEach(record => {
+            if (result.health[record.type] !== undefined) {
+                result.health[record.type]++;
+            }
+        });
+    }
+
+    // 提醒统计（统计在该时间范围内触发的提醒）
+    const startDateTime = startDate.getTime();
+    const endDateTime = endDate.getTime() + 24 * 60 * 60 * 1000 - 1;
+
+    reminders.forEach(reminder => {
+        const reminderDateTime = new Date(reminder.date + 'T' + reminder.time).getTime();
+        if (reminderDateTime >= startDateTime && reminderDateTime <= endDateTime) {
+            if (reminder.completed) {
+                result.reminders.completed++;
+            } else {
+                result.reminders.pending++;
+            }
+        }
+    });
+
+    return result;
+}
+
+// 更新活动统计卡片
+function updateActivityStatsCards(current, previous) {
+    // 用餐
+    updateStatCard('statsMealCount', current.meal, previous.meal, '次');
+    updateStatCard('statsMedCount', current.medication, previous.medication, '次');
+    updateStatCard('statsExerciseCount', current.exercise, previous.exercise, '次');
+    updateExerciseTimeCard(current.exerciseTime, previous.exerciseTime);
+    updateStatCard('statsSleepCount', current.sleep, previous.sleep, '次');
+    updateStatCard('statsWorkCount', current.work, previous.work, '次');
+}
+
+// 更新运动时长卡片
+function updateExerciseTimeCard(currentMinutes, previousMinutes) {
+    const element = document.getElementById('statsExerciseTime');
+    const changeElement = document.getElementById('statsExerciseTimeChange');
+
+    if (!element) return;
+
+    // 格式化当前时长
+    if (currentMinutes > 0) {
+        const hours = Math.floor(currentMinutes / 60);
+        const minutes = currentMinutes % 60;
+        element.textContent = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
+    } else {
+        element.textContent = '0m';
+    }
+
+    // 计算变化
+    if (changeElement && previousMinutes !== undefined) {
+        const diff = currentMinutes - previousMinutes;
+        if (diff > 0) {
+            const hours = Math.floor(diff / 60);
+            const minutes = diff % 60;
+            const diffText = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
+            changeElement.textContent = `↑ ${diffText}`;
+            changeElement.className = 'stats-card-change positive';
+        } else if (diff < 0) {
+            const hours = Math.floor(Math.abs(diff) / 60);
+            const minutes = Math.abs(diff) % 60;
+            const diffText = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
+            changeElement.textContent = `↓ ${diffText}`;
+            changeElement.className = 'stats-card-change negative';
+        } else {
+            changeElement.textContent = '持平';
+            changeElement.className = 'stats-card-change neutral';
+        }
+    }
+}
+
+// 更新单个统计卡片
+function updateStatCard(elementId, currentValue, previousValue, suffix = '') {
+    const element = document.getElementById(elementId);
+    const changeElementId = elementId.replace('Count', 'Change').replace('Value', 'Change');
+    const changeElement = document.getElementById(changeElementId);
+
+    if (!element) return;
+
+    element.textContent = currentValue + suffix;
+
+    if (changeElement && previousValue !== undefined) {
+        const diff = currentValue - previousValue;
+        if (diff > 0) {
+            changeElement.textContent = `↑ +${diff}`;
+            changeElement.className = 'stats-card-change positive';
+        } else if (diff < 0) {
+            changeElement.textContent = `↓ ${diff}`;
+            changeElement.className = 'stats-card-change negative';
+        } else {
+            changeElement.textContent = '持平';
+            changeElement.className = 'stats-card-change neutral';
+        }
+    }
+}
+
+// 更新健康数据统计卡片
+function updateHealthStatsCards(current, previous) {
+    updateStatCard('statsBPCount', current.bloodPressure, previous.bloodPressure, '次');
+    updateStatCard('statsHRCount', current.heartRate, previous.heartRate, '次');
+    updateStatCard('statsBSCount', current.bloodSugar, previous.bloodSugar, '次');
+    updateStatCard('statsBLCount', current.bloodLipid, previous.bloodLipid, '次');
+    updateStatCard('statsUACount', current.uricAcid, previous.uricAcid, '次');
+}
+
+// 更新提醒统计卡片
+function updateReminderStatsCards(current) {
+    const completedElement = document.getElementById('statsReminderCompleted');
+    const pendingElement = document.getElementById('statsReminderPending');
+    const rateElement = document.getElementById('statsReminderRate');
+
+    if (completedElement) completedElement.textContent = current.completed;
+    if (pendingElement) pendingElement.textContent = current.pending;
+
+    if (rateElement) {
+        const total = current.completed + current.pending;
+        const rate = total > 0 ? Math.round((current.completed / total) * 100) : 0;
+        rateElement.textContent = rate + '%';
+    }
+}
+
+// 检查统计空状态
+function checkStatsEmptyState(stats) {
+    const emptyState = document.getElementById('statsEmptyState');
+    if (!emptyState) return;
+
+    const hasData =
+        stats.activities.meal > 0 ||
+        stats.activities.medication > 0 ||
+        stats.activities.exercise > 0 ||
+        stats.health.bloodPressure > 0 ||
+        stats.health.heartRate > 0 ||
+        stats.reminders.completed > 0 ||
+        stats.reminders.pending > 0;
+
+    if (hasData) {
+        emptyState.classList.add('hidden');
+    } else {
+        emptyState.classList.remove('hidden');
+    }
+}
+
+// 将统计模态框暴露到全局
+window.openStatsModal = openStatsModal;
+
+// ==================== 搜索筛选功能 ====================
+
+let isSearchFilterVisible = false;
+
+// 切换搜索筛选面板
+function toggleTimelineSearchFilter() {
+    isSearchFilterVisible = !isSearchFilterVisible;
+    const panel = document.getElementById('timelineSearchFilter');
+    const btn = document.getElementById('timelineFilterBtn');
+
+    if (isSearchFilterVisible) {
+        panel.classList.remove('hidden');
+        btn.classList.add('active');
+    } else {
+        panel.classList.add('hidden');
+        btn.classList.remove('active');
+        clearTimelineFilters();
+    }
+}
+
+// 应用搜索筛选
+function applyTimelineFilters() {
+    const searchTerm = document.getElementById('timelineSearchInput').value.toLowerCase().trim();
+    const typeFilter = document.getElementById('activityTypeFilter').value;
+    const startDate = document.getElementById('startDateFilter').value;
+    const endDate = document.getElementById('endDateFilter').value;
+
+    // 更新清除按钮状态
+    const clearBtn = document.getElementById('clearSearchBtn');
+    if (searchTerm) {
+        clearBtn.classList.remove('hidden');
+    } else {
+        clearBtn.classList.add('hidden');
+    }
+
+    // 渲染筛选后的时间线
+    renderFilteredTimeline(searchTerm, typeFilter, startDate, endDate);
+}
+
+// 渲染筛选后的时间线
+function renderFilteredTimeline(searchTerm, typeFilter, startDate, endDate) {
+    const timeline = document.getElementById('timeline');
+    const emptyState = document.getElementById('emptyState');
+    const noResults = document.getElementById('noSearchResults');
+
+    // 如果没有筛选条件，显示当日数据
+    if (!searchTerm && typeFilter === 'all' && !startDate && !endDate) {
+        renderNormalTimeline();
+        noResults.classList.add('hidden');
+        return;
+    }
+
+    // 收集所有日期范围的数据
+    const filteredActivities = [];
+
+    // 确定日期范围
+    let start = startDate ? new Date(startDate) : null;
+    let end = endDate ? new Date(endDate) : null;
+
+    // 如果只指定了结束日期，从最早的数据开始
+    if (end && !start) {
+        const allDates = Object.keys(allActivitiesData).sort();
+        if (allDates.length > 0) {
+            start = new Date(allDates[0]);
+        }
+    }
+    // 如果只指定了开始日期，到最新的数据为止
+    if (start && !end) {
+        end = new Date();
+    }
+
+    // 遍历所有日期
+    const dates = Object.keys(allActivitiesData).sort();
+    dates.forEach(dateKey => {
+        const date = new Date(dateKey);
+
+        // 检查日期范围
+        if (start && date < start) return;
+        if (end && date > end) return;
+
+        // 获取当天的活动
+        const dayActivities = allActivitiesData[dateKey] || [];
+
+        dayActivities.forEach(activity => {
+            // 类型筛选
+            if (typeFilter !== 'all' && activity.type !== typeFilter) return;
+
+            // 搜索词筛选
+            if (searchTerm) {
+                const contentMatch = activity.content?.toLowerCase().includes(searchTerm) || false;
+                const feelingMatch = activity.feeling?.toLowerCase().includes(searchTerm) || false;
+                if (!contentMatch && !feelingMatch) return;
+            }
+
+            // 添加日期信息用于显示
+            filteredActivities.push({
+                ...activity,
+                _displayDate: dateKey
+            });
+        });
+    });
+
+    // 按时间排序
+    filteredActivities.sort((a, b) => {
+        const dateCompare = a._displayDate.localeCompare(b._displayDate);
+        if (dateCompare !== 0) return dateCompare;
+        return a.time.localeCompare(b.time);
+    });
+
+    // 如果使用倒序
+    if (timelineOrder === 'desc') {
+        filteredActivities.reverse();
+    }
+
+    // 渲染结果
+    if (filteredActivities.length === 0) {
+        timeline.innerHTML = '';
+        emptyState.classList.add('hidden');
+        noResults.classList.remove('hidden');
+    } else {
+        noResults.classList.add('hidden');
+        timeline.innerHTML = filteredActivities.map(activity => {
+            const dateDisplay = activity._displayDate ? formatDateForDisplay(activity._displayDate) : '';
+            return renderActivityItem(activity, dateDisplay);
+        }).join('');
+    }
+}
+
+// 格式化日期显示
+function formatDateForDisplay(dateKey) {
+    const date = new Date(dateKey);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const todayKey = getDateKey(today);
+    const yesterdayKey = getDateKey(yesterday);
+
+    if (dateKey === todayKey) {
+        return '今天';
+    } else if (dateKey === yesterdayKey) {
+        return '昨天';
+    } else {
+        return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+    }
+}
+
+// 渲染普通时间线（当日数据）
+function renderNormalTimeline() {
+    const timeline = document.getElementById('timeline');
+    const emptyState = document.getElementById('emptyState');
+    const noResults = document.getElementById('noSearchResults');
+
+    noResults.classList.add('hidden');
+
+    if (activities.length === 0) {
+        timeline.innerHTML = '';
+        emptyState.classList.remove('hidden');
+    } else {
+        emptyState.classList.add('hidden');
+        timeline.innerHTML = activities.map(activity => renderActivityItem(activity)).join('');
+    }
+}
+
+// 渲染活动项（带日期前缀）
+function renderActivityItem(activity, datePrefix = '') {
+    const typeLabels = {
+        meal: '用餐',
+        medication: '用药',
+        exercise: '运动',
+        sleep: '睡眠',
+        work: '工作',
+        other: '其他'
+    };
+
+    const timeClass = activity.time ? 'activity-time' : 'activity-time-none';
+
+    return `
+        <div class="activity-item" data-id="${activity.id}">
+            <div class="activity-header">
+                <div class="activity-left">
+                    ${activity.time ? `<span class="${timeClass}">${activity.time}</span>` : '<span class="activity-time-none">无时间</span>'}
+                    ${datePrefix ? `<span class="activity-date-prefix">${datePrefix}</span>` : ''}
+                    <span class="activity-type">${typeLabels[activity.type] || activity.type}</span>
+                </div>
+                <div class="activity-actions">
+                    <button class="activity-action-btn" onclick="editActivity('${activity.id}')">编辑</button>
+                    <button class="activity-action-btn delete" onclick="deleteActivity('${activity.id}')">删除</button>
+                </div>
+            </div>
+            <div class="activity-content">${escapeHtml(activity.content)}</div>
+            ${activity.feeling ? `<div class="activity-feeling">${escapeHtml(activity.feeling)}</div>` : ''}
+            ${activity.duration ? `<div class="activity-duration">⏱️ ${activity.duration} 分钟</div>` : ''}
+            ${activity.image ? `<div class="activity-image"><img src="${activity.image}" alt="活动图片"></div>` : ''}
+        </div>
+    `;
+}
+
+// 清除搜索输入
+function clearSearchInput() {
+    document.getElementById('timelineSearchInput').value = '';
+    document.getElementById('clearSearchBtn').classList.add('hidden');
+    applyTimelineFilters();
+}
+
+// 清除所有筛选
+function clearTimelineFilters() {
+    document.getElementById('timelineSearchInput').value = '';
+    document.getElementById('activityTypeFilter').value = 'all';
+    document.getElementById('startDateFilter').value = '';
+    document.getElementById('endDateFilter').value = '';
+    document.getElementById('clearSearchBtn').classList.add('hidden');
+    applyTimelineFilters();
+}
+
+// 暴露全局函数
+window.toggleTimelineSearchFilter = toggleTimelineSearchFilter;
+window.renderActivityItem = renderActivityItem;
+window.updateExportPreview = updateExportPreview;
+window.openStatsModal = openStatsModal;
+window.destroyAllCharts = destroyAllCharts;
+window.renderCharts = renderCharts;
+
+// ==================== 快速模板功能 ====================
+
+// 渲染活动表单中的模板列表
+function renderActivityTemplates() {
+    const container = document.getElementById('templateList');
+    if (!container) return;
+
+    if (templates.length === 0) {
+        container.innerHTML = '<p class="text-secondary" style="font-size:0.9rem;">暂无模板，点击下方按钮创建</p>';
+        return;
+    }
+
+    container.innerHTML = templates.map(template => `
+        <div class="template-item" data-template-id="${template.id}">
+            <span class="template-item-icon">${template.icon}</span>
+            <span class="template-item-name">${escapeHtml(template.name)}</span>
+            <span class="template-item-type">${getTypeLabel(template.type)}</span>
+        </div>
+    `).join('');
+}
+
+// 应用模板到活动表单
+function applyTemplate(templateId) {
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+
+    // 填充表单
+    document.getElementById('activityType').value = template.type;
+    document.getElementById('activityContent').value = template.content;
+    document.getElementById('activityFeeling').value = template.feeling || '';
+    document.getElementById('activityDuration').value = template.duration || '';
+
+    // 高亮选中的模板
+    document.querySelectorAll('.template-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    const selectedItem = document.querySelector(`.template-item[data-template-id="${templateId}"]`);
+    if (selectedItem) {
+        selectedItem.classList.add('active');
+    }
+
+    showToast(`已应用模板：${template.name}`);
+}
+
+// 保存当前表单为模板
+function saveAsTemplate() {
+    const type = document.getElementById('activityType').value;
+    const content = document.getElementById('activityContent').value.trim();
+    const feeling = document.getElementById('activityFeeling').value.trim();
+    const duration = document.getElementById('activityDuration').value;
+
+    if (!content) {
+        showToast('请先填写活动内容');
+        return;
+    }
+
+    const templateName = prompt('请输入模板名称：', content);
+    if (!templateName) return;
+
+    // 获取对应类型的默认图标
+    const typeIcons = {
+        meal: '🍽️',
+        medication: '💊',
+        exercise: '🏃',
+        sleep: '😴',
+        work: '💼',
+        other: '📌'
+    };
+
+    const newTemplate = {
+        id: 'tpl_' + Date.now(),
+        name: templateName,
+        type: type,
+        content: content,
+        feeling: feeling,
+        duration: duration ? parseInt(duration, 10) : null,
+        icon: typeIcons[type] || '📌'
+    };
+
+    templates.push(newTemplate);
+    saveTemplates();
+    renderActivityTemplates();
+    showToast('模板已保存！');
+}
+
+// 打开模板管理模态框
+function openTemplateManager() {
+    document.getElementById('templateModal').style.display = 'block';
+    renderTemplateManagerList();
+}
+
+// 渲染模板管理列表
+function renderTemplateManagerList() {
+    const container = document.getElementById('templateManagerList');
+    const emptyState = document.getElementById('templateEmptyState');
+    const createBtn = document.getElementById('createTemplateBtn');
+
+    if (!container) return;
+
+    if (templates.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        createBtn.textContent = '创建第一个模板';
+        return;
+    }
+
+    emptyState.classList.add('hidden');
+    createBtn.textContent = '创建新模板';
+
+    container.innerHTML = templates.map(template => `
+        <div class="template-manager-item">
+            <div class="template-manager-info">
+                <span class="template-manager-icon">${template.icon}</span>
+                <div class="template-manager-details">
+                    <div class="template-manager-name">${escapeHtml(template.name)}</div>
+                    <div class="template-manager-meta">
+                        ${getTypeLabel(template.type)} · ${escapeHtml(template.content)}
+                        ${template.duration ? ` · ${template.duration}分钟` : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="template-manager-actions">
+                <button class="template-action-btn" onclick="editTemplate('${template.id}')">编辑</button>
+                <button class="template-action-btn delete" onclick="deleteTemplate('${template.id}')">删除</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 打开创建/编辑模板模态框
+function openTemplateEditModal(templateId = null) {
+    const modal = document.getElementById('templateEditModal');
+    const form = document.getElementById('templateForm');
+    const title = document.getElementById('templateEditTitle');
+
+    form.reset();
+
+    if (templateId) {
+        const template = templates.find(t => t.id === templateId);
+        if (!template) return;
+
+        title.textContent = '编辑模板';
+        document.getElementById('templateId').value = template.id;
+        document.getElementById('templateName').value = template.name;
+        document.getElementById('templateType').value = template.type;
+        document.getElementById('templateContent').value = template.content;
+        document.getElementById('templateFeeling').value = template.feeling || '';
+        document.getElementById('templateDuration').value = template.duration || '';
+        document.getElementById('templateIcon').value = template.icon;
+        selectTemplateIcon(template.icon);
+    } else {
+        title.textContent = '创建模板';
+        document.getElementById('templateId').value = '';
+        selectTemplateIcon('💊');
+    }
+
+    document.getElementById('templateModal').style.display = 'none';
+    modal.style.display = 'block';
+}
+
+// 编辑模板
+function editTemplate(templateId) {
+    openTemplateEditModal(templateId);
+}
+
+// 删除模板
+function deleteTemplate(templateId) {
+    if (!confirm('确定要删除这个模板吗？')) return;
+
+    templates = templates.filter(t => t.id !== templateId);
+    saveTemplates();
+    renderActivityTemplates();
+    renderTemplateManagerList();
+    showToast('模板已删除');
+}
+
+// 选择模板图标
+function selectTemplateIcon(icon) {
+    selectedTemplateIcon = icon;
+    document.getElementById('templateIcon').value = icon;
+
+    document.querySelectorAll('.template-icon-option').forEach(btn => {
+        btn.classList.remove('selected');
+        if (btn.dataset.icon === icon) {
+            btn.classList.add('selected');
+        }
+    });
+}
+
+// 处理模板表单提交
+function handleTemplateFormSubmit(e) {
+    e.preventDefault();
+
+    const templateId = document.getElementById('templateId').value;
+    const name = document.getElementById('templateName').value.trim();
+    const type = document.getElementById('templateType').value;
+    const content = document.getElementById('templateContent').value.trim();
+    const feeling = document.getElementById('templateFeeling').value.trim();
+    const duration = document.getElementById('templateDuration').value;
+    const icon = document.getElementById('templateIcon').value;
+
+    if (templateId) {
+        // 编辑现有模板
+        const index = templates.findIndex(t => t.id === templateId);
+        if (index > -1) {
+            templates[index] = {
+                ...templates[index],
+                name,
+                type,
+                content,
+                feeling,
+                duration: duration ? parseInt(duration, 10) : null,
+                icon
+            };
+        }
+        showToast('模板已更新！');
+    } else {
+        // 创建新模板
+        const newTemplate = {
+            id: 'tpl_' + Date.now(),
+            name,
+            type,
+            content,
+            feeling,
+            duration: duration ? parseInt(duration, 10) : null,
+            icon
+        };
+        templates.push(newTemplate);
+        showToast('模板已创建！');
+    }
+
+    saveTemplates();
+    renderActivityTemplates();
+    renderTemplateManagerList();
+    document.getElementById('templateEditModal').style.display = 'none';
+
+    // 如果是从活动表单保存的，重新打开活动表单
+    if (!templateId) {
+        openTemplateManager();
+    }
+}
+
+// 暴露全局函数
+window.applyTemplate = applyTemplate;
+window.saveAsTemplate = saveAsTemplate;
+window.openTemplateManager = openTemplateManager;
+window.editTemplate = editTemplate;
+window.deleteTemplate = deleteTemplate;
+window.selectTemplateIcon = selectTemplateIcon;
+window.openTemplateEditModal = openTemplateEditModal;
+
+// ==================== AI诊断功能 ====================
+
+// 加载AI配置
+function loadAiConfig() {
+    const saved = localStorage.getItem('dailyTracker_aiConfig');
+    if (saved) {
+        try {
+            aiConfig = JSON.parse(saved);
+            document.getElementById('aiProvider').value = aiConfig.provider || 'openai';
+            document.getElementById('aiApiKey').value = aiConfig.apiKey || '';
+            document.getElementById('aiModel').value = aiConfig.model || '';
+            if (aiConfig.apiEndpoint) {
+                document.getElementById('customApiEndpoint').value = aiConfig.apiEndpoint;
+            }
+        } catch (e) {
+            console.error('加载AI配置失败:', e);
+        }
+    }
+}
+
+// 保存AI配置
+function saveAiConfig() {
+    const provider = document.getElementById('aiProvider').value;
+    const apiKey = document.getElementById('aiApiKey').value.trim();
+    const model = document.getElementById('aiModel').value.trim();
+    let apiEndpoint = '';
+
+    if (provider === 'custom') {
+        apiEndpoint = document.getElementById('customApiEndpoint').value.trim();
+    }
+
+    aiConfig = { provider, apiKey, model, apiEndpoint };
+    localStorage.setItem('dailyTracker_aiConfig', JSON.stringify(aiConfig));
+    showToast('AI配置已保存！');
+}
+
+// 打开AI诊断模态框
+function openAiDiagnosisModal() {
+    loadAiConfig();
+    updateAiDataPreview();
+    resetAiProcess();
+    document.getElementById('aiDiagnosisModal').style.display = 'block';
+    renderAiConversation();
+}
+
+function resetAiProcess() {
+    const section = document.getElementById('aiTraceSection');
+    const output = document.getElementById('aiTraceOutput');
+    if (!section || !output) return;
+
+    section.classList.add('hidden');
+    output.value = '';
+}
+
+function renderAiBasis({ startDate, endDate, analysisData }) {
+    const options = [];
+    if (analysisData.options.includeActivities) options.push('活动记录');
+    if (analysisData.options.includeHealth) options.push('健康数据');
+    if (analysisData.options.includeProfile) options.push('个人档案');
+    if (analysisData.options.includeMedication) options.push('用药分析');
+
+    appendAiProcess('success', `分析范围：${startDate} 至 ${endDate}。`);
+    appendAiProcess(
+        'success',
+        `纳入数据：活动 ${analysisData.activities.length} 条，健康 ${analysisData.healthRecords.length} 条，个人档案 ${analysisData.profile ? '已纳入' : '未纳入'}。`
+    );
+    appendAiProcess('success', `分析选项：${options.join('、') || '无'}。`);
+    appendAiProcess('success', `额外问题：${analysisData.customPrompt || '无'}。`);
+}
+
+function appendAiProcess(status, message) {
+    const section = document.getElementById('aiTraceSection');
+    const output = document.getElementById('aiTraceOutput');
+    if (!section || !output) return;
+
+    section.classList.remove('hidden');
+    const timeText = new Date().toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    const statusMap = {
+        running: '进行中',
+        success: '完成',
+        error: '失败'
+    };
+    const line = `[${timeText}] [${statusMap[status] || '信息'}] ${message}`;
+    output.value = output.value ? `${output.value}\n\n${line}` : line;
+    output.scrollTop = output.scrollHeight;
+}
+
+function resetAiConversation() {
+    aiConversationContext = null;
+    aiConversationHistory = [];
+    aiConversationBusy = false;
+    const input = document.getElementById('aiFollowupInput');
+    if (input) input.value = '';
+    renderAiConversation();
+}
+
+function renderAiConversation() {
+    const section = document.getElementById('aiChatSection');
+    const container = document.getElementById('aiChatMessages');
+    const sendBtn = document.getElementById('sendAiFollowupBtn');
+    const input = document.getElementById('aiFollowupInput');
+    if (!section || !container || !sendBtn || !input) return;
+
+    if (!aiConversationContext) {
+        section.classList.add('hidden');
+        container.innerHTML = '';
+        sendBtn.disabled = false;
+        input.disabled = false;
+        return;
+    }
+
+    section.classList.remove('hidden');
+    const introMessage = `
+        <div class="ai-chat-message assistant">
+            <span class="ai-chat-role">AI 助手</span>
+            <div class="ai-chat-content">已载入本次诊断结果上下文，你可以继续追问更具体的问题。</div>
+        </div>
+    `;
+
+    container.innerHTML = introMessage + aiConversationHistory.map(message => `
+        <div class="ai-chat-message ${message.role}">
+            <span class="ai-chat-role">${message.role === 'user' ? '我' : 'AI 助手'}</span>
+            <div class="ai-chat-content">${formatAiResponse(message.content)}</div>
+        </div>
+    `).join('');
+
+    container.scrollTop = container.scrollHeight;
+    sendBtn.disabled = aiConversationBusy;
+    input.disabled = aiConversationBusy;
+}
+
+// 更新AI数据预览
+function updateAiDataPreview() {
+    const range = document.querySelector('input[name="aiRange"]:checked').value;
+    const { startDate, endDate } = getAiDateRange(range);
+
+    let activityCount = 0;
+    let healthCount = 0;
+    let dayCount = 0;
+
+    for (let d = new Date(startDate); d <= new Date(endDate); d.setDate(d.getDate() + 1)) {
+        const dateKey = formatDateKey(d);
+        if (allActivitiesData[dateKey]) {
+            activityCount += allActivitiesData[dateKey].length;
+        }
+        if (allHealthRecordsData[dateKey]) {
+            healthCount += allHealthRecordsData[dateKey].length;
+        }
+        if (allActivitiesData[dateKey] || allHealthRecordsData[dateKey]) {
+            dayCount++;
+        }
+    }
+
+    document.getElementById('aiActivityCount').textContent = activityCount;
+    document.getElementById('aiHealthCount').textContent = healthCount;
+    document.getElementById('aiDayCount').textContent = dayCount;
+}
+
+// 获取AI分析日期范围
+function getAiDateRange(range) {
+    const endDate = new Date();
+    let startDate = new Date();
+
+    switch (range) {
+        case 'week':
+            startDate.setDate(endDate.getDate() - 6);
+            break;
+        case 'month':
+            startDate.setDate(endDate.getDate() - 29);
+            break;
+        case 'quarter':
+            startDate.setDate(endDate.getDate() - 89);
+            break;
+        case 'custom':
+            const customStart = document.getElementById('aiStartDate').value;
+            const customEnd = document.getElementById('aiEndDate').value;
+            if (customStart && customEnd) {
+                return { startDate: customStart, endDate: customEnd };
+            }
+            // 默认最近7天
+            startDate.setDate(endDate.getDate() - 6);
+            break;
+        default:
+            startDate.setDate(endDate.getDate() - 6);
+    }
+
+    return {
+        startDate: formatDateKey(startDate),
+        endDate: formatDateKey(endDate)
+    };
+}
+
+// 开始AI诊断
+async function startAiDiagnosis() {
+    const btn = document.getElementById('startAiDiagnosisBtn');
+    const btnText = btn.querySelector('.btn-text');
+    const btnLoading = btn.querySelector('.btn-loading');
+    const resultSection = document.getElementById('aiResultSection');
+    const resultContent = document.getElementById('aiResultContent');
+
+    resetAiProcess();
+    resetAiConversation();
+    appendAiProcess('running', '开始诊断，正在检查配置。');
+
+    // 验证API配置
+    if (!aiConfig.apiKey) {
+        appendAiProcess('error', '未检测到 API 密钥，请先保存 AI 配置。');
+        showToast('请先配置API密钥！');
+        return;
+    }
+
+    // 显示加载状态
+    btn.disabled = true;
+    btnText.classList.add('hidden');
+    btnLoading.classList.remove('hidden');
+    resultSection.classList.add('hidden');
+    resultContent.innerHTML = '';
+
+    try {
+        appendAiProcess('success', 'AI 配置检查通过。');
+
+        // 收集数据
+        const range = document.querySelector('input[name="aiRange"]:checked').value;
+        const { startDate, endDate } = getAiDateRange(range);
+        appendAiProcess('running', `正在汇总 ${startDate} 至 ${endDate} 的活动、健康和档案数据。`);
+        const analysisData = collectAnalysisData(startDate, endDate);
+        appendAiProcess(
+            'success',
+            `数据汇总完成：${analysisData.activities.length} 条活动，${analysisData.healthRecords.length} 条健康数据${analysisData.profile ? '，含个人档案' : ''}。`
+        );
+
+        // 构建提示词
+        const prompt = buildAnalysisPrompt(analysisData);
+        renderAiBasis({
+            startDate,
+            endDate,
+            analysisData
+        });
+
+        // 调用AI API
+        appendAiProcess('running', '正在请求 AI 服务，请稍候。');
+        const response = await callAiApi(prompt);
+        appendAiProcess('success', 'AI 服务已返回结果，正在整理展示内容。');
+
+        // 显示结果
+        resultContent.innerHTML = formatAiResponse(response);
+        resultSection.classList.remove('hidden');
+        appendAiProcess('success', '诊断结果已生成并显示。');
+        aiConversationContext = {
+            diagnosisResult: response,
+            startDate,
+            endDate
+        };
+        aiConversationHistory = [];
+        renderAiConversation();
+
+        showToast('AI诊断完成！');
+    } catch (error) {
+        console.error('AI诊断失败:', error);
+        appendAiProcess('error', `诊断失败：${error.message}`);
+        resultContent.innerHTML = `<div class="ai-error">
+            <strong>诊断失败：</strong>
+            <p>${error.message}</p>
+            <p>请检查您的API配置和网络连接，然后重试。</p>
+        </div>`;
+        resultSection.classList.remove('hidden');
+        showToast('诊断失败，请重试');
+    } finally {
+        // 恢复按钮状态
+        btn.disabled = false;
+        btnText.classList.remove('hidden');
+        btnLoading.classList.add('hidden');
+    }
+}
+
+async function sendAiFollowup() {
+    if (aiConversationBusy) return;
+    if (!aiConversationContext?.diagnosisResult) {
+        showToast('请先完成一次 AI 诊断');
+        return;
+    }
+
+    const input = document.getElementById('aiFollowupInput');
+    const question = input.value.trim();
+    if (!question) {
+        showToast('请输入追问内容');
+        return;
+    }
+
+    aiConversationHistory.push({ role: 'user', content: question });
+    input.value = '';
+    aiConversationBusy = true;
+    renderAiConversation();
+    appendAiProcess('running', '正在处理追问。');
+
+    try {
+        const messages = [
+            {
+                role: 'user',
+                content: `以下是你刚刚已经完成的一份健康诊断结果，请在此基础上继续回答用户追问。\n分析范围：${aiConversationContext.startDate} 至 ${aiConversationContext.endDate}`
+            },
+            {
+                role: 'assistant',
+                content: aiConversationContext.diagnosisResult
+            },
+            ...aiConversationHistory
+        ];
+
+        const response = await callAiApi(messages, {
+            systemPrompt: '你是一位专业、友好的健康顾问。请基于已有诊断结果继续回答用户追问，避免重复整份报告；保持中文表达清晰简洁；不要做医疗诊断结论，对于明显异常情况建议咨询专业医生。'
+        });
+
+        aiConversationHistory.push({ role: 'assistant', content: response });
+        appendAiProcess('success', '追问回答已生成。');
+    } catch (error) {
+        console.error('AI追问失败:', error);
+        aiConversationHistory.push({
+            role: 'assistant',
+            content: `追问失败：${error.message}\n请检查 API 配置或网络连接后重试。`
+        });
+        appendAiProcess('error', `追问失败：${error.message}`);
+    } finally {
+        aiConversationBusy = false;
+        renderAiConversation();
+    }
+}
+
+// 收集分析数据
+function collectAnalysisData(startDate, endDate) {
+    const data = {
+        period: { start: startDate, end: endDate },
+        activities: [],
+        healthRecords: [],
+        profile: null,
+        options: {
+            includeActivities: document.getElementById('aiIncludeActivities').checked,
+            includeHealth: document.getElementById('aiIncludeHealth').checked,
+            includeProfile: document.getElementById('aiIncludeProfile').checked,
+            includeMedication: document.getElementById('aiIncludeMedication').checked
+        },
+        customPrompt: document.getElementById('aiCustomPrompt').value.trim()
+    };
+
+    // 收集活动数据
+    if (data.options.includeActivities) {
+        for (let d = new Date(startDate); d <= new Date(endDate); d.setDate(d.getDate() + 1)) {
+            const dateKey = formatDateKey(d);
+            if (allActivitiesData[dateKey]) {
+                allActivitiesData[dateKey].forEach(activity => {
+                    data.activities.push({
+                        date: dateKey,
+                        time: activity.time,
+                        type: activity.type,
+                        content: activity.content,
+                        feeling: activity.feeling,
+                        duration: activity.duration
+                    });
+                });
+            }
+        }
+    }
+
+    // 收集健康数据
+    if (data.options.includeHealth) {
+        for (let d = new Date(startDate); d <= new Date(endDate); d.setDate(d.getDate() + 1)) {
+            const dateKey = formatDateKey(d);
+            if (allHealthRecordsData[dateKey]) {
+                allHealthRecordsData[dateKey].forEach(record => {
+                    data.healthRecords.push({
+                        date: dateKey,
+                        type: record.type,
+                        value: record.value,
+                        unit: record.unit,
+                        notes: record.notes
+                    });
+                });
+            }
+        }
+    }
+
+    // 收集个人信息
+    if (data.options.includeProfile && Object.keys(profile).length > 0) {
+        data.profile = {
+            name: profile.name || '',
+            gender: profile.gender || '',
+            age: profile.age || '',
+            height: profile.height || '',
+            weight: profile.weight || '',
+            bloodType: profile.bloodType || '',
+            bloodPressure: profile.bloodPressure || '',
+            bloodSugar: profile.bloodSugar || '',
+            chronicConditions: profile.chronicConditions || '',
+            allergies: profile.allergies || '',
+            medications: profile.medications || '',
+            healthGoals: profile.healthGoals || ''
+        };
+    }
+
+    return data;
+}
+
+// 构建分析提示词
+function buildAnalysisPrompt(data) {
+    let prompt = `你是一位专业的健康顾问。请根据以下健康记录数据，为用户提供健康状况评估和建议。
+
+【分析时间范围】${data.period.start} 至 ${data.period.end}
+【数据说明】这是一份日常健康记录，包含活动记录和健康指标数据。
+
+`;
+
+    // 添加个人信息
+    if (data.profile) {
+        prompt += `【个人基础信息】\n`;
+        if (data.profile.age) prompt += `- 年龄：${data.profile.age}岁\n`;
+        if (data.profile.gender) prompt += `- 性别：${data.profile.gender === 'male' ? '男' : data.profile.gender === 'female' ? '女' : '其他'}\n`;
+        if (data.profile.height) prompt += `- 身高：${data.profile.height}cm\n`;
+        if (data.profile.weight) prompt += `- 体重：${data.profile.weight}kg\n`;
+        if (data.profile.bloodType) prompt += `- 血型：${data.profile.bloodType}型\n`;
+        if (data.profile.bloodPressure) prompt += `- 常见血压：${data.profile.bloodPressure}\n`;
+        if (data.profile.bloodSugar) prompt += `- 常见血糖：${data.profile.bloodSugar}\n`;
+        if (data.profile.chronicConditions) prompt += `- 慢性病/病史：${data.profile.chronicConditions}\n`;
+        if (data.profile.allergies) prompt += `- 过敏史：${data.profile.allergies}\n`;
+        if (data.profile.medications) prompt += `- 长期用药：${data.profile.medications}\n`;
+        if (data.profile.healthGoals) prompt += `- 健康目标：${data.profile.healthGoals}\n`;
+        prompt += `\n`;
+    }
+
+    // 添加活动数据摘要
+    if (data.activities.length > 0) {
+        prompt += `【活动记录摘要】共${data.activities.length}条\n`;
+
+        // 按类型统计
+        const typeStats = {};
+        const medicationList = [];
+        data.activities.forEach(a => {
+            typeStats[a.type] = (typeStats[a.type] || 0) + 1;
+            if (a.type === 'medication') {
+                medicationList.push(`${a.date} ${a.time}: ${a.content}`);
+            }
+        });
+
+        prompt += `活动类型分布：\n`;
+        Object.entries(typeStats).forEach(([type, count]) => {
+            const label = typeLabels[type] || type;
+            prompt += `- ${label}：${count}次\n`;
+        });
+
+        // 用药记录
+        if (data.options.includeMedication && medicationList.length > 0) {
+            prompt += `\n用药记录（部分）：\n`;
+            medicationList.slice(0, 10).forEach(m => {
+                prompt += `- ${m}\n`;
+            });
+            if (medicationList.length > 10) {
+                prompt += `...（共${medicationList.length}条用药记录）\n`;
+            }
+        }
+
+        // 运动统计
+        const exerciseRecords = data.activities.filter(a => a.type === 'exercise' && a.duration);
+        if (exerciseRecords.length > 0) {
+            const totalDuration = exerciseRecords.reduce((sum, r) => sum + (r.duration || 0), 0);
+            prompt += `\n运动统计：共${exerciseRecords.length}次运动，总计${totalDuration}分钟\n`;
+        }
+
+        prompt += `\n`;
+    }
+
+    // 添加健康数据
+    if (data.healthRecords.length > 0) {
+        prompt += `【健康指标数据】共${data.healthRecords.length}条\n`;
+
+        // 按类型分组
+        const healthByType = {};
+        data.healthRecords.forEach(r => {
+            if (!healthByType[r.type]) healthByType[r.type] = [];
+            healthByType[r.type].push(r);
+        });
+
+        Object.entries(healthByType).forEach(([type, records]) => {
+            const label = healthTypeLabels[type] || type;
+            prompt += `\n${label}记录（${records.length}条）：\n`;
+            records.slice(-5).forEach(r => {
+                prompt += `- ${r.date}: ${r.value}${r.unit || ''}\n`;
+            });
+        });
+
+        prompt += `\n`;
+    }
+
+    // 添加用户自定义问题
+    if (data.customPrompt) {
+        prompt += `【用户关注的问题】\n${data.customPrompt}\n\n`;
+    }
+
+    prompt += `【分析要求】
+请基于以上数据，提供一份专业、友好的健康分析报告，包括：
+
+1. **健康状况概述**：总结用户最近一段时间的整体健康状况
+2. **数据分析**：
+   - 活动规律性分析（饮食、运动、睡眠等）
+   - 健康指标趋势分析（血压、心率、血糖等）
+   - 用药情况分析（如果相关）
+3. **风险识别**：指出可能存在的健康风险或需要关注的方面
+4. **改善建议**：提供3-5条具体、可操作的健康改善建议
+5. **下次关注点**：建议下次应该重点关注的指标或习惯
+
+注意事项：
+- 回复要用中文，语气专业且友好
+- 如果数据不足，请明确指出，并给出建议如何完善记录
+- 不要做出诊断性结论，只基于数据给出分析和建议
+- 对于异常指标，请建议咨询专业医生
+- 建议要具体可行，符合用户的生活背景
+
+请开始您的分析：`;
+
+    return prompt;
+}
+
+// 调用AI API
+async function callAiApi(promptOrMessages, options = {}) {
+    const { provider, apiKey, model, apiEndpoint } = aiConfig;
+    const systemPrompt = options.systemPrompt || '你是一位专业的健康顾问，擅长分析健康数据并提供个性化建议。';
+    const messages = Array.isArray(promptOrMessages)
+        ? promptOrMessages
+        : [{ role: 'user', content: promptOrMessages }];
+
+    let apiUrl = '';
+    let headers = {
+        'Content-Type': 'application/json'
+    };
+    let body = {};
+
+    switch (provider) {
+        case 'openai':
+            apiUrl = 'https://api.openai.com/v1/chat/completions';
+            headers['Authorization'] = `Bearer ${apiKey}`;
+            body = {
+                model: model || 'gpt-4o-mini',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    ...messages
+                ],
+                temperature: 0.7,
+                max_tokens: 2000
+            };
+            break;
+
+        case 'anthropic':
+            apiUrl = 'https://api.anthropic.com/v1/messages';
+            headers['x-api-key'] = apiKey;
+            headers['anthropic-version'] = '2023-06-01';
+            body = {
+                model: model || 'claude-3-haiku-20240307',
+                system: systemPrompt,
+                max_tokens: 2000,
+                messages: messages.map(message => ({
+                    role: message.role === 'assistant' ? 'assistant' : 'user',
+                    content: message.content
+                }))
+            };
+            break;
+
+        case 'deepseek':
+            apiUrl = 'https://api.deepseek.com/v1/chat/completions';
+            headers['Authorization'] = `Bearer ${apiKey}`;
+            body = {
+                model: model || 'deepseek-chat',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    ...messages
+                ],
+                temperature: 0.7,
+                max_tokens: 2000
+            };
+            break;
+
+        case 'tongyi':
+            apiUrl = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
+            headers['Authorization'] = `Bearer ${apiKey}`;
+            body = {
+                model: model || 'qwen-turbo',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    ...messages
+                ],
+                temperature: 0.7,
+                max_tokens: 2000
+            };
+            break;
+
+        case 'custom':
+            apiUrl = apiEndpoint;
+            headers['Authorization'] = `Bearer ${apiKey}`;
+            body = {
+                model: model || 'gpt-3.5-turbo',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    ...messages
+                ],
+                temperature: 0.7,
+                max_tokens: 2000
+            };
+            break;
+
+        default:
+            throw new Error('不支持的AI服务提供商');
+    }
+
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`API请求失败 (${response.status}): ${errorData.error?.message || response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    // 根据不同提供商解析响应
+    if (provider === 'anthropic') {
+        return result.content[0].text;
+    } else {
+        return result.choices[0].message.content;
+    }
+}
+
+// 格式化AI响应
+function formatAiResponse(response) {
+    // 简单的Markdown格式化
+    return response
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n/g, '<br>');
+}
+
+// 复制AI结果
+function copyAiResult() {
+    const resultContent = document.getElementById('aiResultContent');
+    const text = resultContent.innerText || resultContent.textContent;
+
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('已复制到剪贴板');
+    }).catch(() => {
+        showToast('复制失败');
+    });
+}
+
+// AI诊断相关事件监听
+function initAiDiagnosisEvents() {
+    try {
+        // 保存AI配置
+        const saveBtn = document.getElementById('saveAiConfigBtn');
+        if (saveBtn) saveBtn.addEventListener('click', saveAiConfig);
+
+        // 提供商切换
+        const provider = document.getElementById('aiProvider');
+        if (provider) {
+            provider.addEventListener('change', (e) => {
+                const customGroup = document.getElementById('customApiEndpointGroup');
+                if (customGroup) {
+                    if (e.target.value === 'custom') {
+                        customGroup.classList.remove('hidden');
+                    } else {
+                        customGroup.classList.add('hidden');
+                    }
+                }
+            });
+        }
+
+        // 数据范围选择
+        document.querySelectorAll('input[name="aiRange"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const dateInputs = document.getElementById('aiDateRangeInputs');
+                if (dateInputs) {
+                    if (radio.value === 'custom') {
+                        dateInputs.classList.remove('hidden');
+                    } else {
+                        dateInputs.classList.add('hidden');
+                    }
+                }
+                updateAiDataPreview();
+            });
+        });
+
+        // 自定义日期变化
+        const startDate = document.getElementById('aiStartDate');
+        const endDate = document.getElementById('aiEndDate');
+        if (startDate) startDate.addEventListener('change', updateAiDataPreview);
+        if (endDate) endDate.addEventListener('change', updateAiDataPreview);
+
+        // 开始诊断
+        const startBtn = document.getElementById('startAiDiagnosisBtn');
+        if (startBtn) startBtn.addEventListener('click', startAiDiagnosis);
+
+        const followupBtn = document.getElementById('sendAiFollowupBtn');
+        if (followupBtn) followupBtn.addEventListener('click', sendAiFollowup);
+
+        const followupInput = document.getElementById('aiFollowupInput');
+        if (followupInput) {
+            followupInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    sendAiFollowup();
+                }
+            });
+        }
+
+        // 复制结果
+        const copyBtn = document.getElementById('copyAiResultBtn');
+        if (copyBtn) copyBtn.addEventListener('click', copyAiResult);
+    } catch (error) {
+        console.error('初始化AI诊断事件失败:', error);
+    }
+}
+window.handleTemplateFormSubmit = handleTemplateFormSubmit;

@@ -223,6 +223,30 @@ body.elder-mode .form-actions button {
     background: rgba(181, 42, 42, 0.28);
 }
 
+/* 在线状态指示器 */
+.online-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+}
+
+.online-status.online {
+    background: rgba(76, 175, 80, 0.2);
+    color: #81c784;
+    border: 1px solid rgba(129, 199, 132, 0.4);
+}
+
+.online-status.offline {
+    background: rgba(244, 67, 54, 0.2);
+    color: #e57373;
+    border: 1px solid rgba(229, 115, 115, 0.4);
+}
+
 .date-selector {
     display: flex;
     justify-content: center;
@@ -1223,6 +1247,883 @@ body.elder-mode .form-actions button {
     width: auto;
 }
 
+/* 提醒历史页面样式 */
+.reminder-history-header {
+    margin-bottom: 16px;
+}
+
+.reminder-search-box {
+    margin-bottom: 12px;
+}
+
+.reminder-search-box input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: var(--bg-color);
+    color: var(--text-color);
+    transition: border-color 0.3s;
+}
+
+.reminder-search-box input:focus {
+    outline: none;
+    border-color: var(--forest-color);
+}
+
+.reminder-filter-box {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.reminder-filter-box select {
+    flex: 1;
+    min-width: 140px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: var(--bg-color);
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+.reminder-filter-box select:focus {
+    outline: none;
+    border-color: var(--forest-color);
+}
+
+/* 提醒历史项特殊样式 */
+.reminder-history-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-color);
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.reminder-history-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.reminder-history-actions-list {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(40, 122, 68, 0.04);
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.reminder-history-actions-list-title {
+    font-weight: 500;
+    color: var(--forest-color);
+    margin-bottom: 6px;
+}
+
+.reminder-history-action-item {
+    padding: 4px 0;
+    color: var(--text-secondary);
+}
+
+.reminder-history-action-item .action-time {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.reminder-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+}
+
+.reminder-empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+.reminder-empty-state-text {
+    font-size: 1rem;
+    margin-bottom: 8px;
+}
+
+.reminder-empty-state-hint {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* ==================== 统计模态框样式 ==================== */
+.stats-container {
+    padding: 0;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.stats-period-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stats-tab-btn {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.stats-tab-btn.active {
+    background: var(--forest-color);
+    color: white;
+    border-color: var(--forest-color);
+}
+
+.stats-tab-btn:hover:not(.active) {
+    background: rgba(40, 122, 68, 0.08);
+}
+
+.stats-section {
+    margin-bottom: 24px;
+}
+
+.stats-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid rgba(40, 122, 68, 0.15);
+}
+
+.stats-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.stats-card {
+    background: var(--bg-color);
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.stats-card-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.stats-card-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--forest-color);
+    margin-bottom: 6px;
+}
+
+.stats-card-change {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.stats-card-change.positive {
+    color: #4caf50;
+}
+
+.stats-card-change.negative {
+    color: #f44336;
+}
+
+.stats-card-change.neutral {
+    color: var(--text-muted);
+}
+
+.stats-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+.stats-empty-state.hidden {
+    display: none;
+}
+
+.stats-empty-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+    opacity: 0.4;
+}
+
+.stats-empty-text {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+}
+
+/* ==================== 图表样式 ==================== */
+.chart-container {
+    margin-bottom: 24px;
+    background: var(--card-bg);
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.chart-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 12px;
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 250px;
+}
+
+.chart-wrapper canvas {
+    max-height: 100%;
+}
+
+/* 长辈模式下的统计卡片样式 */
+body.elder-mode .stats-cards {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+body.elder-mode .stats-card {
+    padding: 20px;
+}
+
+body.elder-mode .stats-card-label {
+    font-size: 1rem;
+}
+
+body.elder-mode .stats-card-value {
+    font-size: 2.2rem;
+}
+
+/* ==================== 时间线搜索筛选样式 ==================== */
+.timeline-search-filter {
+    background: var(--card-bg);
+    padding: 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.timeline-search-filter.hidden {
+    display: none;
+}
+
+.search-filter-row {
+    margin-bottom: 12px;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-input-wrapper input {
+    flex: 1;
+    padding: 12px 40px 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: var(--bg-color);
+    color: var(--text-color);
+    transition: border-color 0.3s;
+}
+
+.search-input-wrapper input:focus {
+    outline: none;
+    border-color: var(--forest-color);
+}
+
+.clear-search-btn {
+    position: absolute;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+}
+
+.clear-search-btn.hidden {
+    display: none;
+}
+
+.clear-search-btn:hover {
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.filter-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filter-select,
+.filter-date {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: var(--bg-color);
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+.filter-select {
+    min-width: 140px;
+}
+
+.filter-date {
+    min-width: 140px;
+}
+
+.date-separator {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.clear-filters-btn {
+    padding: 10px 16px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+
+.clear-filters-btn:hover {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: var(--text-muted);
+}
+
+.section-filter-btn {
+    padding: 8px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+
+.section-filter-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.section-filter-btn.active {
+    background: var(--forest-color);
+    border-color: var(--forest-color);
+}
+
+/* ==================== 导出选项样式 ==================== */
+.export-section {
+    background: var(--card-bg);
+    padding: 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.export-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 12px;
+}
+
+.export-range-options {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.export-range-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.export-range-option input[type="radio"] {
+    cursor: pointer;
+}
+
+.export-range-option span {
+    color: var(--text-color);
+}
+
+.date-range-inputs {
+    margin-bottom: 12px;
+}
+
+.date-range-inputs.hidden {
+    display: none;
+}
+
+.date-range-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.date-range-row label {
+    min-width: 70px;
+    color: var(--text-secondary);
+}
+
+.date-range-row input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-color);
+    color: var(--text-color);
+}
+
+.export-preview {
+    background: rgba(40, 122, 68, 0.04);
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(40, 122, 68, 0.15);
+}
+
+.export-preview h4 {
+    margin: 0 0 10px 0;
+    font-size: 0.9rem;
+    color: var(--forest-color);
+}
+
+.export-preview-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.preview-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.preview-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.preview-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--forest-color);
+}
+
+.export-date-range-text {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.ai-process-section {
+    background: var(--card-bg);
+    padding: 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.ai-process-section.hidden {
+    display: none;
+}
+
+.ai-trace-output {
+    width: 100%;
+    min-height: 300px;
+    padding: 14px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.76);
+    color: var(--text-color);
+    font-family: Consolas, Monaco, monospace;
+    font-size: 0.9rem;
+    line-height: 1.65;
+    resize: vertical;
+    white-space: pre-wrap;
+    box-sizing: border-box;
+}
+
+.ai-trace-output:focus {
+    outline: none;
+    border-color: rgba(40, 122, 68, 0.35);
+    box-shadow: 0 0 0 3px rgba(40, 122, 68, 0.08);
+}
+
+.ai-chat-section {
+    margin-top: 16px;
+    padding: 16px;
+    border-radius: 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+.ai-chat-section.hidden {
+    display: none;
+}
+
+.ai-chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 14px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.ai-chat-message {
+    padding: 12px 14px;
+    border-radius: 14px;
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.ai-chat-message.assistant {
+    background: rgba(40, 122, 68, 0.08);
+    border: 1px solid rgba(40, 122, 68, 0.12);
+}
+
+.ai-chat-message.user {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.ai-chat-role {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.ai-chat-content {
+    color: var(--text-color);
+}
+
+.ai-chat-composer textarea {
+    width: 100%;
+    min-height: 90px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    resize: vertical;
+    background: rgba(255, 255, 255, 0.8);
+    color: var(--text-color);
+    box-sizing: border-box;
+}
+
+.ai-chat-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.export-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* 活动项日期前缀 */
+.activity-date-prefix {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0 8px;
+    padding: 2px 8px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 4px;
+}
+
+.activity-time-none {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ==================== 快速模板样式 ==================== */
+.template-section {
+    background: var(--card-bg);
+    padding: 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(40, 122, 68, 0.2);
+}
+
+.template-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.template-label {
+    font-weight: 600;
+    color: var(--forest-color);
+    font-size: 0.95rem;
+}
+
+.save-template-btn {
+    padding: 6px 12px;
+    background: rgba(40, 122, 68, 0.1);
+    color: var(--forest-color);
+    border: 1px solid rgba(40, 122, 68, 0.3);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s;
+}
+
+.save-template-btn:hover {
+    background: rgba(40, 122, 68, 0.2);
+}
+
+.template-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.template-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.template-item:hover {
+    background: rgba(40, 122, 68, 0.08);
+    border-color: var(--forest-color);
+    transform: translateY(-1px);
+}
+
+.template-item.active {
+    background: rgba(40, 122, 68, 0.15);
+    border-color: var(--forest-color);
+}
+
+.template-item-icon {
+    font-size: 1rem;
+}
+
+.template-item-name {
+    color: var(--text-color);
+}
+
+.template-item-type {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    padding: 2px 6px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 4px;
+}
+
+.add-template-btn {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+
+.add-template-btn:hover {
+    background: rgba(40, 122, 68, 0.05);
+    border-color: var(--forest-color);
+    color: var(--forest-color);
+}
+
+/* 模板管理模态框 */
+.template-manager-content {
+    padding: 16px 0;
+}
+
+.template-manager-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.template-manager-item {
+    background: var(--bg-color);
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.template-manager-item:hover {
+    border-color: var(--forest-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.template-manager-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.template-manager-icon {
+    font-size: 1.8rem;
+}
+
+.template-manager-details {
+    flex: 1;
+}
+
+.template-manager-name {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 4px;
+}
+
+.template-manager-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.template-manager-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.template-action-btn {
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+.template-action-btn:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.template-action-btn.delete:hover {
+    background: rgba(244, 67, 54, 0.1);
+    color: #f44336;
+    border-color: #f44336;
+}
+
+.template-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+}
+
+.template-empty-state p {
+    margin: 8px 0;
+}
+
+.create-template-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--forest-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.create-template-btn:hover {
+    background: var(--forest-dark);
+    transform: translateY(-1px);
+}
+
+/* 模板图标选择器 */
+.template-icon-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.template-icon-option {
+    width: 45px;
+    height: 45px;
+    font-size: 1.5rem;
+    border: 2px solid var(--border-color);
+    background: var(--bg-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.template-icon-option:hover {
+    border-color: var(--forest-color);
+    transform: scale(1.05);
+}
+
+.template-icon-option.selected {
+    border-color: var(--forest-color);
+    background: rgba(40, 122, 68, 0.1);
+}
+
 /* 响应式设计 */
 @media (max-width: 600px) {
     .header-top {
@@ -1305,4 +2206,303 @@ body.elder-mode .form-actions button {
     .tab-btn {
         padding: 12px 10px;
     }
+}
+
+/* ==================== AI诊断模态框样式 ==================== */
+.ai-diagnosis-content {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.ai-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 15px 0 10px;
+    color: var(--text-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ai-config-section,
+.ai-data-section,
+.ai-options-section,
+.ai-action-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.ai-config-form {
+    display: grid;
+    gap: 12px;
+}
+
+.ai-config-form .form-hint {
+    display: block;
+    color: #666;
+    font-size: 0.85rem;
+    margin-top: 4px;
+}
+
+.ai-range-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.ai-range-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.ai-range-option input[type="radio"] {
+    cursor: pointer;
+}
+
+.ai-date-range-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.ai-date-range-inputs .date-range-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.ai-date-range-inputs label {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.ai-date-range-inputs input {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.ai-data-preview {
+    margin-top: 15px;
+    padding: 12px;
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.ai-data-preview h4 {
+    font-size: 0.95rem;
+    margin: 0 0 10px;
+    color: #666;
+}
+
+.ai-data-stats {
+    display: flex;
+    gap: 20px;
+}
+
+.ai-stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ai-stat-label {
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.ai-stat-value {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.ai-option-checks {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.ai-option-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.ai-option-check input[type="checkbox"] {
+    margin-top: 3px;
+    cursor: pointer;
+}
+
+.ai-option-check span {
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.btn-large {
+    width: 100%;
+    padding: 15px 30px;
+    font-size: 1.1rem;
+}
+
+.btn-loading {
+    display: none;
+}
+
+.btn-loading:not(.hidden) {
+    display: inline;
+}
+
+.btn-text:not(.hidden) {
+    display: inline;
+}
+
+.btn-text.hidden {
+    display: none;
+}
+
+.ai-result-section {
+    margin-top: 20px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.ai-result-section.hidden {
+    display: none;
+}
+
+.ai-result-content {
+    line-height: 1.7;
+    color: #333;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.ai-result-content h1,
+.ai-result-content h2,
+.ai-result-content h3 {
+    margin-top: 15px;
+    margin-bottom: 10px;
+    color: #222;
+}
+
+.ai-result-content h1:first-child,
+.ai-result-content h2:first-child,
+.ai-result-content h3:first-child {
+    margin-top: 0;
+}
+
+.ai-result-content ul,
+.ai-result-content ol {
+    margin: 10px 0;
+    padding-left: 25px;
+}
+
+.ai-result-content li {
+    margin: 5px 0;
+}
+
+.ai-result-content p {
+    margin: 8px 0;
+}
+
+.ai-result-content strong {
+    color: #000;
+    font-weight: 600;
+}
+
+.copy-btn {
+    background: #f0f0f0;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.copy-btn:hover {
+    background: #e0e0e0;
+}
+
+.ai-error {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 6px;
+    padding: 15px;
+    color: #856404;
+}
+
+.ai-error strong {
+    color: #856404;
+    font-weight: 600;
+}
+
+.ai-error p {
+    margin: 8px 0;
+}
+
+/* 长辈模式适配 */
+body.elder-mode .ai-section-title {
+    font-size: 1.3rem;
+}
+
+body.elder-mode .ai-diagnosis-content {
+    padding: 15px;
+}
+
+body.elder-mode .ai-config-section,
+body.elder-mode .ai-data-section,
+body.elder-mode .ai-options-section,
+body.elder-mode .ai-action-section {
+    padding: 20px;
+}
+
+body.elder-mode .ai-config-form input,
+body.elder-mode .ai-config-form select,
+body.elder-mode .ai-config-form textarea {
+    font-size: 1.1rem;
+    padding: 12px;
+}
+
+body.elder-mode .ai-range-option span,
+body.elder-mode .ai-option-check span {
+    font-size: 1.1rem;
+}
+
+body.elder-mode .ai-stat-label {
+    font-size: 1rem;
+}
+
+body.elder-mode .ai-stat-value {
+    font-size: 1.5rem;
+}
+
+body.elder-mode .btn-large {
+    font-size: 1.3rem;
+    padding: 18px 30px;
+}
+
+body.elder-mode .ai-result-content {
+    font-size: 1.1rem;
+    line-height: 1.8;
 }
