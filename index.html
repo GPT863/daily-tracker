@@ -18,6 +18,7 @@
                 <h1>📅 今日活动记录</h1>
                 <div class="header-tools">
                     <button id="aiDiagnosisBtn" class="header-tool-btn">🤖 AI诊断</button>
+                    <button id="cloudSyncBtn" class="header-tool-btn">云同步</button>
                     <button id="profileBtn" class="header-tool-btn">个人信息</button>
                     <button id="seedDemoBtn" class="header-tool-btn">示例数据</button>
                     <button id="resetDataBtn" class="header-tool-btn danger">清空</button>
@@ -884,6 +885,37 @@
                         <button type="submit" class="btn-submit">保存信息</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <div id="cloudSyncModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>☁️ 数据云同步</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="storage-panel">
+                    <div class="form-group">
+                        <label for="cloudEnvId">同步服务地址</label>
+                        <input id="cloudEnvId" type="text" placeholder="例如：https://api.example.com/sync">
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input id="cloudAutoSync" type="checkbox">
+                            开启自动同步（本地保存后自动上传）
+                        </label>
+                    </div>
+                    <div id="cloudSyncStatus" class="storage-helper-text">请先填写同步服务地址。</div>
+                    <div class="sync-actions">
+                        <button id="saveCloudConfigBtn" type="button" class="section-order-btn">保存配置</button>
+                        <button id="cloudLoginBtn" type="button" class="section-order-btn">测试连接</button>
+                        <button id="cloudPushBtn" type="button" class="section-export-btn">上传到云端</button>
+                        <button id="cloudPullBtn" type="button" class="section-export-btn">从云端恢复</button>
+                    </div>
+                    <div class="storage-helper-text">
+                        接口约定：<code>PUT /snapshot</code> 上传快照，<code>GET /snapshot</code> 下载快照，建议提供 <code>GET /health</code> 健康检查。
+                    </div>
+                </div>
             </div>
         </div>
 

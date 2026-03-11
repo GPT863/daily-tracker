@@ -28,6 +28,8 @@ let aiConfig = {
 let aiConversationContext = null;
 let aiConversationHistory = [];
 let aiConversationBusy = false;
+let cloudSyncBusy = false;
+let cloudSyncTimer = null;
 
 // 获取类型标签
 function getTypeLabel(type) {
@@ -143,6 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupEventListeners();
     setupReminderListeners();
     setupProfileListeners();
+    hydrateCloudSyncForm();
     updateDisplay();
     updateRemindersDisplay();
     renderReminderTabs('today');
@@ -315,7 +318,7 @@ async function initializeStorageState() {
     }
 }
 
-async function persistAppState() {
+async function persistAppState(options = {}) {
     metadata = {
         ...getDefaultMetadata(),
         ...metadata,
@@ -347,6 +350,10 @@ async function persistAppState() {
         setLocalStorageJSON(legacyStorageKeys.metadata, metadata);
     } catch (error) {
         throw new Error('STORAGE_WRITE_FAILED');
+    }
+
+    if (!options.skipAutoCloudSync) {
+        scheduleCloudAutoSync();
     }
 }
 
@@ -707,6 +714,7 @@ function setupEventListeners() {
         document.getElementById(id).addEventListener('click', openExportModal);
     });
     document.getElementById('timelineOrderBtn').addEventListener('click', toggleTimelineOrder);
+    document.getElementById('cloudSyncBtn').addEventListener('click', openCloudSyncModal);
     document.getElementById('profileBtn').addEventListener('click', openProfileModal);
 
     // AI诊断按钮
@@ -785,6 +793,10 @@ function setupEventListeners() {
     document.getElementById('confirmImportMerge').addEventListener('click', () => confirmImport('merge'));
     document.getElementById('confirmImportReplace').addEventListener('click', () => confirmImport('replace'));
     document.getElementById('snoozeMinutes').addEventListener('change', toggleCustomSnoozeField);
+    document.getElementById('saveCloudConfigBtn').addEventListener('click', saveCloudSyncConfig);
+    document.getElementById('cloudLoginBtn').addEventListener('click', ensureCloudSyncLogin);
+    document.getElementById('cloudPushBtn').addEventListener('click', () => pushSnapshotToCloud(true));
+    document.getElementById('cloudPullBtn').addEventListener('click', pullSnapshotFromCloud);
     document.getElementById('saveDailyNoteBtn').addEventListener('click', saveDailyNote);
     document.getElementById('dailyNoteInput').addEventListener('input', () => {
         const input = document.getElementById('dailyNoteInput');
@@ -2949,6 +2961,235 @@ function completeActiveReminder() {
     const reminderId = activeReminderAlertId;
     closeReminderAlertModal();
     window.completeReminder(reminderId);
+}
+
+function getCloudSyncConfig() {
+    const config = metadata?.cloudSync || {};
+    return {
+        endpoint: config.endpoint || '',
+        apiKey: config.apiKey || '',
+        autoSync: Boolean(config.autoSync),
+        lastSyncedAt: config.lastSyncedAt || ''
+    };
+}
+
+function setCloudSyncStatus(text, isError = false) {
+    const status = document.getElementById('cloudSyncStatus');
+    if (!status) return;
+    status.textContent = text;
+    status.style.color = isError ? '#d32f2f' : 'var(--text-secondary)';
+}
+
+function hydrateCloudSyncForm() {
+    const envInput = document.getElementById('cloudEnvId');
+    const autoSync = document.getElementById('cloudAutoSync');
+    if (!envInput || !autoSync) return;
+
+    const config = getCloudSyncConfig();
+    envInput.value = config.endpoint;
+    autoSync.checked = config.autoSync;
+    setCloudSyncStatus(config.lastSyncedAt ? `最近同步：${new Date(config.lastSyncedAt).toLocaleString('zh-CN')}` : '请先填写同步服务地址。');
+}
+
+function openCloudSyncModal() {
+    hydrateCloudSyncForm();
+    document.getElementById('cloudSyncModal').style.display = 'block';
+}
+
+async function saveCloudSyncConfig() {
+    const endpointInput = document.getElementById('cloudEnvId');
+    const autoSync = document.getElementById('cloudAutoSync');
+    if (!endpointInput || !autoSync) return;
+
+    const prev = getCloudSyncConfig();
+    const endpoint = endpointInput.value.trim().replace(/\/+$/, '');
+    metadata.cloudSync = {
+        ...prev,
+        endpoint,
+        autoSync: autoSync.checked
+    };
+
+    await persistAppState({ skipAutoCloudSync: true });
+    setCloudSyncStatus(endpoint ? '配置已保存，可测试连接或立即同步。' : '已清空同步服务地址。');
+    showToast('云同步配置已保存');
+}
+
+function getCloudSyncHeaders() {
+    const config = getCloudSyncConfig();
+    const headers = { 'Content-Type': 'application/json' };
+    if (config.apiKey) {
+        headers.Authorization = `Bearer ${config.apiKey}`;
+    }
+    return headers;
+}
+
+async function cloudSyncRequest(path, init = {}) {
+    const config = getCloudSyncConfig();
+    const endpoint = (config.endpoint || '').replace(/\/+$/, '');
+    if (!endpoint) {
+        throw new Error('SYNC_ENDPOINT_MISSING');
+    }
+
+    const url = `${endpoint}/${path.replace(/^\/+/, '')}`;
+    const response = await fetch(url, {
+        ...init,
+        headers: {
+            ...getCloudSyncHeaders(),
+            ...(init.headers || {})
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(`SYNC_HTTP_${response.status}`);
+    }
+
+    if (response.status === 204) {
+        return null;
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+        return null;
+    }
+    return await response.json();
+}
+
+async function ensureCloudSyncLogin() {
+    const config = getCloudSyncConfig();
+    if (!config.endpoint) {
+        showToast('请先填写同步服务地址');
+        setCloudSyncStatus('未配置同步服务地址', true);
+        return false;
+    }
+
+    setCloudSyncStatus('正在测试连接...');
+    try {
+        await cloudSyncRequest('/health', { method: 'GET' });
+        setCloudSyncStatus('连接成功，可以开始同步。');
+        showToast('同步服务连接成功');
+        return true;
+    } catch (error) {
+        if (String(error.message || '').includes('SYNC_HTTP_404')) {
+            setCloudSyncStatus('连接成功（未提供 /health），可直接尝试同步。');
+            showToast('服务可达，可直接同步');
+            return true;
+        }
+        console.error(error);
+        setCloudSyncStatus('连接失败，请检查服务地址或跨域配置。', true);
+        showToast('连接失败');
+        return false;
+    }
+}
+
+function scheduleCloudAutoSync() {
+    const config = getCloudSyncConfig();
+    if (!config.autoSync || !config.endpoint) return;
+
+    if (cloudSyncTimer) {
+        clearTimeout(cloudSyncTimer);
+    }
+    cloudSyncTimer = setTimeout(() => {
+        pushSnapshotToCloud(false);
+    }, 4000);
+}
+
+async function pushSnapshotToCloud(manual = false) {
+    const config = getCloudSyncConfig();
+    if (!config.endpoint) {
+        if (manual) showToast('请先配置同步服务地址');
+        return false;
+    }
+    if (cloudSyncBusy) return false;
+
+    cloudSyncBusy = true;
+    setCloudSyncStatus('正在上传到云端...');
+
+    try {
+        const payload = {
+            snapshot: buildFullExportPayload(),
+            updatedAt: new Date().toISOString(),
+            schemaVersion: STORAGE_SCHEMA_VERSION
+        };
+        await cloudSyncRequest('/snapshot', {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+        });
+
+        metadata.cloudSync = {
+            ...config,
+            lastSyncedAt: new Date().toISOString()
+        };
+        await persistAppState({ skipAutoCloudSync: true });
+        setCloudSyncStatus(`上传成功：${new Date(metadata.cloudSync.lastSyncedAt).toLocaleString('zh-CN')}`);
+        if (manual) showToast('已同步到云端');
+        return true;
+    } catch (error) {
+        console.error(error);
+        setCloudSyncStatus('上传失败，请检查同步服务。', true);
+        if (manual) showToast('上传失败');
+        return false;
+    } finally {
+        cloudSyncBusy = false;
+    }
+}
+
+async function pullSnapshotFromCloud() {
+    const config = getCloudSyncConfig();
+    if (!config.endpoint) {
+        showToast('请先配置同步服务地址');
+        return;
+    }
+    if (cloudSyncBusy) return;
+
+    cloudSyncBusy = true;
+    setCloudSyncStatus('正在从云端拉取...');
+
+    try {
+        const response = await cloudSyncRequest('/snapshot', { method: 'GET' });
+        const snapshot = response?.snapshot || response;
+        if (!snapshot || typeof snapshot !== 'object') {
+            showToast('云端暂无可恢复数据');
+            setCloudSyncStatus('云端暂无数据');
+            return;
+        }
+
+        const shouldRestore = confirm('将使用云端数据覆盖本地数据，是否继续？');
+        if (!shouldRestore) {
+            setCloudSyncStatus('已取消恢复');
+            return;
+        }
+
+        const normalized = normalizeImportPayload(snapshot);
+        allActivitiesData = normalized.activitiesByDate || {};
+        allHealthRecordsData = normalized.healthRecordsByDate || {};
+        allSymptomRecordsData = normalized.symptomRecordsByDate || {};
+        allDailyNotesData = normalized.dailyNotesByDate || {};
+        reminders = normalizeReminders(normalized.reminders || []);
+        profile = normalized.profile || {};
+        metadata.lastImportAt = new Date().toISOString();
+        metadata.cloudSync = {
+            ...config,
+            lastSyncedAt: response?.updatedAt || new Date().toISOString()
+        };
+
+        await persistAppState({ skipAutoCloudSync: true });
+        loadActivities();
+        loadHealthRecords();
+        loadSymptomRecords();
+        updateDisplay();
+        updateRemindersDisplay();
+        renderReminderTabs('today');
+        updateStorageStatus();
+
+        setCloudSyncStatus(`恢复成功：${new Date(metadata.cloudSync.lastSyncedAt).toLocaleString('zh-CN')}`);
+        showToast('已从云端恢复');
+    } catch (error) {
+        console.error(error);
+        setCloudSyncStatus('恢复失败，请检查同步服务。', true);
+        showToast('从云端恢复失败');
+    } finally {
+        cloudSyncBusy = false;
+    }
 }
 
 function openProfileModal() {
