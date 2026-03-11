@@ -7,6 +7,7 @@ let reminders = [];
 let allActivitiesData = {};
 let allHealthRecordsData = {};
 let allSymptomRecordsData = {};
+let allDailyNotesData = {};
 let editingId = null;
 let timelineOrder = localStorage.getItem('dailyTracker_timelineOrder') || 'desc';
 let pendingActivityImage = null;
@@ -67,6 +68,7 @@ const legacyStorageKeys = {
     activities: 'dailyTracker_activities',
     healthRecords: 'dailyTracker_healthRecords',
     symptomRecords: 'dailyTracker_symptomRecords',
+    dailyNotes: 'dailyTracker_dailyNotes',
     reminders: 'dailyTracker_reminders',
     profile: 'dailyTracker_profile',
     metadata: 'dailyTracker_metadata'
@@ -167,6 +169,7 @@ function createEmptyState() {
         activities: {},
         healthRecords: {},
         symptomRecords: {},
+        dailyNotes: {},
         reminders: [],
         profile: {},
         metadata: getDefaultMetadata()
@@ -239,6 +242,7 @@ async function initializeStorageState() {
         activities: getLocalStorageJSON(legacyStorageKeys.activities, {}),
         healthRecords: getLocalStorageJSON(legacyStorageKeys.healthRecords, {}),
         symptomRecords: getLocalStorageJSON(legacyStorageKeys.symptomRecords, {}),
+        dailyNotes: getLocalStorageJSON(legacyStorageKeys.dailyNotes, {}),
         reminders: getLocalStorageJSON(legacyStorageKeys.reminders, []),
         profile: getLocalStorageJSON(legacyStorageKeys.profile, {}),
         metadata: {
@@ -249,7 +253,7 @@ async function initializeStorageState() {
 
     try {
         await openIndexedDB();
-        const keys = ['activities', 'healthRecords', 'symptomRecords', 'reminders', 'profile', 'metadata'];
+        const keys = ['activities', 'healthRecords', 'symptomRecords', 'dailyNotes', 'reminders', 'profile', 'metadata'];
         const indexedState = {};
 
         for (const key of keys) {
@@ -262,6 +266,7 @@ async function initializeStorageState() {
             const initialState = Object.keys(fallbackState.activities).length
                 || Object.keys(fallbackState.healthRecords).length
                 || Object.keys(fallbackState.symptomRecords).length
+                || Object.keys(fallbackState.dailyNotes).length
                 || fallbackState.reminders.length
                 || Object.keys(fallbackState.profile).length
                 ? fallbackState
@@ -286,6 +291,7 @@ async function initializeStorageState() {
             activities: indexedState.activities || {},
             healthRecords: indexedState.healthRecords || {},
             symptomRecords: indexedState.symptomRecords || {},
+            dailyNotes: indexedState.dailyNotes || {},
             reminders: indexedState.reminders || [],
             profile: indexedState.profile || {},
             metadata: {
@@ -320,6 +326,7 @@ async function persistAppState() {
         activities: allActivitiesData,
         healthRecords: allHealthRecordsData,
         symptomRecords: allSymptomRecordsData,
+        dailyNotes: allDailyNotesData,
         reminders,
         profile,
         metadata
@@ -334,6 +341,7 @@ async function persistAppState() {
         setLocalStorageJSON(legacyStorageKeys.activities, allActivitiesData);
         setLocalStorageJSON(legacyStorageKeys.healthRecords, allHealthRecordsData);
         setLocalStorageJSON(legacyStorageKeys.symptomRecords, allSymptomRecordsData);
+        setLocalStorageJSON(legacyStorageKeys.dailyNotes, allDailyNotesData);
         setLocalStorageJSON(legacyStorageKeys.reminders, reminders);
         setLocalStorageJSON(legacyStorageKeys.profile, profile);
         setLocalStorageJSON(legacyStorageKeys.metadata, metadata);
@@ -347,6 +355,7 @@ async function initDB() {
     allActivitiesData = state.activities || {};
     allHealthRecordsData = state.healthRecords || {};
     allSymptomRecordsData = state.symptomRecords || {};
+    allDailyNotesData = state.dailyNotes || {};
     reminders = normalizeReminders(state.reminders || []);
     profile = state.profile || {};
     metadata = {
@@ -539,6 +548,23 @@ function createMockSymptomRecord(id, time, description, measures = '', image = n
     };
 }
 
+function createMockDailyNotes() {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    return {
+        [getDateKey(today)]: {
+            content: '今天总体状态平稳，午后略疲劳。晚饭后散步后感觉轻松，晚上尽量 23:00 前休息。',
+            updatedAt: new Date().toISOString()
+        },
+        [getDateKey(yesterday)]: {
+            content: '昨天午后有轻微头痛，补水和短暂休息后缓解。后续继续观察睡眠质量。',
+            updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        }
+    };
+}
+
 function createMockProfile() {
     return {
         name: '张晨',
@@ -564,6 +590,7 @@ async function loadDemoData() {
     allActivitiesData = createMockActivities();
     allHealthRecordsData = createMockHealthRecords();
     allSymptomRecordsData = createMockSymptomRecords();
+    allDailyNotesData = createMockDailyNotes();
     reminders = normalizeReminders(createMockReminders());
     profile = createMockProfile();
     metadata.lastImportAt = new Date().toISOString();
@@ -586,6 +613,7 @@ async function resetAllData() {
     allActivitiesData = {};
     allHealthRecordsData = {};
     allSymptomRecordsData = {};
+    allDailyNotesData = {};
     reminders = [];
     profile = {};
     metadata = {
@@ -757,6 +785,14 @@ function setupEventListeners() {
     document.getElementById('confirmImportMerge').addEventListener('click', () => confirmImport('merge'));
     document.getElementById('confirmImportReplace').addEventListener('click', () => confirmImport('replace'));
     document.getElementById('snoozeMinutes').addEventListener('change', toggleCustomSnoozeField);
+    document.getElementById('saveDailyNoteBtn').addEventListener('click', saveDailyNote);
+    document.getElementById('dailyNoteInput').addEventListener('input', () => {
+        const input = document.getElementById('dailyNoteInput');
+        const meta = document.getElementById('dailyNoteMeta');
+        if (!input || !meta) return;
+        const savedValue = input.dataset.savedValue || '';
+        meta.textContent = input.value === savedValue ? '已保存' : '有未保存修改';
+    });
 
     // 模板相关事件
     document.getElementById('saveAsTemplateBtn').addEventListener('click', saveAsTemplate);
@@ -799,6 +835,7 @@ function updateDisplay() {
     updateTimelineOrderButton();
     updateHealthDisplay();
     updateTimeline();
+    updateDailySummary();
     updateStats();
 }
 
@@ -1704,7 +1741,7 @@ async function exportJson() {
         filename = `daily-tracker-backup-all-${new Date().toISOString().split('T')[0]}.json`;
     } else {
         // 部分导出
-        const { activities, healthRecords, symptomRecords, dateRange } = getExportData();
+        const { activities, healthRecords, symptomRecords, dailyNotesByDate, dateRange } = getExportData();
 
         // 按日期组织数据
         const activitiesByDate = {};
@@ -1739,6 +1776,7 @@ async function exportJson() {
             activitiesByDate,
             healthRecordsByDate,
             symptomRecordsByDate,
+            dailyNotesByDate,
             reminders,
             profile,
             metadata: {
@@ -1818,6 +1856,7 @@ function updateExportPreview() {
     let activities = [];
     let healthRecords = [];
     let symptomRecords = [];
+    let noteCount = 0;
     let reminderCount = 0;
 
     if (exportRange === 'current') {
@@ -1826,6 +1865,7 @@ function updateExportPreview() {
         activities = allActivitiesData[dateKey] || [];
         healthRecords = allHealthRecordsData[dateKey] || [];
         symptomRecords = allSymptomRecordsData[dateKey] || [];
+        noteCount = allDailyNotesData[dateKey] ? 1 : 0;
         reminderCount = reminders.filter(r => r.date === dateKey).length;
         exportDateRangeText.textContent = `导出日期: ${dateKey}`;
     } else if (exportRange === 'range') {
@@ -1848,6 +1888,9 @@ function updateExportPreview() {
                 }
                 if (allSymptomRecordsData[dateKey]) {
                     symptomRecords = symptomRecords.concat(allSymptomRecordsData[dateKey]);
+                }
+                if (allDailyNotesData[dateKey]) {
+                    noteCount += 1;
                 }
             }
 
@@ -1878,12 +1921,14 @@ function updateExportPreview() {
                 symptomRecords = symptomRecords.concat(allSymptomRecordsData[dateKey]);
             }
         });
+        noteCount = Object.keys(allDailyNotesData).length;
         reminderCount = reminders.length;
 
         const dates = Object.keys({
             ...allActivitiesData,
             ...allHealthRecordsData,
-            ...allSymptomRecordsData
+            ...allSymptomRecordsData,
+            ...allDailyNotesData
         }).sort();
         if (dates.length > 0) {
             exportDateRangeText.textContent = `导出范围: ${dates[0]} 至 ${dates[dates.length - 1]} (全部数据)`;
@@ -1894,7 +1939,7 @@ function updateExportPreview() {
 
     // 更新预览统计
     document.getElementById('previewActivityCount').textContent = activities.length;
-    document.getElementById('previewHealthCount').textContent = healthRecords.length + symptomRecords.length;
+    document.getElementById('previewHealthCount').textContent = healthRecords.length + symptomRecords.length + noteCount;
     document.getElementById('previewReminderCount').textContent = reminderCount;
 }
 
@@ -1904,6 +1949,7 @@ function getExportData() {
     let activities = [];
     let healthRecords = [];
     let symptomRecords = [];
+    let dailyNotesByDate = {};
     let dateRange = '';
 
     if (exportRange === 'current') {
@@ -1911,6 +1957,9 @@ function getExportData() {
         activities = (allActivitiesData[dateKey] || []).map(normalizeActivity);
         healthRecords = allHealthRecordsData[dateKey] || [];
         symptomRecords = allSymptomRecordsData[dateKey] || [];
+        if (allDailyNotesData[dateKey]) {
+            dailyNotesByDate[dateKey] = allDailyNotesData[dateKey];
+        }
         dateRange = dateKey;
     } else if (exportRange === 'range') {
         const startDate = document.getElementById('exportStartDate').value;
@@ -1930,6 +1979,9 @@ function getExportData() {
                 }
                 if (allSymptomRecordsData[dateKey]) {
                     symptomRecords = symptomRecords.concat(allSymptomRecordsData[dateKey]);
+                }
+                if (allDailyNotesData[dateKey]) {
+                    dailyNotesByDate[dateKey] = allDailyNotesData[dateKey];
                 }
             }
             dateRange = `${startDate}_to_${endDate}`;
@@ -1951,15 +2003,17 @@ function getExportData() {
                 symptomRecords = symptomRecords.concat(allSymptomRecordsData[dateKey]);
             }
         });
+        dailyNotesByDate = { ...allDailyNotesData };
         const dates = Object.keys({
             ...allActivitiesData,
             ...allHealthRecordsData,
-            ...allSymptomRecordsData
+            ...allSymptomRecordsData,
+            ...allDailyNotesData
         }).sort();
         dateRange = dates.length > 0 ? `all_${dates[0]}_${dates[dates.length - 1]}` : 'all';
     }
 
-    return { activities, healthRecords, symptomRecords, dateRange };
+    return { activities, healthRecords, symptomRecords, dailyNotesByDate, dateRange };
 }
 
 // 导出CSV
@@ -2708,6 +2762,52 @@ function updateRemindersDisplay() {
             </div>
         `).join('');
     }
+
+    updateDailySummary();
+}
+
+function updateDailySummary() {
+    const input = document.getElementById('dailyNoteInput');
+    const meta = document.getElementById('dailyNoteMeta');
+    if (!input || !meta) {
+        return;
+    }
+
+    const currentDateKey = getDateKey(currentDate);
+    const noteRecord = allDailyNotesData[currentDateKey];
+    const content = typeof noteRecord === 'string' ? noteRecord : (noteRecord?.content || '');
+    const updatedAt = typeof noteRecord === 'string' ? '' : (noteRecord?.updatedAt || '');
+    input.value = content;
+    input.dataset.savedValue = content;
+    meta.textContent = updatedAt ? `已保存：${new Date(updatedAt).toLocaleString('zh-CN')}` : '尚未保存';
+}
+
+async function saveDailyNote() {
+    const input = document.getElementById('dailyNoteInput');
+    const meta = document.getElementById('dailyNoteMeta');
+    if (!input || !meta) return;
+
+    const dateKey = getDateKey(currentDate);
+    const content = input.value.trim();
+
+    if (!content) {
+        delete allDailyNotesData[dateKey];
+    } else {
+        allDailyNotesData[dateKey] = {
+            content,
+            updatedAt: new Date().toISOString()
+        };
+    }
+
+    try {
+        await persistAppState();
+        await updateStorageStatus();
+        updateDailySummary();
+        showToast('今日状态记录已保存');
+    } catch (error) {
+        console.error(error);
+        showToast('保存失败：本地存储空间不足');
+    }
 }
 
 // 检查提醒（每分钟调用）
@@ -3035,6 +3135,7 @@ function buildFullExportPayload() {
         activitiesByDate: allActivitiesData,
         healthRecordsByDate: allHealthRecordsData,
         symptomRecordsByDate: allSymptomRecordsData,
+        dailyNotesByDate: allDailyNotesData,
         reminders,
         profile,
         metadata
@@ -3071,6 +3172,7 @@ function normalizeImportPayload(parsed) {
             activitiesByDate: { [dateKey]: parsed.activities || [] },
             healthRecordsByDate: { [dateKey]: parsed.healthRecords || [] },
             symptomRecordsByDate: { [dateKey]: parsed.symptomRecords || [] },
+            dailyNotesByDate: parsed.dailyNotesByDate || {},
             reminders: parsed.reminders || [],
             profile: parsed.profile || {},
             metadata: parsed.metadata || {}
@@ -3081,6 +3183,7 @@ function normalizeImportPayload(parsed) {
         activitiesByDate: parsed.activitiesByDate || {},
         healthRecordsByDate: parsed.healthRecordsByDate || {},
         symptomRecordsByDate: parsed.symptomRecordsByDate || {},
+        dailyNotesByDate: parsed.dailyNotesByDate || {},
         reminders: parsed.reminders || [],
         profile: parsed.profile || {},
         metadata: parsed.metadata || {}
@@ -3091,10 +3194,13 @@ function summarizeImportPayload(payload) {
     const activityCount = Object.values(payload.activitiesByDate).reduce((sum, list) => sum + list.length, 0);
     const healthCount = Object.values(payload.healthRecordsByDate).reduce((sum, list) => sum + list.length, 0);
     const symptomCount = Object.values(payload.symptomRecordsByDate).reduce((sum, list) => sum + list.length, 0);
+    const noteCount = Object.keys(payload.dailyNotesByDate || {}).length;
     const reminderCount = payload.reminders.length;
-    const dates = Object.keys(payload.activitiesByDate).concat(Object.keys(payload.healthRecordsByDate), Object.keys(payload.symptomRecordsByDate)).sort();
+    const dates = Object.keys(payload.activitiesByDate)
+        .concat(Object.keys(payload.healthRecordsByDate), Object.keys(payload.symptomRecordsByDate), Object.keys(payload.dailyNotesByDate || {}))
+        .sort();
     const rangeText = dates.length ? `${dates[0]} 至 ${dates[dates.length - 1]}` : '未包含日期记录';
-    return `检测到 ${activityCount} 条活动、${healthCount} 条健康数据、${symptomCount} 条症状记录、${reminderCount} 条提醒；日期范围：${rangeText}`;
+    return `检测到 ${activityCount} 条活动、${healthCount} 条健康数据、${symptomCount} 条症状记录、${noteCount} 条状态记录、${reminderCount} 条提醒；日期范围：${rangeText}`;
 }
 
 async function confirmImport(strategy) {
@@ -3107,12 +3213,17 @@ async function confirmImport(strategy) {
             allActivitiesData = pendingImportData.activitiesByDate;
             allHealthRecordsData = pendingImportData.healthRecordsByDate;
             allSymptomRecordsData = pendingImportData.symptomRecordsByDate;
+            allDailyNotesData = pendingImportData.dailyNotesByDate || {};
             reminders = normalizeReminders(pendingImportData.reminders);
             profile = pendingImportData.profile || {};
         } else {
             allActivitiesData = mergeDateBuckets(allActivitiesData, pendingImportData.activitiesByDate, normalizeActivity, getActivitySortTime);
             allHealthRecordsData = mergeDateBuckets(allHealthRecordsData, pendingImportData.healthRecordsByDate, item => item, item => item.time || '00:00');
             allSymptomRecordsData = mergeDateBuckets(allSymptomRecordsData, pendingImportData.symptomRecordsByDate, item => item, item => item.time || '00:00');
+            allDailyNotesData = {
+                ...allDailyNotesData,
+                ...(pendingImportData.dailyNotesByDate || {})
+            };
             reminders = mergeReminders(reminders, pendingImportData.reminders);
             profile = {
                 ...profile,
@@ -3137,6 +3248,7 @@ async function confirmImport(strategy) {
         allActivitiesData = previousState.activitiesByDate;
         allHealthRecordsData = previousState.healthRecordsByDate;
         allSymptomRecordsData = previousState.symptomRecordsByDate || {};
+        allDailyNotesData = previousState.dailyNotesByDate || {};
         reminders = previousState.reminders;
         profile = previousState.profile;
         metadata = {
@@ -3212,6 +3324,7 @@ function maybeRemindBackup() {
     const hasAnyData = Object.keys(allActivitiesData).length
         || Object.keys(allHealthRecordsData).length
         || Object.keys(allSymptomRecordsData).length
+        || Object.keys(allDailyNotesData).length
         || reminders.length
         || Object.keys(profile).length;
     if (!hasAnyData) return;

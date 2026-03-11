@@ -656,6 +656,50 @@ body.elder-mode .form-actions button {
     font-size: 1.5rem;
 }
 
+.daily-summary-section {
+    margin-bottom: 30px;
+}
+
+.daily-summary-card {
+    background: var(--card-bg);
+    border: 1px solid rgba(31, 122, 61, 0.12);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 4px 14px rgba(31, 122, 61, 0.08);
+}
+
+.daily-note-input {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text-color);
+    background: #fff;
+}
+
+.daily-note-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.12);
+}
+
+.daily-note-actions {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.daily-note-meta {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
 /* 底部操作按钮 */
 .bottom-actions {
     position: fixed;
