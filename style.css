@@ -53,8 +53,7 @@ body.elder-mode #currentDate {
 body.elder-mode .date-btn,
 body.elder-mode .fab-add,
 body.elder-mode .fab-health,
-body.elder-mode .fab-reminder,
-body.elder-mode .fab-export {
+body.elder-mode .fab-reminder {
     width: 68px;
     height: 68px;
 }
@@ -670,7 +669,7 @@ body.elder-mode .form-actions button {
     z-index: 1000;
 }
 
-.fab-add, .fab-health, .fab-symptom, .fab-reminder, .fab-export {
+.fab-add, .fab-health, .fab-symptom, .fab-reminder {
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -704,12 +703,7 @@ body.elder-mode .form-actions button {
     font-size: 1.5rem;
 }
 
-.fab-export {
-    background: linear-gradient(135deg, var(--forest-color), #6cbf72);
-    font-size: 1.6rem;
-}
-
-.fab-add:hover, .fab-health:hover, .fab-symptom:hover, .fab-reminder:hover, .fab-export:hover {
+.fab-add:hover, .fab-health:hover, .fab-symptom:hover, .fab-reminder:hover {
     transform: scale(1.1);
     box-shadow: 0 6px 16px rgba(0,0,0,0.4);
 }

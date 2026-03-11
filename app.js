@@ -675,7 +675,7 @@ function setupEventListeners() {
     document.getElementById('addHealthBtnInline').addEventListener('click', () => openHealthModal());
 
     // 导出入口
-    ['exportBtn', 'timelineExportBtn', 'quickExportBtn'].forEach(id => {
+    ['exportBtn', 'timelineExportBtn'].forEach(id => {
         document.getElementById(id).addEventListener('click', openExportModal);
     });
     document.getElementById('timelineOrderBtn').addEventListener('click', toggleTimelineOrder);
