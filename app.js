@@ -30,6 +30,7 @@ let aiConversationHistory = [];
 let aiConversationBusy = false;
 let cloudSyncBusy = false;
 let cloudSyncTimer = null;
+let calendarViewDate = new Date();
 
 // 获取类型标签
 function getTypeLabel(type) {
@@ -700,6 +701,10 @@ function setupEventListeners() {
     // 日期导航
     document.getElementById('prevDay').addEventListener('click', () => changeDate(-1));
     document.getElementById('nextDay').addEventListener('click', () => changeDate(1));
+    document.getElementById('currentDate').addEventListener('click', openCurrentDatePicker);
+    document.getElementById('calendarPrevMonth').addEventListener('click', () => shiftCalendarMonth(-1));
+    document.getElementById('calendarNextMonth').addEventListener('click', () => shiftCalendarMonth(1));
+    document.getElementById('calendarDayGrid').addEventListener('click', handleCalendarDayClick);
 
     // 添加按钮
     document.getElementById('addBtn').addEventListener('click', () => openModal());
@@ -755,6 +760,11 @@ function setupEventListeners() {
     window.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
             closeModal(e.target);
+        }
+
+        const dateWrap = document.querySelector('.current-date-wrap');
+        if (dateWrap && !dateWrap.contains(e.target)) {
+            document.getElementById('currentDatePanel')?.classList.add('hidden');
         }
     });
 
@@ -843,6 +853,87 @@ function changeDate(days) {
     loadHealthRecords();
     loadSymptomRecords();
     updateDisplay();
+}
+
+function openCurrentDatePicker() {
+    const panel = document.getElementById('currentDatePanel');
+    if (!panel) return;
+
+    calendarViewDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    renderCalendarPanel();
+    panel.classList.toggle('hidden');
+}
+
+function selectCurrentDate(date) {
+    currentDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
+    document.getElementById('currentDatePanel')?.classList.add('hidden');
+    loadActivities();
+    loadHealthRecords();
+    loadSymptomRecords();
+    updateDisplay();
+}
+
+function shiftCalendarMonth(offset) {
+    calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + offset, 1);
+    renderCalendarPanel();
+}
+
+function handleCalendarDayClick(e) {
+    const dayBtn = e.target.closest('.date-calendar-day');
+    if (!dayBtn) return;
+
+    const dateValue = dayBtn.dataset.date;
+    if (!dateValue) return;
+
+    selectCurrentDate(new Date(`${dateValue}T12:00:00`));
+}
+
+function renderCalendarPanel() {
+    const monthLabel = document.getElementById('calendarMonthLabel');
+    const grid = document.getElementById('calendarDayGrid');
+    if (!monthLabel || !grid) return;
+
+    const viewYear = calendarViewDate.getFullYear();
+    const viewMonth = calendarViewDate.getMonth();
+    const firstDay = new Date(viewYear, viewMonth, 1);
+    const firstWeekday = (firstDay.getDay() + 6) % 7;
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const prevMonthDays = new Date(viewYear, viewMonth, 0).getDate();
+    const todayKey = getDateKey(new Date());
+    const selectedKey = getDateKey(currentDate);
+
+    monthLabel.textContent = `${viewYear}年${viewMonth + 1}月`;
+
+    const dayItems = [];
+
+    for (let i = firstWeekday - 1; i >= 0; i--) {
+        const day = prevMonthDays - i;
+        const date = new Date(viewYear, viewMonth - 1, day);
+        dayItems.push(renderCalendarDay(date, { muted: true, todayKey, selectedKey }));
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(viewYear, viewMonth, day);
+        dayItems.push(renderCalendarDay(date, { muted: false, todayKey, selectedKey }));
+    }
+
+    while (dayItems.length < 42) {
+        const day = dayItems.length - (firstWeekday + daysInMonth) + 1;
+        const date = new Date(viewYear, viewMonth + 1, day);
+        dayItems.push(renderCalendarDay(date, { muted: true, todayKey, selectedKey }));
+    }
+
+    grid.innerHTML = dayItems.join('');
+}
+
+function renderCalendarDay(date, { muted, todayKey, selectedKey }) {
+    const dateKey = getDateKey(date);
+    const classes = ['date-calendar-day'];
+    if (muted) classes.push('is-muted');
+    if (dateKey === todayKey) classes.push('is-today');
+    if (dateKey === selectedKey) classes.push('is-selected');
+
+    return `<button type="button" class="${classes.join(' ')}" data-date="${dateKey}">${date.getDate()}</button>`;
 }
 
 // 更新显示

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#4CAF50">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>日常活动记录器</title>
@@ -27,7 +28,26 @@
             </div>
             <div class="date-selector">
                 <button id="prevDay" class="date-btn">◀</button>
-                <span id="currentDate"></span>
+                <div class="current-date-wrap">
+                    <button id="currentDate" class="current-date-btn" type="button"></button>
+                    <div id="currentDatePanel" class="current-date-panel hidden">
+                        <div class="date-calendar-header">
+                            <button id="calendarPrevMonth" type="button" class="date-calendar-nav">◀</button>
+                            <div id="calendarMonthLabel" class="date-calendar-month"></div>
+                            <button id="calendarNextMonth" type="button" class="date-calendar-nav">▶</button>
+                        </div>
+                        <div class="date-calendar-weekdays">
+                            <span>一</span>
+                            <span>二</span>
+                            <span>三</span>
+                            <span>四</span>
+                            <span>五</span>
+                            <span>六</span>
+                            <span>日</span>
+                        </div>
+                        <div id="calendarDayGrid" class="date-calendar-grid"></div>
+                    </div>
+                </div>
                 <button id="nextDay" class="date-btn">▶</button>
             </div>
         </header>

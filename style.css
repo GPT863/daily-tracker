@@ -250,6 +250,119 @@ body.elder-mode .form-actions button {
     font-weight: 500;
 }
 
+.current-date-btn {
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.24);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.25s, border-color 0.25s, transform 0.25s;
+}
+
+.current-date-btn:hover {
+    background: rgba(255,255,255,0.22);
+    border-color: rgba(255,255,255,0.42);
+    transform: translateY(-1px);
+}
+
+.current-date-btn:focus-visible {
+    outline: 2px solid rgba(255,255,255,0.8);
+    outline-offset: 2px;
+}
+
+.current-date-wrap {
+    position: relative;
+}
+
+.current-date-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.96);
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.16);
+    backdrop-filter: blur(10px);
+    z-index: 20;
+    min-width: 270px;
+}
+
+.date-calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.date-calendar-nav {
+    width: 32px;
+    height: 32px;
+    border: 1px solid rgba(31, 122, 61, 0.15);
+    border-radius: 10px;
+    background: rgba(223, 245, 228, 0.7);
+    color: var(--forest-color);
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.date-calendar-month {
+    flex: 1;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--forest-color);
+}
+
+.date-calendar-weekdays,
+.date-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.date-calendar-weekdays {
+    margin-bottom: 8px;
+}
+
+.date-calendar-weekdays span {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.date-calendar-day {
+    height: 34px;
+    border: 1px solid rgba(31, 122, 61, 0.12);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 0.88rem;
+}
+
+.date-calendar-day.is-muted {
+    color: #a0a0a0;
+    background: rgba(245, 245, 245, 0.92);
+}
+
+.date-calendar-day.is-today {
+    border-color: rgba(76, 175, 80, 0.45);
+    color: var(--forest-color);
+    font-weight: 700;
+}
+
+.date-calendar-day.is-selected {
+    background: linear-gradient(135deg, var(--forest-color), var(--primary-color));
+    color: white;
+    border-color: transparent;
+}
+
 /* 主内容区 */
 .app-main {
     padding: 20px;
