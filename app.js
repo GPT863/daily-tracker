@@ -705,6 +705,7 @@ function setupEventListeners() {
     document.getElementById('calendarPrevMonth').addEventListener('click', () => shiftCalendarMonth(-1));
     document.getElementById('calendarNextMonth').addEventListener('click', () => shiftCalendarMonth(1));
     document.getElementById('calendarDayGrid').addEventListener('click', handleCalendarDayClick);
+    document.getElementById('currentDatePanel').addEventListener('click', handleCalendarPanelClick);
 
     // 添加按钮
     document.getElementById('addBtn').addEventListener('click', () => openModal());
@@ -878,6 +879,16 @@ function shiftCalendarMonth(offset) {
     renderCalendarPanel();
 }
 
+function clearCalendarPanel() {
+    document.getElementById('currentDatePanel')?.classList.add('hidden');
+}
+
+function selectTodayFromCalendar() {
+    const today = new Date();
+    calendarViewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    selectCurrentDate(today);
+}
+
 function handleCalendarDayClick(e) {
     const dayBtn = e.target.closest('.date-calendar-day');
     if (!dayBtn) return;
@@ -886,6 +897,21 @@ function handleCalendarDayClick(e) {
     if (!dateValue) return;
 
     selectCurrentDate(new Date(`${dateValue}T12:00:00`));
+}
+
+function handleCalendarPanelClick(e) {
+    e.stopPropagation();
+
+    const clearBtn = e.target.closest('#calendarClearBtn');
+    if (clearBtn) {
+        clearCalendarPanel();
+        return;
+    }
+
+    const todayBtn = e.target.closest('#calendarTodayBtn');
+    if (todayBtn) {
+        selectTodayFromCalendar();
+    }
 }
 
 function renderCalendarPanel() {
