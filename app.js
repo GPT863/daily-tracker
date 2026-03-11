@@ -47,7 +47,6 @@ function getTypeLabel(type) {
 // 默认模板
 const defaultTemplates = [
     { id: 'tpl_1', name: '降压药', type: 'medication', content: '降压药 1片', feeling: '无不适', duration: null, icon: '💊' },
-    { id: 'tpl_2', name: '维生素D', type: 'medication', content: '维生素D 1粒', feeling: '', duration: null, icon: '💊' },
     { id: 'tpl_3', name: '晨跑', type: 'exercise', content: '慢跑', feeling: '呼吸顺畅', duration: 30, icon: '🏃' },
     { id: 'tpl_4', name: '早餐', type: 'meal', content: '燕麦粥 + 鸡蛋', feeling: '吃饱了', duration: 15, icon: '🍽️' },
     { id: 'tpl_5', name: '午休', type: 'sleep', content: '午休30分钟', feeling: '下午精神好', duration: 30, icon: '😴' }
@@ -378,7 +377,12 @@ async function initDB() {
 function loadTemplates() {
     const savedTemplates = getLocalStorageJSON('dailyTracker_templates', null);
     if (savedTemplates && savedTemplates.length > 0) {
-        templates = savedTemplates;
+        templates = savedTemplates.filter(template => {
+            return !(template.id === 'tpl_2' || template.name === '维生素D' || template.content === '维生素D 1粒');
+        });
+        if (templates.length !== savedTemplates.length) {
+            saveTemplates();
+        }
     } else {
         // 使用默认模板
         templates = [...defaultTemplates];
@@ -4299,6 +4303,11 @@ function getAiDateRange(range) {
     let startDate = new Date();
 
     switch (range) {
+        case 'today':
+            break;
+        case '3days':
+            startDate.setDate(endDate.getDate() - 2);
+            break;
         case 'week':
             startDate.setDate(endDate.getDate() - 6);
             break;
@@ -4314,11 +4323,10 @@ function getAiDateRange(range) {
             if (customStart && customEnd) {
                 return { startDate: customStart, endDate: customEnd };
             }
-            // 默认最近7天
-            startDate.setDate(endDate.getDate() - 6);
+            // 自定义范围未填写完整时，回退到今天
             break;
         default:
-            startDate.setDate(endDate.getDate() - 6);
+            break;
     }
 
     return {
