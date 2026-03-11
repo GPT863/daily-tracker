@@ -1,0 +1,594 @@
+# 健康生活记录器后端方案设计
+
+## 1. 文档信息
+
+- 文档名称：健康生活记录器后端方案设计
+- 技术栈：`.NET 8 Web API + MySQL 8`
+- 文档版本：`V1.0`
+- 文档日期：`2026-03-11`
+- 适用范围：当前前端仓库 `daily-tracker`
+
+## 2. 建设目标
+
+当前项目是本地优先的前端单页应用，核心数据保存在浏览器本地。为了支持后续多设备同步、账号体系、服务端备份、统一 AI 诊断代理和可审计的数据管理，需要增加独立后端。
+
+后端建设目标如下：
+
+- 提供统一账号与身份认证能力
+- 提供结构化健康数据存储能力
+- 提供全量快照同步与后续增量同步演进能力
+- 提供 AI 诊断服务端代理能力，避免密钥暴露在前端
+- 提供提醒、模板、个人档案等数据的统一管理能力
+- 为后续 App、小程序、管理后台预留复用接口
+
+## 3. 总体方案
+
+### 3.1 技术选型
+
+- API 框架：`ASP.NET Core 8 Web API`
+- ORM：`SqlSugar`
+- 数据库：`MySQL 8`
+- 认证方式：`JWT Bearer Token`
+- 密码加密：`ASP.NET Core Identity PasswordHasher`
+- 缓存：一期可不引入；二期可加 `Redis`
+- 日志：`Serilog`
+- 接口文档：`Swagger / OpenAPI`
+- 数据校验：`FluentValidation`
+- 对象存储：一期可先本地/数据库路径；二期接 `阿里云 OSS` 或 `腾讯云 COS`
+- 后台任务：一期使用应用内 `BackgroundService`；二期可演进为消息队列
+
+### 3.2 架构分层
+
+- `Api`：控制器、鉴权、Swagger、异常处理、中间件
+- `Application`：用例编排、DTO、校验、接口定义
+- `Domain`：实体、枚举、领域规则
+- `Infrastructure`：SqlSugar、MySQL、外部 AI 服务、文件存储、JWT
+
+推荐基础依赖：
+
+- `SqlSugarCore`
+- `MySqlConnector`
+- `Serilog.AspNetCore`
+- `Swashbuckle.AspNetCore`
+- `FluentValidation.AspNetCore`
+- `Microsoft.AspNetCore.Authentication.JwtBearer`
+
+建议目录结构：
+
+```text
+src/
+  DailyTracker.Api
+  DailyTracker.Application
+  DailyTracker.Domain
+  DailyTracker.Infrastructure
+tests/
+  DailyTracker.Api.Tests
+  DailyTracker.Application.Tests
+```
+
+## 4. 业务范围映射
+
+后端一期建议覆盖以下数据域：
+
+1. 用户与认证
+2. 个人档案
+3. 活动记录
+4. 健康数据记录
+5. 症状记录
+6. 提醒管理
+7. 快速模板
+8. 今日状态记录
+9. AI 诊断记录
+10. 云同步快照
+
+## 5. 核心设计原则
+
+- 前端兼容优先：尽量兼容当前 `app.js` 的数据结构
+- 先快照同步，后增量同步：先解决“能同步”，再解决“同步优雅”
+- 服务端统一安全边界：AI 密钥、用户身份、数据权限都由后端控制
+- 软删除优先：为同步冲突恢复与审计留空间
+- 审计字段完整：所有核心表统一包含创建时间、更新时间、创建人、更新时间
+
+## 6. 数据库设计
+
+### 6.1 命名规范
+
+- 表名统一小写下划线：如 `activity_records`
+- 主键统一 `bigint` 或 `char(36)`；建议一期使用 `bigint`
+- 时间字段统一使用 `datetime(3)`
+- 金额类无需求，本系统不涉及
+
+### 6.1.1 SqlSugar 使用建议
+
+- 一期优先采用 `Code First + DbMaintenance` 自动建表
+- 生产环境禁止应用启动时自动修改列结构，表结构变更改为显式 SQL 脚本
+- 读写逻辑统一通过仓储或查询服务封装，避免控制器直接操作 ORM
+- 常规 CRUD、分页、条件查询优先使用 `ISqlSugarClient`
+- 复杂统计查询允许使用原生 SQL，但必须收敛在基础设施层
+
+### 6.2 核心表清单
+
+#### 6.2.1 用户表 `users`
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint PK | 用户ID |
+| account | varchar(64) unique | 登录账号 |
+| password_hash | varchar(255) | 密码哈希 |
+| nickname | varchar(64) | 昵称 |
+| mobile | varchar(20) null | 手机号 |
+| status | tinyint | 1启用 0禁用 |
+| created_at | datetime(3) | 创建时间 |
+| updated_at | datetime(3) | 更新时间 |
+
+#### 6.2.2 用户档案表 `user_profiles`
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint PK | 主键 |
+| user_id | bigint unique | 用户ID |
+| name | varchar(64) null | 姓名 |
+| gender | varchar(16) null | 性别 |
+| age | int null | 年龄 |
+| height | decimal(5,2) null | 身高 |
+| weight | decimal(5,2) null | 体重 |
+| blood_type | varchar(8) null | 血型 |
+| blood_pressure | varchar(32) null | 常见血压 |
+| blood_sugar | varchar(32) null | 常见血糖 |
+| chronic_conditions | text null | 慢病史 |
+| allergies | text null | 过敏史 |
+| medications | text null | 长期用药 |
+| health_goals | text null | 健康目标 |
+| notes | text null | 备注 |
+| created_at | datetime(3) | 创建时间 |
+| updated_at | datetime(3) | 更新时间 |
+
+#### 6.2.3 活动记录表 `activity_records`
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint PK | 主键 |
+| user_id | bigint | 用户ID |
+| activity_date | date | 所属日期 |
+| start_time | time null | 开始时间 |
+| end_time | time null | 结束时间 |
+| duration_minutes | int null | 时长 |
+| type | varchar(32) | meal / medication / exercise / sleep / work / other |
+| content | varchar(255) | 内容 |
+| feeling | text null | 感受 |
+| image_url | varchar(500) null | 图片地址 |
+| source | varchar(32) | web / import / sync |
+| is_deleted | tinyint | 软删除 |
+| created_at | datetime(3) | 创建时间 |
+| updated_at | datetime(3) | 更新时间 |
+
+索引建议：
+
+- `idx_activity_user_date`
+- `idx_activity_user_type_date`
+
+#### 6.2.4 健康数据表 `health_records`
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint PK | 主键 |
+| user_id | bigint | 用户ID |
+| record_date | date | 所属日期 |
+| record_time | time null | 记录时间 |
+| type | varchar(32) | bloodPressure / heartRate / bloodSugar / bloodLipid / uricAcid / other |
+| value | varchar(64) | 数值 |
+| unit | varchar(32) null | 单位 |
+| notes | text null | 备注 |
+| image_url | varchar(500) null | 图片地址 |
+| is_deleted | tinyint | 软删除 |
+| created_at | datetime(3) | 创建时间 |
+| updated_at | datetime(3) | 更新时间 |
+
+#### 6.2.5 症状记录表 `symptom_records`
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint PK | 主键 |
+| user_id | bigint | 用户ID |
+| record_date | date | 所属日期 |
+| record_time | time null | 发生时间 |
+| description | text | 症状描述 |
+| measures | text null | 处理措施 |
+| image_url | varchar(500) null | 图片地址 |
+| is_deleted | tinyint | 软删除 |
+| created_at | datetime(3) | 创建时间 |
+| updated_at | datetime(3) | 更新时间 |
+
+#### 6.2.6 提醒表 `reminders`
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint PK | 主键 |
+| user_id | bigint | 用户ID |
+| title | varchar(128) | 提醒标题 |
+| type | varchar(32) | meal / medication / exercise / sleep / other |
+| reminder_date | date | 提醒日期 |
+| reminder_time | time | 提醒时间 |
+| repeat_type | varchar(16) | none / daily / weekly / biweekly / monthly |
+| notes | text null | 备注 |
+| image_url | varchar(500) null | 图片地址 |
+| completed | tinyint | 是否完成 |
+| completed_at | datetime(3) null | 完成时间 |
+| snooze_until | datetime(3) null | 延后至 |
+| snooze_count | int | 延后次数 |
+| is_deleted | tinyint | 软删除 |
+| created_at | datetime(3) | 创建时间 |
+| updated_at | datetime(3) | 更新时间 |
+
+#### 6.2.7 提醒操作历史表 `reminder_histories`
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint PK | 主键 |
+| reminder_id | bigint | 提醒ID |
+| action | varchar(32) | completed / reopened / snoozed |
+| action_value | varchar(64) null | 如延后分钟数 |
+| action_at | datetime(3) | 操作时间 |
+
+#### 6.2.8 模板表 `activity_templates`
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint PK | 主键 |
+| user_id | bigint | 用户ID |
+| name | varchar(64) | 模板名称 |
+| type | varchar(32) | 活动类型 |
+| content | varchar(255) | 内容 |
+| feeling | varchar(255) null | 感受 |
+| duration_minutes | int null | 时长 |
+| icon | varchar(16) | 图标 |
+| is_deleted | tinyint | 软删除 |
+| created_at | datetime(3) | 创建时间 |
+| updated_at | datetime(3) | 更新时间 |
+
+#### 6.2.9 今日状态记录表 `daily_status_notes`
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint PK | 主键 |
+| user_id | bigint | 用户ID |
+| note_date | date | 对应日期 |
+| content | text | 状态记录内容 |
+| created_at | datetime(3) | 创建时间 |
+| updated_at | datetime(3) | 更新时间 |
+
+约束建议：
+
+- `uk_daily_status_user_date`
+
+#### 6.2.10 AI 诊断记录表 `ai_diagnosis_logs`
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint PK | 主键 |
+| user_id | bigint | 用户ID |
+| range_type | varchar(32) | today / 3days / week / month / quarter / custom |
+| start_date | date | 分析开始日期 |
+| end_date | date | 分析结束日期 |
+| request_payload | longtext | 请求摘要 |
+| response_content | longtext | AI返回内容 |
+| model_name | varchar(64) null | 模型名 |
+| provider | varchar(32) | openai / deepseek / custom |
+| created_at | datetime(3) | 创建时间 |
+
+#### 6.2.11 云同步快照表 `sync_snapshots`
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint PK | 主键 |
+| user_id | bigint unique | 用户ID |
+| snapshot_json | longtext | 全量快照JSON |
+| snapshot_hash | varchar(64) | 快照哈希 |
+| client_updated_at | datetime(3) null | 客户端更新时间 |
+| server_updated_at | datetime(3) | 服务端更新时间 |
+
+## 7. 接口设计
+
+### 7.1 认证接口
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `GET /api/auth/me`
+
+### 7.2 个人档案接口
+
+- `GET /api/profile`
+- `PUT /api/profile`
+
+### 7.3 活动记录接口
+
+- `GET /api/activities?date=2026-03-11`
+- `GET /api/activities/range?startDate=2026-03-01&endDate=2026-03-11`
+- `POST /api/activities`
+- `PUT /api/activities/{id}`
+- `DELETE /api/activities/{id}`
+
+### 7.4 健康数据接口
+
+- `GET /api/health-records?date=2026-03-11`
+- `POST /api/health-records`
+- `PUT /api/health-records/{id}`
+- `DELETE /api/health-records/{id}`
+
+### 7.5 症状记录接口
+
+- `GET /api/symptom-records?date=2026-03-11`
+- `POST /api/symptom-records`
+- `PUT /api/symptom-records/{id}`
+- `DELETE /api/symptom-records/{id}`
+
+### 7.6 提醒接口
+
+- `GET /api/reminders/today`
+- `GET /api/reminders/upcoming`
+- `GET /api/reminders`
+- `POST /api/reminders`
+- `PUT /api/reminders/{id}`
+- `DELETE /api/reminders/{id}`
+- `POST /api/reminders/{id}/complete`
+- `POST /api/reminders/{id}/reopen`
+- `POST /api/reminders/{id}/snooze`
+
+### 7.7 模板接口
+
+- `GET /api/templates`
+- `POST /api/templates`
+- `PUT /api/templates/{id}`
+- `DELETE /api/templates/{id}`
+
+### 7.8 今日状态记录接口
+
+- `GET /api/daily-status?date=2026-03-11`
+- `PUT /api/daily-status`
+
+请求示例：
+
+```json
+{
+  "date": "2026-03-11",
+  "content": "今天总体状态平稳，午后有些疲劳。"
+}
+```
+
+### 7.9 AI 诊断接口
+
+- `POST /api/ai/diagnosis`
+- `POST /api/ai/followup`
+- `GET /api/ai/logs`
+
+说明：
+
+- 前端不再直接访问第三方 AI
+- API Key 存储在服务端配置中心
+- 服务端负责提示词拼装、限流、审计和脱敏
+
+### 7.10 云同步接口
+
+建议一期保留“全量快照同步”：
+
+- `GET /api/sync/snapshot`
+- `PUT /api/sync/snapshot`
+- `GET /api/sync/health`
+
+`PUT /api/sync/snapshot` 请求示例：
+
+```json
+{
+  "clientUpdatedAt": "2026-03-11T17:30:00+08:00",
+  "snapshot": {
+    "activitiesByDate": {},
+    "healthRecordsByDate": {},
+    "symptomRecordsByDate": {},
+    "dailyNotesByDate": {},
+    "reminders": [],
+    "profile": {},
+    "metadata": {}
+  }
+}
+```
+
+## 8. 鉴权与安全方案
+
+### 8.1 一期方案
+
+- 用户注册登录后获取 `JWT Access Token`
+- 前端通过 `Authorization: Bearer <token>` 调用接口
+- 所有业务接口按 `user_id` 做数据隔离
+
+### 8.2 安全要求
+
+- 密码仅存储哈希，不落明文
+- JWT 过期时间建议 `2小时`
+- Refresh Token 建议独立表存储
+- 图片上传限制大小、类型和数量
+- 所有写接口增加参数校验
+- AI 接口增加限流与调用日志
+- 导入接口增加 JSON 结构校验
+- 关键删除操作使用软删除
+
+## 9. 与当前前端的对接策略
+
+### 9.1 一期兼容原则
+
+当前前端仍保留本地存储能力，后端接入分两步：
+
+1. 第一阶段：只接云同步与 AI 代理
+2. 第二阶段：活动、健康、提醒等改为标准 CRUD API
+
+### 9.2 第一阶段建议
+
+优先上线以下接口：
+
+- `/api/auth/*`
+- `/api/sync/snapshot`
+- `/api/ai/diagnosis`
+- `/api/ai/followup`
+
+理由：
+
+- 现有前端已经有本地存储和快照导入导出能力
+- 快照同步可以最快解决账号和多端数据归集问题
+- AI 后端代理可以立刻解决前端暴露 API Key 的安全问题
+
+### 9.3 第二阶段建议
+
+将以下前端本地模块逐步改成服务端主存储：
+
+- 个人档案
+- 活动记录
+- 健康数据
+- 症状记录
+- 今日状态记录
+- 提醒
+- 快速模板
+
+## 10. AI 服务端代理方案
+
+### 10.1 目标
+
+- 隐藏第三方 AI Key
+- 统一模型切换策略
+- 记录请求和响应日志
+- 控制超时、重试和限流
+
+### 10.2 推荐实现
+
+- `IAiProviderClient`
+- `OpenAiClient`
+- `DeepSeekClient`
+- `CustomAiClient`
+
+由 `AiDiagnosisService` 统一调用，按配置决定具体供应商。
+
+### 10.3 服务端职责
+
+- 根据前端选择的范围读取数据库数据
+- 拼装提示词
+- 调用第三方 AI 接口
+- 保存诊断日志
+- 返回前端已格式化结果
+
+## 11. 文件上传方案
+
+### 11.1 一期简化方案
+
+- 图片上传到 API
+- API 落盘到本地目录或挂载卷
+- 数据库存储相对路径
+
+### 11.2 二期推荐方案
+
+- 接入 `OSS / COS`
+- API 返回公网访问地址
+- 图片统一压缩与缩略图处理
+
+## 12. 部署方案
+
+### 12.1 环境建议
+
+- 应用服务：Linux + `ASP.NET Core 8`
+- 数据库：`MySQL 8`
+- 反向代理：`Nginx`
+- HTTPS：`Let's Encrypt`
+
+### 12.2 配置项
+
+```json
+{
+  "ConnectionStrings": {
+    "Default": "server=127.0.0.1;port=3306;database=daily_tracker;user=app;password=***"
+  },
+  "Jwt": {
+    "Issuer": "daily-tracker-api",
+    "Audience": "daily-tracker-client",
+    "SecretKey": "***",
+    "AccessTokenMinutes": 120
+  },
+  "Ai": {
+    "Provider": "DeepSeek",
+    "ApiKey": "***",
+    "BaseUrl": "https://api.deepseek.com",
+    "Model": "deepseek-chat"
+  },
+  "Storage": {
+    "UploadRoot": "/data/daily-tracker/uploads"
+  }
+}
+```
+
+### 12.3 SqlSugar 初始化建议
+
+```csharp
+builder.Services.AddSingleton<ISqlSugarClient>(_ =>
+{
+    return new SqlSugarClient(new ConnectionConfig
+    {
+        ConnectionString = builder.Configuration.GetConnectionString("Default"),
+        DbType = DbType.MySql,
+        IsAutoCloseConnection = true,
+        InitKeyType = InitKeyType.Attribute
+    });
+});
+```
+
+实体建议通过特性标注，例如：
+
+```csharp
+[SugarTable("activity_records")]
+public class ActivityRecord
+{
+    [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
+    public long Id { get; set; }
+}
+```
+
+## 13. 开发里程碑
+
+### 13.1 Phase 1
+
+- 搭建 `.NET 8 Web API` 基础工程
+- 接入 MySQL、SqlSugar、Swagger、JWT
+- 实现用户登录注册
+- 实现快照同步接口
+- 实现 AI 代理接口
+
+### 13.2 Phase 2
+
+- 实现活动、健康、症状、提醒、模板、状态记录 CRUD
+- 接入图片上传
+- 接入提醒历史记录
+- 增加服务端校验和审计
+
+### 13.3 Phase 3
+
+- 引入 Redis 缓存
+- 引入对象存储
+- 增加增量同步
+- 增加后台管理端
+- 增加运营监控与告警
+
+## 14. 风险与注意事项
+
+- 当前前端是本地优先模型，切服务端主存储时要控制迁移成本
+- 快照同步简单但不够精细，后续可能需要增量同步和冲突解决
+- AI 诊断请求可能较大，需要控制单次查询时间范围和数据量
+- 图片若直接存 MySQL 会快速膨胀，不建议二进制入库
+- 提醒通知若要做服务端推送，需要额外设计消息通道，不建议在一期引入
+
+## 15. 结论
+
+对当前项目而言，`.NET 8 Web API + MySQL` 是一套稳妥、可扩展、适合后续企业化演进的方案。
+
+推荐实施顺序不是一次性把所有前端本地逻辑改成后端，而是：
+
+1. 先做认证、云同步快照、AI 服务端代理
+2. 再逐步把各业务模块切换为标准 CRUD API
+3. 最后补齐图片存储、缓存、后台管理和增量同步
+
+这样风险最低，交付速度也最快。
