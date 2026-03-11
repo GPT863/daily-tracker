@@ -107,6 +107,7 @@
         <div class="bottom-actions">
             <button id="addBtn" class="fab-add">+</button>
             <button id="healthBtn" class="fab-health">📋</button>
+            <button id="symptomBtn" class="fab-symptom">🩹</button>
             <button id="reminderBtn" class="fab-reminder">🔔</button>
             <button id="quickExportBtn" class="fab-export">⇩</button>
         </div>
@@ -747,6 +748,53 @@
                             <div id="healthImagePreview" class="activity-image-preview hidden">
                                 <img id="healthImagePreviewImg" alt="健康数据图片预览">
                                 <button type="button" id="removeHealthImage" class="remove-image-btn">移除图片</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel">取消</button>
+                        <button type="submit" class="btn-submit">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="symptomModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="symptomModalTitle">记录症状</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <form id="symptomForm" class="activity-form">
+                    <input type="hidden" id="symptomRecordId">
+
+                    <div class="form-group">
+                        <label for="symptomTime">症状发生时间</label>
+                        <input type="time" id="symptomTime" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="symptomDescription">症状描述</label>
+                        <textarea id="symptomDescription" rows="3" placeholder="例如：下午开始头痛，太阳穴位置有胀痛感" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="symptomMeasures">处理措施</label>
+                        <textarea id="symptomMeasures" rows="3" placeholder="例如：休息 30 分钟，喝温水，贴退热贴"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>症状图片</label>
+                        <div class="image-upload-card">
+                            <div class="image-upload-actions">
+                                <label for="symptomImageUpload" class="image-upload-btn">上传图片</label>
+                            </div>
+                            <input type="file" id="symptomImageUpload" accept="image/*" hidden>
+                            <div id="symptomImageHint" class="image-upload-hint">可上传症状照片、用药照片或处理过程记录图片。</div>
+                            <div id="symptomImagePreview" class="activity-image-preview hidden">
+                                <img id="symptomImagePreviewImg" alt="症状图片预览">
+                                <button type="button" id="removeSymptomImage" class="remove-image-btn">移除图片</button>
                             </div>
                         </div>
                     </div>
