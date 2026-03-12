@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#4CAF50">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -61,12 +61,15 @@
                 <div class="section-heading">
                     <h2>📋 健康数据</h2>
                     <div class="section-tools">
+                        <button id="toggleHealthSectionBtn" class="section-order-btn">查看健康数据</button>
                         <button id="addHealthBtnInline" class="section-order-btn">记录健康数据</button>
                     </div>
                 </div>
-                <div id="healthSummary" class="health-summary-grid"></div>
-                <div id="healthEmptyState" class="empty-state small">
-                    <p>当天还没有健康数据</p>
+                <div id="healthSectionBody" class="health-section-body hidden">
+                    <div id="healthSummary" class="health-summary-grid"></div>
+                    <div id="healthEmptyState" class="empty-state small">
+                        <p>当天还没有健康数据</p>
+                    </div>
                 </div>
             </section>
 

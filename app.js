@@ -720,6 +720,7 @@ function setupEventListeners() {
     document.getElementById('healthBtn').addEventListener('click', () => openHealthModal());
     document.getElementById('symptomBtn').addEventListener('click', () => openSymptomModal());
     document.getElementById('addHealthBtnInline').addEventListener('click', () => openHealthModal());
+    document.getElementById('toggleHealthSectionBtn').addEventListener('click', toggleHealthSection);
 
     // 导出入口
     ['exportBtn', 'timelineExportBtn'].forEach(id => {
@@ -968,10 +969,27 @@ function renderCalendarDay(date, { muted, todayKey, selectedKey }) {
 function updateDisplay() {
     updateDateDisplay();
     updateTimelineOrderButton();
+    updateHealthSectionButton();
     updateHealthDisplay();
     updateTimeline();
     updateDailySummary();
     updateStats();
+}
+
+function toggleHealthSection() {
+    const body = document.getElementById('healthSectionBody');
+    if (!body) return;
+
+    body.classList.toggle('hidden');
+    updateHealthSectionButton();
+}
+
+function updateHealthSectionButton() {
+    const body = document.getElementById('healthSectionBody');
+    const button = document.getElementById('toggleHealthSectionBtn');
+    if (!body || !button) return;
+
+    button.textContent = body.classList.contains('hidden') ? '查看健康数据' : '关闭健康数据';
 }
 
 // 更新日期显示

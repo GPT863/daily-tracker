@@ -405,6 +405,10 @@ body.elder-mode .form-actions button {
     margin-bottom: 30px;
 }
 
+.health-section-body {
+    margin-top: 4px;
+}
+
 .health-summary-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -2293,6 +2297,150 @@ body.elder-mode .stats-card-value {
 }
 
 /* 响应式设计 */
+@media (max-width: 768px) {
+    .app-main {
+        padding: 16px;
+    }
+
+    .header-top {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .header-tools {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .header-tool-btn,
+    .header-export-btn {
+        min-height: 42px;
+    }
+
+    .date-selector {
+        gap: 10px;
+    }
+
+    .current-date-btn {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    .current-date-wrap {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .current-date-panel {
+        width: min(92vw, 360px);
+        min-width: auto;
+    }
+
+    .stats-section,
+    .health-summary-grid,
+    .template-manager-list {
+        grid-template-columns: 1fr;
+    }
+
+    .section-tools,
+    .export-buttons,
+    .reminder-detail-actions,
+    .form-actions,
+    .import-actions,
+    .date-calendar-actions,
+    .ai-config-actions,
+    .ai-chat-actions {
+        flex-direction: column;
+    }
+
+    .section-tools > *,
+    .export-buttons > *,
+    .reminder-detail-actions > *,
+    .form-actions > *,
+    .import-actions > *,
+    .date-calendar-actions > *,
+    .ai-config-actions > *,
+    .ai-chat-actions > * {
+        width: 100%;
+    }
+
+    .modal-content {
+        width: calc(100% - 16px);
+        margin: 12px auto;
+        max-height: calc(100vh - 24px);
+        border-radius: 14px;
+    }
+
+    .modal-content.large {
+        width: calc(100% - 16px);
+        max-width: none;
+    }
+
+    .profile-grid,
+    .time-range-grid,
+    .ai-date-range-inputs {
+        grid-template-columns: 1fr;
+    }
+
+    .ai-diagnosis-content {
+        max-height: calc(100vh - 140px);
+        padding: 8px;
+    }
+
+    .ai-config-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ai-config-edit-btn {
+        align-self: flex-start;
+    }
+
+    .ai-range-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 12px;
+    }
+
+    .ai-range-option {
+        min-height: 36px;
+    }
+
+    .ai-data-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .ai-stat-item {
+        padding: 10px;
+        background: #fff;
+        border: 1px solid #e8ece8;
+        border-radius: 10px;
+    }
+
+    .ai-chat-composer textarea,
+    .ai-result-content {
+        font-size: 16px;
+    }
+
+    .bottom-actions {
+        right: 16px;
+        bottom: 16px;
+        max-width: 168px;
+        gap: 10px;
+    }
+
+    .fab-add,
+    .fab-health,
+    .fab-symptom,
+    .fab-reminder {
+        width: 56px;
+        height: 56px;
+    }
+}
+
 @media (max-width: 600px) {
     .header-top {
         align-items: flex-start;
@@ -2377,6 +2525,79 @@ body.elder-mode .stats-card-value {
 
     .tab-btn {
         padding: 12px 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-header {
+        padding: 16px 14px;
+    }
+
+    .app-header h1 {
+        font-size: 1.15rem;
+    }
+
+    .header-tools {
+        gap: 8px;
+    }
+
+    .header-tool-btn,
+    .header-export-btn {
+        padding: 8px 12px;
+        font-size: 0.82rem;
+    }
+
+    .app-main {
+        padding: 14px;
+    }
+
+    .date-selector {
+        gap: 8px;
+    }
+
+    .date-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+
+    .current-date-btn {
+        padding: 9px 12px;
+        font-size: 0.92rem;
+    }
+
+    .current-date-panel {
+        width: min(94vw, 340px);
+        padding: 10px;
+    }
+
+    .ai-config-section,
+    .ai-data-section,
+    .ai-options-section,
+    .ai-action-section,
+    .ai-result-section {
+        padding: 12px;
+    }
+
+    .ai-range-options,
+    .ai-data-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .ai-config-edit-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .reminder-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .bottom-actions {
+        right: 12px;
+        bottom: 12px;
     }
 }
 
