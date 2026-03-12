@@ -441,8 +441,14 @@
                 <div class="ai-diagnosis-content">
                     <!-- API配置 -->
                     <div class="ai-config-section">
-                        <h3 class="ai-section-title">API配置</h3>
-                        <div class="ai-config-form">
+                        <div class="ai-config-header">
+                            <div>
+                                <h3 class="ai-section-title">API配置</h3>
+                                <p id="aiConfigSummary" class="ai-config-summary hidden"></p>
+                            </div>
+                            <button type="button" id="editAiConfigBtn" class="ai-config-edit-btn hidden">修改配置</button>
+                        </div>
+                        <div id="aiConfigFormWrap" class="ai-config-form">
                             <div class="form-group">
                                 <label for="aiProvider">AI服务提供商</label>
                                 <select id="aiProvider">
@@ -455,7 +461,10 @@
                             </div>
                             <div class="form-group">
                                 <label for="aiApiKey">API密钥</label>
-                                <input type="password" id="aiApiKey" placeholder="请输入您的API密钥">
+                                <div class="ai-password-field">
+                                    <input type="password" id="aiApiKey" placeholder="请输入您的API密钥">
+                                    <button type="button" id="toggleAiApiKeyBtn" class="ai-password-toggle" aria-label="显示API密钥" title="显示API密钥">👁</button>
+                                </div>
                                 <small class="form-hint">密钥仅存储在本地浏览器中，不会上传到服务器</small>
                             </div>
                             <div class="form-group hidden" id="customApiEndpointGroup">

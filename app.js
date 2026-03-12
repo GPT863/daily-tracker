@@ -23,7 +23,9 @@ let aiConfig = {
     provider: 'openai',
     apiKey: '',
     apiEndpoint: '',
-    model: ''
+    model: '',
+    verified: false,
+    verifiedAt: ''
 };
 let aiConversationContext = null;
 let aiConversationHistory = [];
@@ -4255,16 +4257,44 @@ function loadAiConfig() {
     const saved = localStorage.getItem('dailyTracker_aiConfig');
     if (saved) {
         try {
-            aiConfig = JSON.parse(saved);
+            const parsedConfig = JSON.parse(saved);
+            const isLegacyVerifiedConfig = !Object.prototype.hasOwnProperty.call(parsedConfig, 'verified')
+                && !!parsedConfig.apiKey
+                && (parsedConfig.provider !== 'custom' || !!parsedConfig.apiEndpoint);
+
+            aiConfig = {
+                provider: 'openai',
+                apiKey: '',
+                apiEndpoint: '',
+                model: '',
+                verified: false,
+                verifiedAt: '',
+                ...parsedConfig
+            };
+            if (isLegacyVerifiedConfig) {
+                aiConfig.verified = true;
+                localStorage.setItem('dailyTracker_aiConfig', JSON.stringify(aiConfig));
+            }
             document.getElementById('aiProvider').value = aiConfig.provider || 'openai';
             document.getElementById('aiApiKey').value = aiConfig.apiKey || '';
             document.getElementById('aiModel').value = aiConfig.model || '';
             if (aiConfig.apiEndpoint) {
                 document.getElementById('customApiEndpoint').value = aiConfig.apiEndpoint;
             }
+            syncAiProviderFields();
         } catch (e) {
             console.error('加载AI配置失败:', e);
         }
+    } else {
+        aiConfig = {
+            provider: 'openai',
+            apiKey: '',
+            apiEndpoint: '',
+            model: '',
+            verified: false,
+            verifiedAt: ''
+        };
+        syncAiProviderFields();
     }
 }
 
@@ -4279,9 +4309,109 @@ function saveAiConfig() {
         apiEndpoint = document.getElementById('customApiEndpoint').value.trim();
     }
 
-    aiConfig = { provider, apiKey, model, apiEndpoint };
+    aiConfig = {
+        provider,
+        apiKey,
+        model,
+        apiEndpoint,
+        verified: false,
+        verifiedAt: ''
+    };
     localStorage.setItem('dailyTracker_aiConfig', JSON.stringify(aiConfig));
+    updateAiConfigSection();
     showToast('AI配置已保存！');
+}
+
+function syncAiProviderFields() {
+    const customGroup = document.getElementById('customApiEndpointGroup');
+    if (!customGroup) return;
+
+    if (document.getElementById('aiProvider')?.value === 'custom') {
+        customGroup.classList.remove('hidden');
+    } else {
+        customGroup.classList.add('hidden');
+    }
+}
+
+function hasUsableAiConfig() {
+    if (!aiConfig?.apiKey) return false;
+    if (aiConfig.provider === 'custom' && !aiConfig.apiEndpoint) return false;
+    return true;
+}
+
+function getAiProviderLabel(provider) {
+    const labels = {
+        openai: 'OpenAI',
+        anthropic: 'Anthropic',
+        deepseek: 'DeepSeek',
+        tongyi: '通义千问',
+        custom: '自定义API'
+    };
+    return labels[provider] || provider || '未配置';
+}
+
+function buildAiConfigSummary() {
+    const parts = [`<strong>${aiConfig.verified ? '已连接' : '已配置'}</strong> ${getAiProviderLabel(aiConfig.provider)}`];
+    if (aiConfig.model) {
+        parts.push(`模型：${aiConfig.model}`);
+    } else {
+        parts.push('模型：默认');
+    }
+    if (aiConfig.verifiedAt) {
+        const verifiedDate = new Date(aiConfig.verifiedAt);
+        if (!Number.isNaN(verifiedDate.getTime())) {
+            parts.push(`最近验证：${verifiedDate.toLocaleString('zh-CN')}`);
+        }
+    }
+    return parts.join(' · ');
+}
+
+function updateAiConfigSection(forceExpanded = null) {
+    const formWrap = document.getElementById('aiConfigFormWrap');
+    const summary = document.getElementById('aiConfigSummary');
+    const editBtn = document.getElementById('editAiConfigBtn');
+    if (!formWrap || !summary || !editBtn) return;
+
+    const shouldCollapse = forceExpanded === null
+        ? hasUsableAiConfig()
+        : !forceExpanded;
+
+    if (shouldCollapse) {
+        formWrap.classList.add('hidden');
+        summary.innerHTML = buildAiConfigSummary();
+        summary.classList.remove('hidden');
+        editBtn.classList.remove('hidden');
+    } else {
+        formWrap.classList.remove('hidden');
+        if (hasUsableAiConfig()) {
+            summary.innerHTML = buildAiConfigSummary();
+            summary.classList.remove('hidden');
+        } else {
+            summary.classList.add('hidden');
+            summary.innerHTML = '';
+        }
+        editBtn.classList.toggle('hidden', !hasUsableAiConfig());
+    }
+}
+
+function markAiConfigVerified() {
+    if (!hasUsableAiConfig()) return;
+    aiConfig.verified = true;
+    aiConfig.verifiedAt = new Date().toISOString();
+    localStorage.setItem('dailyTracker_aiConfig', JSON.stringify(aiConfig));
+    updateAiConfigSection();
+}
+
+function setAiApiKeyVisibility(visible) {
+    const input = document.getElementById('aiApiKey');
+    const toggleBtn = document.getElementById('toggleAiApiKeyBtn');
+    if (!input || !toggleBtn) return;
+
+    input.type = visible ? 'text' : 'password';
+    toggleBtn.dataset.visible = visible ? 'true' : 'false';
+    toggleBtn.textContent = visible ? '🙈' : '👁';
+    toggleBtn.setAttribute('aria-label', visible ? '隐藏API密钥' : '显示API密钥');
+    toggleBtn.title = visible ? '隐藏API密钥' : '显示API密钥';
 }
 
 // 打开AI诊断模态框
@@ -4289,6 +4419,8 @@ function openAiDiagnosisModal() {
     loadAiConfig();
     updateAiDataPreview();
     resetAiProcess();
+    setAiApiKeyVisibility(false);
+    updateAiConfigSection();
     document.getElementById('aiDiagnosisModal').style.display = 'block';
     renderAiConversation();
 }
@@ -4502,6 +4634,7 @@ async function startAiDiagnosis() {
         // 调用AI API
         appendAiProcess('running', '正在请求 AI 服务，请稍候。');
         const response = await callAiApi(prompt);
+        markAiConfigVerified();
         appendAiProcess('success', 'AI 服务已返回结果，正在整理展示内容。');
 
         // 显示结果
@@ -4568,11 +4701,12 @@ async function sendAiFollowup() {
             ...aiConversationHistory
         ];
 
-        const response = await callAiApi(messages, {
-            systemPrompt: '你是一位专业、友好的健康顾问。请基于已有诊断结果继续回答用户追问，避免重复整份报告；保持中文表达清晰简洁；不要做医疗诊断结论，对于明显异常情况建议咨询专业医生。'
-        });
+	        const response = await callAiApi(messages, {
+	            systemPrompt: '你是一位专业、友好的健康顾问。请基于已有诊断结果继续回答用户追问，避免重复整份报告；保持中文表达清晰简洁；不要做医疗诊断结论，对于明显异常情况建议咨询专业医生。'
+	        });
+            markAiConfigVerified();
 
-        aiConversationHistory.push({ role: 'assistant', content: response });
+	        aiConversationHistory.push({ role: 'assistant', content: response });
         appendAiProcess('success', '追问回答已生成。');
     } catch (error) {
         console.error('AI追问失败:', error);
@@ -4950,15 +5084,24 @@ function initAiDiagnosisEvents() {
         // 提供商切换
         const provider = document.getElementById('aiProvider');
         if (provider) {
-            provider.addEventListener('change', (e) => {
-                const customGroup = document.getElementById('customApiEndpointGroup');
-                if (customGroup) {
-                    if (e.target.value === 'custom') {
-                        customGroup.classList.remove('hidden');
-                    } else {
-                        customGroup.classList.add('hidden');
-                    }
-                }
+            provider.addEventListener('change', () => {
+                syncAiProviderFields();
+            });
+        }
+
+        const editAiConfigBtn = document.getElementById('editAiConfigBtn');
+        if (editAiConfigBtn) {
+            editAiConfigBtn.addEventListener('click', () => {
+                updateAiConfigSection(true);
+            });
+        }
+
+        const toggleAiApiKeyBtn = document.getElementById('toggleAiApiKeyBtn');
+        if (toggleAiApiKeyBtn) {
+            toggleAiApiKeyBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const isVisible = toggleAiApiKeyBtn.dataset.visible === 'true';
+                setAiApiKeyVisibility(!isVisible);
             });
         }
 
