@@ -837,6 +837,14 @@ body.elder-mode .form-actions button {
     gap: 10px;
 }
 
+.daily-note-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .daily-note-meta {
     color: var(--text-secondary);
     font-size: 0.85rem;
@@ -2350,7 +2358,8 @@ body.elder-mode .stats-card-value {
     .import-actions,
     .date-calendar-actions,
     .ai-config-actions,
-    .ai-chat-actions {
+    .ai-chat-actions,
+    .daily-note-actions {
         flex-direction: column;
     }
 
@@ -2361,7 +2370,17 @@ body.elder-mode .stats-card-value {
     .import-actions > *,
     .date-calendar-actions > *,
     .ai-config-actions > *,
-    .ai-chat-actions > * {
+    .ai-chat-actions > *,
+    .daily-note-actions > * {
+        width: 100%;
+    }
+
+    .daily-note-action-buttons {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .daily-note-action-buttons > * {
         width: 100%;
     }
 

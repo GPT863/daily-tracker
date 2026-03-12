@@ -723,7 +723,7 @@ function setupEventListeners() {
     document.getElementById('toggleHealthSectionBtn').addEventListener('click', toggleHealthSection);
 
     // 导出入口
-    ['exportBtn', 'timelineExportBtn'].forEach(id => {
+    ['exportBtn'].forEach(id => {
         document.getElementById(id).addEventListener('click', openExportModal);
     });
     document.getElementById('timelineOrderBtn').addEventListener('click', toggleTimelineOrder);
@@ -816,6 +816,7 @@ function setupEventListeners() {
     document.getElementById('cloudPushBtn').addEventListener('click', () => pushSnapshotToCloud(true));
     document.getElementById('cloudPullBtn').addEventListener('click', pullSnapshotFromCloud);
     document.getElementById('saveDailyNoteBtn').addEventListener('click', saveDailyNote);
+    document.getElementById('quickAiDiagnosisBtn').addEventListener('click', runQuickTodayAiDiagnosis);
     document.getElementById('dailyNoteInput').addEventListener('input', () => {
         const input = document.getElementById('dailyNoteInput');
         const meta = document.getElementById('dailyNoteMeta');
@@ -963,6 +964,22 @@ function renderCalendarDay(date, { muted, todayKey, selectedKey }) {
     if (dateKey === selectedKey) classes.push('is-selected');
 
     return `<button type="button" class="${classes.join(' ')}" data-date="${dateKey}">${date.getDate()}</button>`;
+}
+
+async function runQuickTodayAiDiagnosis() {
+    openAiDiagnosisModal();
+
+    const todayRange = document.querySelector('input[name="aiRange"][value="today"]');
+    const customRangeInputs = document.getElementById('aiDateRangeInputs');
+    if (todayRange) {
+        todayRange.checked = true;
+    }
+    if (customRangeInputs) {
+        customRangeInputs.classList.add('hidden');
+    }
+    updateAiDataPreview();
+
+    await startAiDiagnosis();
 }
 
 // 更新显示

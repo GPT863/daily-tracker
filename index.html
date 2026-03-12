@@ -93,7 +93,10 @@
                     <textarea id="dailyNoteInput" class="daily-note-input" placeholder="记录今天的感受、状态变化、需要关注的事项..."></textarea>
                     <div class="daily-note-actions">
                         <span id="dailyNoteMeta" class="daily-note-meta">尚未保存</span>
-                        <button id="saveDailyNoteBtn" class="section-order-btn">保存状态记录</button>
+                        <div class="daily-note-action-buttons">
+                            <button id="saveDailyNoteBtn" class="section-order-btn">保存状态记录</button>
+                            <button id="quickAiDiagnosisBtn" class="section-order-btn">一键AI诊断</button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -104,7 +107,6 @@
                     <h2>📝 时间线</h2>
                     <div class="section-tools">
                         <button id="timelineOrderBtn" class="section-order-btn">倒序显示</button>
-                        <button id="timelineExportBtn" class="section-export-btn">导出今日记录</button>
                     </div>
                 </div>
                 <div id="timeline" class="timeline"></div>
