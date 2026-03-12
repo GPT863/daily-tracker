@@ -476,7 +476,11 @@
                                 <input type="text" id="aiModel" placeholder="留空使用默认模型">
                                 <small class="form-hint">例如: gpt-4, claude-3-opus-20240229</small>
                             </div>
-                            <button type="button" id="saveAiConfigBtn" class="btn-submit">保存配置</button>
+                            <div class="ai-config-actions">
+                                <button type="button" id="testAiConfigBtn" class="btn-secondary">测试连接</button>
+                                <button type="button" id="saveAiConfigBtn" class="btn-submit">保存配置</button>
+                            </div>
+                            <p id="aiConfigTestStatus" class="ai-config-test-status hidden"></p>
                         </div>
                     </div>
 

@@ -4299,7 +4299,7 @@ function loadAiConfig() {
 }
 
 // 保存AI配置
-function saveAiConfig() {
+function getAiConfigFromForm() {
     const provider = document.getElementById('aiProvider').value;
     const apiKey = document.getElementById('aiApiKey').value.trim();
     const model = document.getElementById('aiModel').value.trim();
@@ -4309,7 +4309,7 @@ function saveAiConfig() {
         apiEndpoint = document.getElementById('customApiEndpoint').value.trim();
     }
 
-    aiConfig = {
+    return {
         provider,
         apiKey,
         model,
@@ -4317,6 +4317,10 @@ function saveAiConfig() {
         verified: false,
         verifiedAt: ''
     };
+}
+
+function saveAiConfig() {
+    aiConfig = getAiConfigFromForm();
     localStorage.setItem('dailyTracker_aiConfig', JSON.stringify(aiConfig));
     updateAiConfigSection();
     showToast('AI配置已保存！');
@@ -4414,11 +4418,71 @@ function setAiApiKeyVisibility(visible) {
     toggleBtn.title = visible ? '隐藏API密钥' : '显示API密钥';
 }
 
+function setAiConfigTestStatus(message = '', type = '') {
+    const status = document.getElementById('aiConfigTestStatus');
+    if (!status) return;
+
+    if (!message) {
+        status.textContent = '';
+        status.classList.add('hidden');
+        status.classList.remove('success', 'error');
+        return;
+    }
+
+    status.textContent = message;
+    status.classList.remove('hidden');
+    status.classList.toggle('success', type === 'success');
+    status.classList.toggle('error', type === 'error');
+}
+
+async function testAiConfigConnection() {
+    const testBtn = document.getElementById('testAiConfigBtn');
+    if (!testBtn) return;
+
+    const config = getAiConfigFromForm();
+    if (!config.apiKey) {
+        setAiConfigTestStatus('请先填写 API 密钥', 'error');
+        showToast('请先填写API密钥');
+        return;
+    }
+    if (config.provider === 'custom' && !config.apiEndpoint) {
+        setAiConfigTestStatus('自定义 API 需要填写接口地址', 'error');
+        showToast('请先填写自定义API端点');
+        return;
+    }
+
+    const originalText = testBtn.textContent;
+    testBtn.disabled = true;
+    setAiConfigTestStatus('正在测试连接，请稍候...', '');
+    testBtn.textContent = '测试中...';
+
+    try {
+        await callAiApi('请只回复“连接成功”四个字。', { config });
+        aiConfig = {
+            ...config,
+            verified: true,
+            verifiedAt: new Date().toISOString()
+        };
+        localStorage.setItem('dailyTracker_aiConfig', JSON.stringify(aiConfig));
+        updateAiConfigSection(true);
+        setAiConfigTestStatus('连接成功，可以正常访问大模型', 'success');
+        showToast('大模型连接成功');
+    } catch (error) {
+        console.error('测试AI连接失败:', error);
+        setAiConfigTestStatus(`连接失败：${error.message}`, 'error');
+        showToast('大模型连接失败');
+    } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = originalText;
+    }
+}
+
 // 打开AI诊断模态框
 function openAiDiagnosisModal() {
     loadAiConfig();
     updateAiDataPreview();
     resetAiProcess();
+    setAiConfigTestStatus();
     setAiApiKeyVisibility(false);
     updateAiConfigSection();
     document.getElementById('aiDiagnosisModal').style.display = 'block';
@@ -4944,7 +5008,8 @@ function buildAnalysisPrompt(data) {
 
 // 调用AI API
 async function callAiApi(promptOrMessages, options = {}) {
-    const { provider, apiKey, model, apiEndpoint } = aiConfig;
+    const config = options.config || aiConfig;
+    const { provider, apiKey, model, apiEndpoint } = config;
     const systemPrompt = options.systemPrompt || '你是一位专业的健康顾问，擅长分析健康数据并提供个性化建议。';
     const messages = Array.isArray(promptOrMessages)
         ? promptOrMessages
@@ -5080,6 +5145,9 @@ function initAiDiagnosisEvents() {
         // 保存AI配置
         const saveBtn = document.getElementById('saveAiConfigBtn');
         if (saveBtn) saveBtn.addEventListener('click', saveAiConfig);
+
+        const testBtn = document.getElementById('testAiConfigBtn');
+        if (testBtn) testBtn.addEventListener('click', testAiConfigConnection);
 
         // 提供商切换
         const provider = document.getElementById('aiProvider');
