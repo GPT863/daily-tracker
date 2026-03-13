@@ -18,11 +18,17 @@
             <div class="header-top">
                 <h1>📅 今日活动记录</h1>
                 <div class="header-tools">
-                    <button id="cloudSyncBtn" class="header-tool-btn">云同步</button>
-                    <button id="profileBtn" class="header-tool-btn">个人信息</button>
-                    <button id="seedDemoBtn" class="header-tool-btn">示例数据</button>
-                    <button id="resetDataBtn" class="header-tool-btn danger">清空</button>
                     <button id="exportBtn" class="header-export-btn">导出</button>
+                    <div class="header-secondary-wrap">
+                        <!-- 桌面端：直接显示所有按钮；移动端：折叠到 ⋮ 菜单 -->
+                        <button id="headerMoreBtn" class="header-more-btn" type="button" aria-label="更多功能" aria-expanded="false">⋮</button>
+                        <div id="headerMoreMenu" class="header-more-menu" role="menu">
+                            <button id="cloudSyncBtn" class="header-tool-btn">☁ 云同步</button>
+                            <button id="profileBtn" class="header-tool-btn">👤 个人信息</button>
+                            <button id="seedDemoBtn" class="header-tool-btn">📂 示例数据</button>
+                            <button id="resetDataBtn" class="header-tool-btn danger">🗑 清空</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="date-selector">
@@ -116,12 +122,24 @@
             </section>
         </main>
 
-        <!-- 底部导航按钮 -->
+        <!-- 底部导航/FAB 按钮 -->
         <div class="bottom-actions">
-            <button id="addBtn" class="fab-add">+</button>
-            <button id="healthBtn" class="fab-health">📋</button>
-            <button id="symptomBtn" class="fab-symptom">🩹</button>
-            <button id="reminderBtn" class="fab-reminder">🔔</button>
+            <button id="addBtn" class="fab-add">
+                <span class="nav-icon">＋</span>
+                <span class="nav-label">记录</span>
+            </button>
+            <button id="healthBtn" class="fab-health">
+                <span class="nav-icon">📋</span>
+                <span class="nav-label">健康</span>
+            </button>
+            <button id="symptomBtn" class="fab-symptom">
+                <span class="nav-icon">🩹</span>
+                <span class="nav-label">症状</span>
+            </button>
+            <button id="reminderBtn" class="fab-reminder">
+                <span class="nav-icon">🔔</span>
+                <span class="nav-label">提醒</span>
+            </button>
         </div>
 
         <!-- 添加/编辑活动表单模态框 -->

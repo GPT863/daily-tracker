@@ -11,12 +11,22 @@
     --forest-color: #1f7a3d;
     --mint-color: #dff5e4;
     --leaf-shadow: 0 10px 30px rgba(40, 122, 68, 0.16);
-    --bg-color: #f5f5f5;
+    --bg-color: #f0f4f0;
     --card-bg: #ffffff;
-    --text-color: #333333;
-    --text-secondary: #666666;
-    --border-color: #e0e0e0;
-    --shadow: 0 2px 8px rgba(0,0,0,0.1);
+    --text-color: #1a2e1c;
+    --text-secondary: #5a7360;
+    --border-color: #d8e8da;
+    --shadow: 0 2px 10px rgba(31,122,61,0.08);
+    --shadow-md: 0 4px 18px rgba(31,122,61,0.12);
+    --shadow-lg: 0 8px 32px rgba(31,122,61,0.15);
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --space-xs: 8px;
+    --space-sm: 12px;
+    --space-md: 20px;
+    --space-lg: 28px;
+    --nav-height: 64px;
 }
 
 body {
@@ -161,9 +171,9 @@ body.elder-mode .form-actions button {
         radial-gradient(circle at top right, rgba(223, 245, 228, 0.35), transparent 36%),
         linear-gradient(135deg, var(--forest-color), var(--primary-color) 55%, var(--secondary-color));
     color: white;
-    padding: 20px;
+    padding: 18px 20px 14px;
     text-align: center;
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow-md);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -180,7 +190,94 @@ body.elder-mode .form-actions button {
 .header-tools {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+}
+
+/* 桌面端：secondary wrap 展开为横向菜单 */
+.header-secondary-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.header-more-btn {
+    display: none; /* 桌面端隐藏，移动端显示 */
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    font-size: 1.4rem;
+    font-weight: 700;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    line-height: 1;
+    transition: background 0.2s;
+}
+
+.header-more-btn:hover {
+    background: rgba(255,255,255,0.24);
+}
+
+/* 桌面端：menu 当普通 flex 行显示 */
+.header-more-menu {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 移动端 dropdown */
+.header-more-menu.dropdown-open {
+    display: flex;
+}
+
+/* Dropdown 选项条（移动端专用，仅当 dropdown-mode 激活时） */
+.header-more-menu.dropdown-mode {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    flex-direction: column;
+    background: white;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    min-width: 160px;
+    z-index: 200;
+}
+
+.header-more-menu.dropdown-mode.dropdown-open {
+    display: flex;
+}
+
+.header-more-menu.dropdown-mode .header-tool-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    border-radius: 0;
+    padding: 14px 18px;
+    text-align: left;
+    font-size: 0.95rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.header-more-menu.dropdown-mode .header-tool-btn:last-child {
+    border-bottom: none;
+}
+
+.header-more-menu.dropdown-mode .header-tool-btn:hover {
+    background: var(--mint-color);
+    transform: none;
+}
+
+.header-more-menu.dropdown-mode .header-tool-btn.danger {
+    color: #c0392b;
+    background: none;
+}
+
+.header-more-menu.dropdown-mode .header-tool-btn.danger:hover {
+    background: rgba(192,57,43,0.08);
 }
 
 .app-header h1 {
@@ -390,7 +487,46 @@ body.elder-mode .form-actions button {
 
 /* 主内容区 */
 .app-main {
-    padding: 20px;
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+/* Section 通用样式优化 */
+.health-section,
+.daily-summary-section,
+.timeline-section {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(40,122,68,0.06);
+}
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: var(--space-md);
+}
+
+.section-heading h2,
+.reminder-header h2,
+.daily-summary-section .section-heading h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--forest-color);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.section-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 /* 统计卡片 */
@@ -402,7 +538,7 @@ body.elder-mode .form-actions button {
 }
 
 .health-section {
-    margin-bottom: 30px;
+    /* margin handled by app-main gap */
 }
 
 .health-section-body {
@@ -496,89 +632,91 @@ body.elder-mode .form-actions button {
 }
 
 /* 时间线 */
-.timeline-section h2 {
-    font-size: 1.3rem;
-}
 
 .section-heading {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 20px;
+    margin-bottom: var(--space-md);
 }
 
 .section-tools {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .section-order-btn,
 .section-export-btn {
-    border: none;
-    background: linear-gradient(135deg, var(--mint-color), #f4fff5);
+    border: 1px solid rgba(40, 122, 68, 0.16);
+    background: rgba(223, 245, 228, 0.6);
     color: var(--forest-color);
-    padding: 10px 14px;
+    padding: 7px 14px;
     border-radius: 999px;
-    font-size: 0.88rem;
-    font-weight: 700;
+    font-size: 0.82rem;
+    font-weight: 600;
     cursor: pointer;
-    box-shadow: var(--leaf-shadow);
-    transition: transform 0.25s, box-shadow 0.25s;
-}
-
-.section-order-btn {
-    background: rgba(223, 245, 228, 0.72);
-    border: 1px solid rgba(40, 122, 68, 0.12);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+    white-space: nowrap;
 }
 
 .section-order-btn:hover,
 .section-export-btn:hover {
+    background: rgba(223, 245, 228, 0.95);
     transform: translateY(-1px);
-    box-shadow: 0 12px 28px rgba(40, 122, 68, 0.2);
+    box-shadow: 0 4px 12px rgba(40, 122, 68, 0.15);
 }
 
 .timeline {
     position: relative;
-    padding-left: 30px;
+    padding-left: 28px;
 }
 
 .timeline::before {
     content: '';
     position: absolute;
-    left: 10px;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: linear-gradient(to bottom, var(--primary-color), var(--secondary-color));
+    left: 8px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--primary-color), rgba(139,195,74,0.3));
     border-radius: 2px;
 }
 
 .timeline-item {
-    background: var(--card-bg);
-    margin-bottom: 20px;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: var(--shadow);
+    background: #fafcfa;
+    border: 1px solid rgba(40,122,68,0.08);
+    margin-bottom: 14px;
+    padding: 16px;
+    border-radius: var(--radius-md);
+    box-shadow: 0 1px 6px rgba(31,122,61,0.06);
     position: relative;
-    transition: transform 0.3s, box-shadow 0.3s;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
 }
 
 .timeline-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-md);
 }
 
 .timeline-item::before {
     content: '';
     position: absolute;
-    left: -28px;
-    top: 20px;
-    width: 16px;
-    height: 16px;
+    left: -23px;
+    top: 18px;
+    width: 12px;
+    height: 12px;
     background: var(--primary-color);
-    border: 3px solid white;
+    border: 2.5px solid white;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(31,122,61,0.3);
+}
     border-radius: 50%;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
@@ -591,19 +729,23 @@ body.elder-mode .form-actions button {
 }
 
 .timeline-time {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: var(--primary-color);
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--forest-color);
+    background: rgba(223, 245, 228, 0.7);
+    padding: 2px 8px;
+    border-radius: 6px;
 }
 
 .timeline-type {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
 }
 
 .timeline-content {
-    font-size: 1.1rem;
-    margin-bottom: 8px;
+    font-size: 1rem;
+    margin-bottom: 6px;
     color: var(--text-color);
+    font-weight: 500;
 }
 
 .health-timeline-item {
@@ -633,7 +775,7 @@ body.elder-mode .form-actions button {
 
 .timeline-image {
     width: 100%;
-    max-height: 240px;
+    max-height: 160px;
     object-fit: cover;
     display: block;
 }
@@ -652,31 +794,40 @@ body.elder-mode .form-actions button {
 
 .timeline-actions {
     display: flex;
-    gap: 10px;
-    margin-top: 15px;
+    gap: 8px;
+    margin-top: 12px;
 }
 
 .btn-action {
-    padding: 8px 15px;
-    border: none;
-    border-radius: 8px;
+    padding: 5px 14px;
+    border-radius: 20px;
     cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.3s;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    line-height: 1.4;
 }
 
 .btn-edit {
+    background: transparent;
+    border: 1.5px solid var(--accent-color);
+    color: var(--accent-color);
+}
+
+.btn-edit:hover {
     background: var(--accent-color);
     color: white;
 }
 
 .btn-delete {
-    background: #f44336;
-    color: white;
+    background: transparent;
+    border: 1.5px solid #e85d5d;
+    color: #e85d5d;
 }
 
-.btn-action:hover {
-    opacity: 0.8;
+.btn-delete:hover {
+    background: #e85d5d;
+    color: white;
 }
 
 /* 空状态 */
@@ -700,10 +851,9 @@ body.elder-mode .form-actions button {
     background:
         radial-gradient(circle at top right, rgba(223, 245, 228, 0.28), transparent 34%),
         linear-gradient(135deg, #2f8f4c 0%, var(--forest-color) 55%, var(--primary-color) 100%);
-    border-radius: 15px;
-    padding: 20px;
-    margin-bottom: 30px;
-    box-shadow: var(--shadow);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+    box-shadow: var(--shadow-md);
 }
 
 .reminder-header {
@@ -756,9 +906,9 @@ body.elder-mode .form-actions button {
 }
 
 .reminder-thumb-wrap {
-    width: 54px;
-    height: 54px;
-    border-radius: 14px;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
     overflow: hidden;
     flex-shrink: 0;
     box-shadow: inset 0 0 0 1px rgba(40, 122, 68, 0.08);
@@ -799,7 +949,7 @@ body.elder-mode .form-actions button {
 }
 
 .daily-summary-section {
-    margin-bottom: 30px;
+    /* margin handled by app-main gap */
 }
 
 .daily-summary-card {
@@ -1107,6 +1257,21 @@ body.elder-mode .form-actions button {
 }
 
 /* 底部操作按钮 */
+/* nav-icon / nav-label：label 默认隐藏，移动端显示 */
+.nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.nav-label {
+    display: none;
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+/* 桌面 FAB 样式 */
 .bottom-actions {
     position: fixed;
     bottom: 30px;
@@ -1115,47 +1280,49 @@ body.elder-mode .form-actions button {
     flex-wrap: wrap;
     justify-content: flex-end;
     max-width: 300px;
-    gap: 15px;
+    gap: 14px;
     z-index: 1000;
 }
 
 .fab-add, .fab-health, .fab-symptom, .fab-reminder {
-    width: 60px;
-    height: 60px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     color: white;
-    font-size: 2rem;
+    font-size: 1.8rem;
     border: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
     cursor: pointer;
-    transition: transform 0.3s, box-shadow 0.3s;
+    transition: transform 0.2s, box-shadow 0.2s;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 3px;
 }
 
 .fab-add {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background: linear-gradient(135deg, var(--forest-color), var(--primary-color));
 }
 
 .fab-health {
-    background: linear-gradient(135deg, #2d8d64, #69c59a);
-    font-size: 1.5rem;
+    background: linear-gradient(135deg, #1a7a5c, #4ab88a);
+    font-size: 1.4rem;
 }
 
 .fab-reminder {
-    background: linear-gradient(135deg, #2f8f4c, #69b66b);
-    font-size: 1.8rem;
-}
-
-.fab-symptom {
-    background: linear-gradient(135deg, #d06a4c, #ee9a74);
+    background: linear-gradient(135deg, #1a6e3c, #4caf71);
     font-size: 1.5rem;
 }
 
+.fab-symptom {
+    background: linear-gradient(135deg, #b55030, #e07850);
+    font-size: 1.4rem;
+}
+
 .fab-add:hover, .fab-health:hover, .fab-symptom:hover, .fab-reminder:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
 }
 
 /* 模态框 */
@@ -1178,14 +1345,15 @@ body.elder-mode .form-actions button {
 
 .modal-content {
     background-color: var(--card-bg);
-    margin: 5% auto;
+    margin: 4% auto;
     padding: 0;
-    border-radius: 15px;
+    border-radius: var(--radius-lg);
     width: 90%;
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
-    animation: slideUp 0.3s;
+    animation: slideUp 0.28s ease-out;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
 }
 
 .modal-content.large {
@@ -1197,30 +1365,49 @@ body.elder-mode .form-actions button {
 }
 
 @keyframes slideUp {
-    from { transform: translateY(50px); opacity: 0; }
+    from { transform: translateY(40px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideUpSheet {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px;
+    padding: 18px 20px;
     border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    background: var(--card-bg);
+    z-index: 1;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .modal-header h2 {
-    font-size: 1.3rem;
+    font-size: 1.15rem;
+    color: var(--text-color);
 }
 
 .close {
-    font-size: 2rem;
+    font-size: 1.6rem;
+    line-height: 1;
     cursor: pointer;
     color: var(--text-secondary);
-    transition: color 0.3s;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s, color 0.2s;
 }
 
 .close:hover {
+    background: rgba(0,0,0,0.06);
     color: var(--text-color);
 }
 
@@ -2548,27 +2735,19 @@ body.elder-mode .stats-card-value {
 /* 响应式设计 */
 @media (max-width: 768px) {
     .app-main {
-        padding: 16px;
+        padding: 14px;
+        gap: var(--space-md);
     }
 
     .header-top {
         align-items: stretch;
         flex-direction: column;
+        gap: 10px;
     }
 
     .header-tools {
         width: 100%;
-        justify-content: flex-start;
-        flex-wrap: wrap;
-    }
-
-    .header-tool-btn,
-    .header-export-btn {
-        min-height: 42px;
-    }
-
-    .date-selector {
-        gap: 10px;
+        justify-content: flex-end;
     }
 
     .current-date-btn {
@@ -2590,30 +2769,6 @@ body.elder-mode .stats-card-value {
     .health-summary-grid,
     .template-manager-list {
         grid-template-columns: 1fr;
-    }
-
-    .section-tools,
-    .export-buttons,
-    .reminder-detail-actions,
-    .form-actions,
-    .import-actions,
-    .date-calendar-actions,
-    .ai-config-actions,
-    .ai-chat-actions,
-    .daily-note-actions {
-        flex-direction: column;
-    }
-
-    .section-tools > *,
-    .export-buttons > *,
-    .reminder-detail-actions > *,
-    .form-actions > *,
-    .import-actions > *,
-    .date-calendar-actions > *,
-    .ai-config-actions > *,
-    .ai-chat-actions > *,
-    .daily-note-actions > * {
-        width: 100%;
     }
 
     .cloud-auth-grid,
@@ -2643,20 +2798,10 @@ body.elder-mode .stats-card-value {
         border-radius: 16px;
     }
 
-    .daily-note-action-buttons {
-        width: 100%;
-        justify-content: stretch;
-    }
-
-    .daily-note-action-buttons > * {
-        width: 100%;
-    }
-
     .modal-content {
         width: calc(100% - 16px);
-        margin: 12px auto;
-        max-height: calc(100vh - 24px);
-        border-radius: 14px;
+        margin: 10px auto;
+        max-height: calc(100vh - 20px);
     }
 
     .modal-content.large {
@@ -2715,95 +2860,280 @@ body.elder-mode .stats-card-value {
     .bottom-actions {
         right: 16px;
         bottom: 16px;
-        max-width: 168px;
-        gap: 10px;
-    }
-
-    .fab-add,
-    .fab-health,
-    .fab-symptom,
-    .fab-reminder {
-        width: 56px;
-        height: 56px;
+        max-width: 180px;
+        gap: 12px;
     }
 }
 
 @media (max-width: 600px) {
-    .header-top {
-        align-items: flex-start;
-        flex-direction: column;
+    /* ── Header：紧凑单行布局 ── */
+    .app-header {
+        padding: 12px 14px 10px;
     }
 
-    .header-tools {
-        width: 100%;
-        justify-content: flex-end;
-        flex-wrap: wrap;
+    /* 手机端：标题和工具按钮同行显示（左右布局） */
+    .header-top {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
     }
 
     .app-header h1 {
+        flex: 1;
+        min-width: 0;
+        text-align: left;
+        font-size: 1rem;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin: 0;
+    }
+
+    .header-tools {
+        width: auto;
+        flex-shrink: 0;
+        gap: 6px;
+    }
+
+    /* ── Header：激活汉堡菜单 ── */
+    .header-more-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .header-more-menu {
+        display: none;
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        flex-direction: column;
+        background: white;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        min-width: 158px;
+        z-index: 300;
+    }
+
+    .header-more-menu.dropdown-open {
+        display: flex;
+    }
+
+    .header-more-menu .header-tool-btn {
+        background: none;
+        border: none;
+        border-radius: 0;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-color);
+        padding: 14px 16px;
+        text-align: left;
+        font-size: 0.92rem;
+        font-weight: 500;
+        backdrop-filter: none;
+        transform: none;
+    }
+
+    .header-more-menu .header-tool-btn:last-child {
+        border-bottom: none;
+    }
+
+    .header-more-menu .header-tool-btn.danger {
+        color: #c0392b;
+        background: none;
+    }
+
+    .header-more-menu .header-tool-btn:hover {
+        background: var(--mint-color);
+        transform: none;
+    }
+
+    .header-more-menu .header-tool-btn.danger:hover {
+        background: rgba(192, 57, 43, 0.08);
+    }
+
+    /* 导出按钮在手机上更紧凑 */
+    .header-export-btn {
+        padding: 8px 14px;
+        font-size: 0.84rem;
+    }
+
+    /* 日期导航按钮缩小 */
+    .date-selector {
+        gap: 8px;
+    }
+
+    .date-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
+
+    .current-date-btn {
+        padding: 8px 12px;
+        font-size: 0.92rem;
+        min-height: 40px;
+    }
+
+    /* ── 底部导航栏（替换 FAB） ── */
+    .app-container {
+        padding-bottom: var(--nav-height);
+    }
+
+    .bottom-actions {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        width: 100%;
+        height: var(--nav-height);
+        max-width: none;
+        background: rgba(255, 255, 255, 0.97);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-top: 1px solid rgba(31, 122, 61, 0.1);
+        box-shadow: 0 -4px 24px rgba(31, 122, 61, 0.08);
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        justify-content: space-around;
+        gap: 0;
+        padding: 0;
+        border-radius: 0;
+        z-index: 1000;
+    }
+
+    .fab-add, .fab-health, .fab-symptom, .fab-reminder {
+        width: auto;
+        height: auto;
+        border-radius: 0;
+        box-shadow: none;
+        flex: 1;
+        flex-direction: column;
+        gap: 3px;
+        padding: 7px 4px 9px;
+        background: none;
+        color: #999;
         font-size: 1.3rem;
     }
 
-    .header-tool-btn,
-    .header-export-btn {
-        padding: 9px 14px;
-        font-size: 0.85rem;
+    .fab-add:hover, .fab-health:hover, .fab-symptom:hover, .fab-reminder:hover {
+        background: rgba(31, 122, 61, 0.06);
+        transform: none;
+        box-shadow: none;
     }
 
-    .profile-grid {
-        grid-template-columns: 1fr;
+    .nav-label {
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 600;
     }
 
-    .stat-card {
-        padding: 15px;
+    /* + 图标：用圆形底色突出主操作 */
+    .fab-add .nav-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, var(--forest-color), var(--primary-color));
+        color: white;
+        border-radius: 50%;
+        font-size: 1.3rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        box-shadow: 0 2px 8px rgba(31,122,61,0.35);
+    }
+    .fab-add .nav-label { color: var(--forest-color); font-weight: 700; }
+
+    .fab-health .nav-icon { color: #1a7a5c; font-size: 1.35rem; }
+    .fab-health .nav-label { color: #1a7a5c; }
+
+    .fab-symptom .nav-icon { color: #b55030; font-size: 1.35rem; }
+    .fab-symptom .nav-label { color: #b55030; }
+
+    .fab-reminder .nav-icon { color: #1a6e3c; font-size: 1.35rem; }
+    .fab-reminder .nav-label { color: #1a6e3c; }
+
+    /* ── Modal：底部 Sheet 滑入 ── */
+    .modal-content {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        max-height: 92vh;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+        animation: slideUpSheet 0.3s ease-out;
     }
 
-    .stat-icon {
-        font-size: 2rem;
+    /* Sheet 顶部拖拽手柄 */
+    .modal-content::before {
+        content: '';
+        display: block;
+        width: 40px;
+        height: 4px;
+        background: rgba(0,0,0,0.15);
+        border-radius: 2px;
+        margin: 10px auto -6px;
     }
 
-    .stat-value {
-        font-size: 1.5rem;
+    .modal-header {
+        border-radius: 0;
     }
 
-    .time-range-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .timeline-item {
-        padding: 15px;
-    }
-
+    /* ── Section tools：不再强制 column ── */
     .section-heading {
-        align-items: flex-start;
-        flex-direction: column;
+        flex-wrap: wrap;
     }
 
     .section-tools {
         width: 100%;
-        flex-wrap: wrap;
+    }
+
+    .form-actions,
+    .import-actions,
+    .ai-config-actions,
+    .ai-chat-actions,
+    .daily-note-actions {
+        flex-direction: column;
+    }
+
+    .form-actions > *,
+    .import-actions > *,
+    .ai-config-actions > *,
+    .ai-chat-actions > *,
+    .daily-note-actions > * {
+        width: 100%;
+    }
+
+    .daily-note-action-buttons {
+        width: 100%;
+    }
+
+    .daily-note-action-buttons > * {
+        flex: 1;
+    }
+
+    .reminder-detail-actions {
+        flex-direction: column;
+    }
+
+    .reminder-detail-actions > * {
+        width: 100%;
     }
 
     .alert-actions button {
         width: 100%;
     }
 
-    .modal-content {
-        width: 95%;
-        margin: 10% auto;
-    }
-
-    .modal-content.large {
-        width: 95%;
-    }
-
-    .import-actions {
-        flex-direction: column;
-    }
-
-    .bottom-actions {
-        right: 20px;
-        bottom: 20px;
+    .profile-grid {
+        grid-template-columns: 1fr;
     }
 
     .reminder-tabs {
@@ -2817,25 +3147,25 @@ body.elder-mode .stats-card-value {
 
 @media (max-width: 480px) {
     .app-header {
-        padding: 16px 14px;
+        padding: 14px 14px 12px;
     }
 
     .app-header h1 {
-        font-size: 1.15rem;
+        font-size: 1.1rem;
     }
 
     .header-tools {
         gap: 8px;
     }
 
-    .header-tool-btn,
     .header-export-btn {
-        padding: 8px 12px;
-        font-size: 0.82rem;
+        padding: 8px 14px;
+        font-size: 0.84rem;
     }
 
     .app-main {
-        padding: 14px;
+        padding: 12px;
+        gap: 14px;
     }
 
     .date-selector {
@@ -2850,7 +3180,7 @@ body.elder-mode .stats-card-value {
 
     .current-date-btn {
         padding: 9px 12px;
-        font-size: 0.92rem;
+        font-size: 0.9rem;
     }
 
     .current-date-panel {
@@ -2882,10 +3212,145 @@ body.elder-mode .stats-card-value {
         gap: 8px;
     }
 
-    .bottom-actions {
-        right: 12px;
-        bottom: 12px;
+    .health-section,
+    .daily-summary-section,
+    .timeline-section,
+    .reminder-section {
+        padding: 14px;
     }
+}
+
+/* ==================== 视觉系统优化补丁 ==================== */
+
+/* 时间线按活动类型着色 */
+.timeline-item[data-type="meal"]::before        { background: #f59e42; }
+.timeline-item[data-type="medication"]::before  { background: #e74c7c; }
+.timeline-item[data-type="exercise"]::before    { background: #27ae60; }
+.timeline-item[data-type="sleep"]::before       { background: #6c63d4; }
+.timeline-item[data-type="work"]::before        { background: #2980b9; }
+.timeline-item[data-type="other"]::before       { background: #95a5a6; }
+.timeline-item[data-type="health"]::before      { background: #1a9bbb; }
+.timeline-item[data-type="symptom"]::before     { background: #e85d5d; }
+
+.timeline-item[data-type="meal"]       { border-left: 3px solid #f59e42; }
+.timeline-item[data-type="medication"] { border-left: 3px solid #e74c7c; }
+.timeline-item[data-type="exercise"]   { border-left: 3px solid #27ae60; }
+.timeline-item[data-type="sleep"]      { border-left: 3px solid #6c63d4; }
+.timeline-item[data-type="work"]       { border-left: 3px solid #2980b9; }
+.timeline-item[data-type="other"]      { border-left: 3px solid #bdc3c7; }
+.timeline-item[data-type="health"]     { border-left: 3px solid #1a9bbb; }
+.timeline-item[data-type="symptom"]    { border-left: 3px solid #e85d5d; }
+
+/* 健康/症状时间线 item - 仅作为回退（已由 data-type 覆盖） */
+.health-timeline-item {
+    border-left: 3px solid #1a9bbb;
+}
+
+/* 表单输入框优化 */
+.form-group input,
+.form-group select,
+.form-group textarea {
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.12);
+    outline: none;
+}
+
+/* 按钮基础触摸区域 */
+.btn-submit, .btn-cancel {
+    min-height: 46px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+}
+
+.btn-submit {
+    background: linear-gradient(135deg, var(--forest-color), var(--primary-color));
+    box-shadow: 0 4px 14px rgba(31, 122, 61, 0.3);
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.btn-submit:hover {
+    box-shadow: 0 6px 20px rgba(31, 122, 61, 0.4);
+    transform: translateY(-1px);
+}
+
+/* 健康数据卡片优化 */
+.health-summary-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.health-summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* 空状态优化 */
+.empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.8;
+}
+
+.empty-state.small {
+    padding: 16px;
+}
+
+/* 提醒区域空状态：深色背景上用白色文字 */
+.reminder-section .empty-state,
+.reminder-section .empty-state p {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+/* daily summary card */
+.daily-summary-card {
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.daily-note-input {
+    border: none;
+    border-bottom: 1.5px solid var(--border-color);
+    border-radius: 0;
+    background: #fafcfa;
+    resize: vertical;
+    min-height: 90px;
+    transition: background 0.2s;
+}
+
+.daily-note-input:focus {
+    background: #fff;
+    outline: none;
+    border-bottom-color: var(--primary-color);
+    box-shadow: none;
+}
+
+/* Section heading 左侧装饰线 */
+.section-heading h2::before,
+.reminder-header h2::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 1em;
+    background: linear-gradient(to bottom, var(--primary-color), var(--secondary-color));
+    border-radius: 2px;
+    margin-right: 8px;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+/* 提醒区域 h2 颜色：保持白色 */
+.reminder-header h2::before {
+    background: rgba(255,255,255,0.6);
 }
 
 /* ==================== AI诊断模态框样式 ==================== */

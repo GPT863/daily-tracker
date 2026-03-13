@@ -931,6 +931,29 @@ function setupEventListeners() {
     document.getElementById('seedDemoBtn').addEventListener('click', loadDemoData);
     document.getElementById('resetDataBtn').addEventListener('click', resetAllData);
 
+    // Header 汉堡菜单（移动端）
+    const headerMoreBtn = document.getElementById('headerMoreBtn');
+    const headerMoreMenu = document.getElementById('headerMoreMenu');
+    if (headerMoreBtn && headerMoreMenu) {
+        headerMoreBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = headerMoreMenu.classList.toggle('dropdown-open');
+            headerMoreBtn.setAttribute('aria-expanded', isOpen);
+        });
+        // 点击菜单内的按钮后自动关闭
+        headerMoreMenu.addEventListener('click', () => {
+            headerMoreMenu.classList.remove('dropdown-open');
+            headerMoreBtn.setAttribute('aria-expanded', 'false');
+        });
+        // 点击页面其他区域关闭
+        document.addEventListener('click', (e) => {
+            if (!headerMoreBtn.contains(e.target) && !headerMoreMenu.contains(e.target)) {
+                headerMoreMenu.classList.remove('dropdown-open');
+                headerMoreBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+
     // 查看全部提醒
     document.getElementById('viewAllReminders').addEventListener('click', () => {
         document.getElementById('reminderModal').style.display = 'block';
@@ -1245,7 +1268,7 @@ function updateTimeline() {
 function renderActivityTimelineItem(activity) {
     const duration = getActivityDuration(activity);
     return `
-        <div class="timeline-item" data-id="${activity.id}">
+        <div class="timeline-item" data-id="${activity.id}" data-type="${activity.type}">
             <div class="timeline-header">
                 <span class="timeline-time">${getActivityTimeRangeText(activity)}</span>
                 <span class="timeline-type">${typeIcons[activity.type]}</span>
@@ -1268,7 +1291,7 @@ function renderActivityTimelineItem(activity) {
 
 function renderHealthTimelineItem(record) {
     return `
-        <div class="timeline-item health-timeline-item" data-id="${record.id}">
+        <div class="timeline-item health-timeline-item" data-id="${record.id}" data-type="health">
             <div class="timeline-header">
                 <span class="timeline-time">${formatTime(record.time)}</span>
                 <span class="timeline-type">${healthTypeIcons[record.type]}</span>
@@ -1291,7 +1314,7 @@ function renderHealthTimelineItem(record) {
 
 function renderSymptomTimelineItem(record) {
     return `
-        <div class="timeline-item health-timeline-item" data-id="${record.id}">
+        <div class="timeline-item health-timeline-item" data-id="${record.id}" data-type="symptom">
             <div class="timeline-header">
                 <span class="timeline-time">${formatTime(record.time)}</span>
                 <span class="timeline-type">🩹</span>
