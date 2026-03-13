@@ -62,6 +62,7 @@ let pendingImportData = null;
 let submitLocks = {
     activity: false,
     health: false,
+    symptom: false,
     reminder: false,
     import: false
 };
@@ -154,6 +155,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateStorageStatus();
     maybeRemindBackup();
     checkReminders();
+    await refreshActivitiesFromBackend(getDateKey(currentDate), { silent: true });
+    await refreshHealthRecordsFromBackend(getDateKey(currentDate), { silent: true });
+    await refreshSymptomRecordsFromBackend(getDateKey(currentDate), { silent: true });
+    await refreshRemindersFromBackend({ silent: true });
+    await refreshProfileFromBackend({ silent: true });
+    await refreshDailyNoteFromBackend(getDateKey(currentDate), { silent: true });
     setInterval(checkReminders, 60000);
     await registerServiceWorker();
     await syncRemindersToServiceWorker();
@@ -654,16 +661,206 @@ function loadActivities() {
     activities.sort((a, b) => getActivitySortTime(a).localeCompare(getActivitySortTime(b)));
 }
 
+function isBackendActivityModeEnabled() {
+    return isCloudSyncAuthenticated();
+}
+
+function normalizeBackendActivityRecord(record) {
+    return normalizeActivity({
+        id: String(record.id),
+        backendId: record.id,
+        time: record.startTime || '00:00',
+        startTime: record.startTime || '00:00',
+        endTime: record.endTime || record.startTime || '00:00',
+        type: record.type,
+        content: record.content || '',
+        feeling: record.feeling || '',
+        duration: typeof record.durationMinutes === 'number' ? record.durationMinutes : null,
+        image: record.imageUrl || null,
+        source: record.source || '',
+        createdAt: record.createdAt || new Date().toISOString(),
+        updatedAt: record.updatedAt || new Date().toISOString(),
+        activityDate: record.activityDate || getDateKey(currentDate)
+    });
+}
+
+function toBackendActivityPayload(activity, dateKey = getDateKey(currentDate)) {
+    return {
+        activityDate: dateKey,
+        startTime: activity.startTime || activity.time,
+        endTime: activity.endTime || activity.time,
+        durationMinutes: typeof activity.duration === 'number' ? activity.duration : null,
+        type: activity.type,
+        content: activity.content,
+        feeling: activity.feeling || '',
+        imageUrl: activity.image || '',
+        source: activity.source || 'web'
+    };
+}
+
+async function refreshActivitiesFromBackend(dateKey = getDateKey(currentDate), options = {}) {
+    if (!isBackendActivityModeEnabled()) {
+        loadActivities();
+        return activities;
+    }
+
+    try {
+        const response = await cloudSyncRequest(`/api/activities?date=${encodeURIComponent(dateKey)}`, {
+            method: 'GET'
+        });
+        const normalized = Array.isArray(response) ? response.map(normalizeBackendActivityRecord) : [];
+        normalized.sort((a, b) => getActivitySortTime(a).localeCompare(getActivitySortTime(b)));
+        allActivitiesData[dateKey] = normalized;
+
+        if (dateKey === getDateKey(currentDate)) {
+            activities = [...normalized];
+            updateDisplay();
+        }
+
+        await persistAppState({ skipAutoCloudSync: true });
+        await updateStorageStatus();
+        return normalized;
+    } catch (error) {
+        console.error(error);
+        if (!options.silent) {
+            showToast('活动数据加载失败，请检查后端连接');
+        }
+        return [...(allActivitiesData[dateKey] || [])];
+    }
+}
+
 function loadHealthRecords() {
     const dateKey = getDateKey(currentDate);
     healthRecords = [...(allHealthRecordsData[dateKey] || [])];
     healthRecords.sort((a, b) => a.time.localeCompare(b.time));
 }
 
+function isBackendHealthModeEnabled() {
+    return isCloudSyncAuthenticated();
+}
+
+function normalizeBackendHealthRecord(record) {
+    return {
+        id: String(record.id),
+        backendId: record.id,
+        time: record.recordTime || '00:00',
+        type: record.type,
+        value: record.value,
+        unit: record.unit || '',
+        notes: record.notes || '',
+        image: record.imageUrl || null,
+        createdAt: record.createdAt || new Date().toISOString(),
+        updatedAt: record.updatedAt || new Date().toISOString(),
+        recordDate: record.recordDate || getDateKey(currentDate)
+    };
+}
+
+function toBackendHealthPayload(record, dateKey = getDateKey(currentDate)) {
+    return {
+        recordDate: dateKey,
+        recordTime: record.time,
+        type: record.type,
+        value: record.value,
+        unit: record.unit || '',
+        notes: record.notes || '',
+        imageUrl: record.image || ''
+    };
+}
+
+async function refreshHealthRecordsFromBackend(dateKey = getDateKey(currentDate), options = {}) {
+    if (!isBackendHealthModeEnabled()) {
+        loadHealthRecords();
+        return healthRecords;
+    }
+
+    try {
+        const response = await cloudSyncRequest(`/api/health-records?date=${encodeURIComponent(dateKey)}`, {
+            method: 'GET'
+        });
+        const normalized = Array.isArray(response) ? response.map(normalizeBackendHealthRecord) : [];
+        normalized.sort((a, b) => a.time.localeCompare(b.time));
+        allHealthRecordsData[dateKey] = normalized;
+
+        if (dateKey === getDateKey(currentDate)) {
+            healthRecords = [...normalized];
+            updateDisplay();
+        }
+
+        await persistAppState({ skipAutoCloudSync: true });
+        await updateStorageStatus();
+        return normalized;
+    } catch (error) {
+        console.error(error);
+        if (!options.silent) {
+            showToast('健康数据加载失败，请检查后端连接');
+        }
+        return [...(allHealthRecordsData[dateKey] || [])];
+    }
+}
+
 function loadSymptomRecords() {
     const dateKey = getDateKey(currentDate);
     symptomRecords = [...(allSymptomRecordsData[dateKey] || [])];
     symptomRecords.sort((a, b) => a.time.localeCompare(b.time));
+}
+
+function isBackendSymptomModeEnabled() {
+    return isCloudSyncAuthenticated();
+}
+
+function normalizeBackendSymptomRecord(record) {
+    return {
+        id: String(record.id),
+        backendId: record.id,
+        time: record.recordTime || '00:00',
+        description: record.description || '',
+        measures: record.measures || '',
+        image: record.imageUrl || null,
+        createdAt: record.createdAt || new Date().toISOString(),
+        updatedAt: record.updatedAt || new Date().toISOString(),
+        recordDate: record.recordDate || getDateKey(currentDate)
+    };
+}
+
+function toBackendSymptomPayload(record, dateKey = getDateKey(currentDate)) {
+    return {
+        recordDate: dateKey,
+        recordTime: record.time,
+        description: record.description,
+        measures: record.measures || '',
+        imageUrl: record.image || ''
+    };
+}
+
+async function refreshSymptomRecordsFromBackend(dateKey = getDateKey(currentDate), options = {}) {
+    if (!isBackendSymptomModeEnabled()) {
+        loadSymptomRecords();
+        return symptomRecords;
+    }
+
+    try {
+        const response = await cloudSyncRequest(`/api/symptom-records?date=${encodeURIComponent(dateKey)}`, {
+            method: 'GET'
+        });
+        const normalized = Array.isArray(response) ? response.map(normalizeBackendSymptomRecord) : [];
+        normalized.sort((a, b) => a.time.localeCompare(b.time));
+        allSymptomRecordsData[dateKey] = normalized;
+
+        if (dateKey === getDateKey(currentDate)) {
+            symptomRecords = [...normalized];
+            updateDisplay();
+        }
+
+        await persistAppState({ skipAutoCloudSync: true });
+        await updateStorageStatus();
+        return normalized;
+    } catch (error) {
+        console.error(error);
+        if (!options.silent) {
+            showToast('症状记录加载失败，请检查后端连接');
+        }
+        return [...(allSymptomRecordsData[dateKey] || [])];
+    }
 }
 
 // 保存活动数据
@@ -729,19 +926,6 @@ function setupEventListeners() {
     document.getElementById('timelineOrderBtn').addEventListener('click', toggleTimelineOrder);
     document.getElementById('cloudSyncBtn').addEventListener('click', openCloudSyncModal);
     document.getElementById('profileBtn').addEventListener('click', openProfileModal);
-
-    // AI诊断按钮
-    const aiDiagnosisBtn = document.getElementById('aiDiagnosisBtn');
-    if (aiDiagnosisBtn) {
-        aiDiagnosisBtn.addEventListener('click', function(e) {
-            console.log('AI诊断按钮被点击');
-            e.preventDefault();
-            e.stopPropagation();
-            openAiDiagnosisModal();
-        });
-    } else {
-        console.error('AI诊断按钮未找到');
-    }
 
     // 数据辅助入口
     document.getElementById('seedDemoBtn').addEventListener('click', loadDemoData);
@@ -812,7 +996,9 @@ function setupEventListeners() {
     document.getElementById('confirmImportReplace').addEventListener('click', () => confirmImport('replace'));
     document.getElementById('snoozeMinutes').addEventListener('change', toggleCustomSnoozeField);
     document.getElementById('saveCloudConfigBtn').addEventListener('click', saveCloudSyncConfig);
-    document.getElementById('cloudLoginBtn').addEventListener('click', ensureCloudSyncLogin);
+    document.getElementById('cloudAuthLoginBtn').addEventListener('click', loginCloudSyncAccount);
+    document.getElementById('cloudAuthRegisterBtn').addEventListener('click', registerCloudSyncAccount);
+    document.getElementById('cloudAuthLogoutBtn').addEventListener('click', logoutCloudSyncAccount);
     document.getElementById('cloudPushBtn').addEventListener('click', () => pushSnapshotToCloud(true));
     document.getElementById('cloudPullBtn').addEventListener('click', pullSnapshotFromCloud);
     document.getElementById('saveDailyNoteBtn').addEventListener('click', saveDailyNote);
@@ -852,12 +1038,16 @@ function setupEventListeners() {
 }
 
 // 更改日期
-function changeDate(days) {
+async function changeDate(days) {
     currentDate.setDate(currentDate.getDate() + days);
     loadActivities();
     loadHealthRecords();
     loadSymptomRecords();
     updateDisplay();
+    await refreshActivitiesFromBackend(getDateKey(currentDate), { silent: true });
+    await refreshHealthRecordsFromBackend(getDateKey(currentDate), { silent: true });
+    await refreshSymptomRecordsFromBackend(getDateKey(currentDate), { silent: true });
+    await refreshDailyNoteFromBackend(getDateKey(currentDate), { silent: true });
 }
 
 function openCurrentDatePicker() {
@@ -869,13 +1059,17 @@ function openCurrentDatePicker() {
     panel.classList.toggle('hidden');
 }
 
-function selectCurrentDate(date) {
+async function selectCurrentDate(date) {
     currentDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
     document.getElementById('currentDatePanel')?.classList.add('hidden');
     loadActivities();
     loadHealthRecords();
     loadSymptomRecords();
     updateDisplay();
+    await refreshActivitiesFromBackend(getDateKey(currentDate), { silent: true });
+    await refreshHealthRecordsFromBackend(getDateKey(currentDate), { silent: true });
+    await refreshSymptomRecordsFromBackend(getDateKey(currentDate), { silent: true });
+    await refreshDailyNoteFromBackend(getDateKey(currentDate), { silent: true });
 }
 
 function shiftCalendarMonth(offset) {
@@ -1523,20 +1717,44 @@ async function handleFormSubmit(e) {
     };
 
     submitLocks.activity = true;
-    if (editingId) {
-        const index = activities.findIndex(a => a.id === editingId);
-        if (index > -1) {
-            activities[index] = activity;
-        }
-    } else {
-        activities.push(activity);
-    }
-
-    activities = activities.map(normalizeActivity);
-    activities.sort((a, b) => getActivitySortTime(a).localeCompare(getActivitySortTime(b)));
-
     try {
-        await saveActivities();
+        if (isBackendActivityModeEnabled()) {
+            const savedActivity = await cloudSyncRequest(
+                editingId ? `/api/activities/${encodeURIComponent(editingId)}` : '/api/activities',
+                {
+                    method: editingId ? 'PUT' : 'POST',
+                    body: JSON.stringify(toBackendActivityPayload(activity))
+                }
+            );
+            const normalized = normalizeBackendActivityRecord(savedActivity);
+            const dateKey = getDateKey(currentDate);
+            const currentList = [...(allActivitiesData[dateKey] || [])];
+            const targetIndex = currentList.findIndex(item => item.id === normalized.id);
+            if (targetIndex > -1) {
+                currentList[targetIndex] = normalized;
+            } else {
+                currentList.push(normalized);
+            }
+            currentList.sort((a, b) => getActivitySortTime(a).localeCompare(getActivitySortTime(b)));
+            allActivitiesData[dateKey] = currentList;
+            activities = [...currentList];
+            await persistAppState({ skipAutoCloudSync: true });
+            await updateStorageStatus();
+        } else {
+            if (editingId) {
+                const index = activities.findIndex(a => a.id === editingId);
+                if (index > -1) {
+                    activities[index] = activity;
+                }
+            } else {
+                activities.push(activity);
+            }
+
+            activities = activities.map(normalizeActivity);
+            activities.sort((a, b) => getActivitySortTime(a).localeCompare(getActivitySortTime(b)));
+            await saveActivities();
+        }
+
         updateDisplay();
         document.getElementById('activityModal').style.display = 'none';
         pendingActivityImage = null;
@@ -1544,7 +1762,7 @@ async function handleFormSubmit(e) {
         showToast(editingId ? '活动已更新！' : '活动已添加！');
     } catch (error) {
         console.error(error);
-        showToast('保存失败：图片过大或本地存储空间不足');
+        showToast(isBackendActivityModeEnabled() ? '保存失败，请检查后端连接或登录状态' : '保存失败：图片过大或本地存储空间不足');
     } finally {
         submitLocks.activity = false;
     }
@@ -1592,19 +1810,42 @@ async function handleHealthFormSubmit(e) {
     };
 
     submitLocks.health = true;
-    if (editingHealthId) {
-        const index = healthRecords.findIndex(r => r.id === editingHealthId);
-        if (index > -1) {
-            healthRecords[index] = record;
-        }
-    } else {
-        healthRecords.push(record);
-    }
-
-    healthRecords.sort((a, b) => a.time.localeCompare(b.time));
-
     try {
-        await saveHealthRecords();
+        if (isBackendHealthModeEnabled()) {
+            const savedRecord = await cloudSyncRequest(
+                editingHealthId ? `/api/health-records/${encodeURIComponent(editingHealthId)}` : '/api/health-records',
+                {
+                    method: editingHealthId ? 'PUT' : 'POST',
+                    body: JSON.stringify(toBackendHealthPayload(record))
+                }
+            );
+            const normalized = normalizeBackendHealthRecord(savedRecord);
+            const dateKey = getDateKey(currentDate);
+            const currentList = [...(allHealthRecordsData[dateKey] || [])];
+            const targetIndex = currentList.findIndex(item => item.id === normalized.id);
+            if (targetIndex > -1) {
+                currentList[targetIndex] = normalized;
+            } else {
+                currentList.push(normalized);
+            }
+            currentList.sort((a, b) => a.time.localeCompare(b.time));
+            allHealthRecordsData[dateKey] = currentList;
+            healthRecords = [...currentList];
+            await persistAppState({ skipAutoCloudSync: true });
+            await updateStorageStatus();
+        } else {
+            if (editingHealthId) {
+                const index = healthRecords.findIndex(r => r.id === editingHealthId);
+                if (index > -1) {
+                    healthRecords[index] = record;
+                }
+            } else {
+                healthRecords.push(record);
+            }
+            healthRecords.sort((a, b) => a.time.localeCompare(b.time));
+            await saveHealthRecords();
+        }
+
         updateDisplay();
         document.getElementById('healthModal').style.display = 'none';
         pendingHealthImage = null;
@@ -1612,7 +1853,7 @@ async function handleHealthFormSubmit(e) {
         showToast(editingHealthId ? '健康数据已更新！' : '健康数据已记录！');
     } catch (error) {
         console.error(error);
-        showToast('保存失败：图片过大或本地存储空间不足');
+        showToast(isBackendHealthModeEnabled() ? '保存失败，请检查后端连接或登录状态' : '保存失败：图片过大或本地存储空间不足');
     } finally {
         submitLocks.health = false;
     }
@@ -1620,6 +1861,7 @@ async function handleHealthFormSubmit(e) {
 
 async function handleSymptomFormSubmit(e) {
     e.preventDefault();
+    if (submitLocks.symptom) return;
 
     const time = document.getElementById('symptomTime').value;
     const description = document.getElementById('symptomDescription').value.trim();
@@ -1644,19 +1886,43 @@ async function handleSymptomFormSubmit(e) {
         updatedAt: new Date().toISOString()
     };
 
-    if (editingSymptomId) {
-        const index = symptomRecords.findIndex(item => item.id === editingSymptomId);
-        if (index > -1) {
-            symptomRecords[index] = record;
-        }
-    } else {
-        symptomRecords.push(record);
-    }
-
-    symptomRecords.sort((a, b) => a.time.localeCompare(b.time));
-
+    submitLocks.symptom = true;
     try {
-        await saveSymptomRecords();
+        if (isBackendSymptomModeEnabled()) {
+            const savedRecord = await cloudSyncRequest(
+                editingSymptomId ? `/api/symptom-records/${encodeURIComponent(editingSymptomId)}` : '/api/symptom-records',
+                {
+                    method: editingSymptomId ? 'PUT' : 'POST',
+                    body: JSON.stringify(toBackendSymptomPayload(record))
+                }
+            );
+            const normalized = normalizeBackendSymptomRecord(savedRecord);
+            const dateKey = getDateKey(currentDate);
+            const currentList = [...(allSymptomRecordsData[dateKey] || [])];
+            const targetIndex = currentList.findIndex(item => item.id === normalized.id);
+            if (targetIndex > -1) {
+                currentList[targetIndex] = normalized;
+            } else {
+                currentList.push(normalized);
+            }
+            currentList.sort((a, b) => a.time.localeCompare(b.time));
+            allSymptomRecordsData[dateKey] = currentList;
+            symptomRecords = [...currentList];
+            await persistAppState({ skipAutoCloudSync: true });
+            await updateStorageStatus();
+        } else {
+            if (editingSymptomId) {
+                const index = symptomRecords.findIndex(item => item.id === editingSymptomId);
+                if (index > -1) {
+                    symptomRecords[index] = record;
+                }
+            } else {
+                symptomRecords.push(record);
+            }
+            symptomRecords.sort((a, b) => a.time.localeCompare(b.time));
+            await saveSymptomRecords();
+        }
+
         updateDisplay();
         document.getElementById('symptomModal').style.display = 'none';
         pendingSymptomImage = null;
@@ -1664,7 +1930,9 @@ async function handleSymptomFormSubmit(e) {
         showToast(editingSymptomId ? '症状记录已更新！' : '症状记录已保存！');
     } catch (error) {
         console.error(error);
-        showToast('保存失败：图片过大或本地存储空间不足');
+        showToast(isBackendSymptomModeEnabled() ? '保存失败，请检查后端连接或登录状态' : '保存失败：图片过大或本地存储空间不足');
+    } finally {
+        submitLocks.symptom = false;
     }
 }
 
@@ -1888,6 +2156,23 @@ window.editActivity = function(id) {
 // 删除活动
 window.deleteActivity = function(id) {
     if (confirm('确定要删除这个活动吗？')) {
+        if (isBackendActivityModeEnabled()) {
+            cloudSyncRequest(`/api/activities/${encodeURIComponent(id)}`, {
+                method: 'DELETE'
+            })
+                .then(async () => {
+                    const dateKey = getDateKey(currentDate);
+                    activities = activities.filter(a => a.id !== id);
+                    allActivitiesData[dateKey] = [...activities];
+                    await persistAppState({ skipAutoCloudSync: true });
+                    await updateStorageStatus();
+                    updateDisplay();
+                    showToast('活动已删除！');
+                })
+                .catch(() => showToast('删除失败，请检查后端连接'));
+            return;
+        }
+
         activities = activities.filter(a => a.id !== id);
         saveActivities()
             .then(() => {
@@ -1981,6 +2266,23 @@ window.editHealthRecord = function(id) {
 
 window.deleteHealthRecord = function(id) {
     if (confirm('确定要删除这条健康数据吗？')) {
+        if (isBackendHealthModeEnabled()) {
+            cloudSyncRequest(`/api/health-records/${encodeURIComponent(id)}`, {
+                method: 'DELETE'
+            })
+                .then(async () => {
+                    const dateKey = getDateKey(currentDate);
+                    healthRecords = healthRecords.filter(r => r.id !== id);
+                    allHealthRecordsData[dateKey] = [...healthRecords];
+                    await persistAppState({ skipAutoCloudSync: true });
+                    await updateStorageStatus();
+                    updateDisplay();
+                    showToast('健康数据已删除！');
+                })
+                .catch(() => showToast('删除失败，请检查后端连接'));
+            return;
+        }
+
         healthRecords = healthRecords.filter(r => r.id !== id);
         saveHealthRecords()
             .then(() => {
@@ -2000,6 +2302,23 @@ window.editSymptomRecord = function(id) {
 
 window.deleteSymptomRecord = function(id) {
     if (confirm('确定要删除这条症状记录吗？')) {
+        if (isBackendSymptomModeEnabled()) {
+            cloudSyncRequest(`/api/symptom-records/${encodeURIComponent(id)}`, {
+                method: 'DELETE'
+            })
+                .then(async () => {
+                    const dateKey = getDateKey(currentDate);
+                    symptomRecords = symptomRecords.filter(item => item.id !== id);
+                    allSymptomRecordsData[dateKey] = [...symptomRecords];
+                    await persistAppState({ skipAutoCloudSync: true });
+                    await updateStorageStatus();
+                    updateDisplay();
+                    showToast('症状记录已删除！');
+                })
+                .catch(() => showToast('删除失败，请检查后端连接'));
+            return;
+        }
+
         symptomRecords = symptomRecords.filter(item => item.id !== id);
         saveSymptomRecords()
             .then(() => {
@@ -2373,6 +2692,67 @@ function loadReminders() {
     reminders = normalizeReminders(reminders || []);
 }
 
+function isBackendReminderModeEnabled() {
+    return isCloudSyncAuthenticated();
+}
+
+function normalizeBackendReminderRecord(reminder) {
+    return {
+        id: String(reminder.id),
+        backendId: reminder.id,
+        title: reminder.title || '',
+        type: reminder.type || 'other',
+        date: reminder.reminderDate,
+        time: reminder.reminderTime,
+        repeat: normalizeReminderRepeat(reminder.repeatType),
+        notes: reminder.notes || '',
+        image: reminder.imageUrl || null,
+        completed: Boolean(reminder.completed),
+        completedAt: reminder.completedAt || null,
+        snoozeUntil: reminder.snoozeUntil || null,
+        snoozeCount: Number(reminder.snoozeCount || 0),
+        history: [],
+        createdAt: reminder.createdAt || new Date().toISOString(),
+        updatedAt: reminder.updatedAt || new Date().toISOString()
+    };
+}
+
+function toBackendReminderPayload(reminder) {
+    return {
+        title: reminder.title,
+        type: reminder.type,
+        reminderDate: reminder.date,
+        reminderTime: reminder.time,
+        repeatType: normalizeReminderRepeat(reminder.repeat),
+        notes: reminder.notes || '',
+        imageUrl: reminder.image || ''
+    };
+}
+
+async function refreshRemindersFromBackend(options = {}) {
+    if (!isBackendReminderModeEnabled()) {
+        loadReminders();
+        return reminders;
+    }
+
+    try {
+        const response = await cloudSyncRequest('/api/reminders', { method: 'GET' });
+        reminders = normalizeReminders(Array.isArray(response) ? response.map(normalizeBackendReminderRecord) : []);
+        await persistAppState({ skipAutoCloudSync: true });
+        await syncRemindersToServiceWorker();
+        await updateStorageStatus();
+        renderReminderTabs('today');
+        updateRemindersDisplay();
+        return reminders;
+    } catch (error) {
+        console.error(error);
+        if (!options.silent) {
+            showToast('提醒加载失败，请检查后端连接');
+        }
+        return reminders;
+    }
+}
+
 // 保存提醒数据
 async function saveReminders() {
     reminders = normalizeReminders(reminders);
@@ -2381,11 +2761,114 @@ async function saveReminders() {
     await updateStorageStatus();
 }
 
+function isBackendProfileModeEnabled() {
+    return isCloudSyncAuthenticated();
+}
+
+function normalizeBackendProfile(profileResponse) {
+    return {
+        name: profileResponse?.name || '',
+        gender: profileResponse?.gender || '',
+        age: profileResponse?.age || '',
+        height: profileResponse?.height || '',
+        weight: profileResponse?.weight || '',
+        bloodType: profileResponse?.bloodType || '',
+        bloodPressure: profileResponse?.bloodPressure || '',
+        bloodSugar: profileResponse?.bloodSugar || '',
+        chronicConditions: profileResponse?.chronicConditions || '',
+        allergies: profileResponse?.allergies || '',
+        medications: profileResponse?.medications || '',
+        healthGoals: profileResponse?.healthGoals || '',
+        notes: profileResponse?.notes || ''
+    };
+}
+
+async function refreshProfileFromBackend(options = {}) {
+    if (!isBackendProfileModeEnabled()) {
+        loadProfile();
+        return profile;
+    }
+
+    try {
+        const response = await cloudSyncRequest('/api/profile', { method: 'GET' });
+        profile = response ? normalizeBackendProfile(response) : {};
+        await persistAppState({ skipAutoCloudSync: true });
+        await updateStorageStatus();
+        return profile;
+    } catch (error) {
+        console.error(error);
+        if (!options.silent) {
+            showToast('个人档案加载失败，请检查后端连接');
+        }
+        return profile;
+    }
+}
+
+function isBackendDailyNoteModeEnabled() {
+    return isCloudSyncAuthenticated();
+}
+
+async function refreshDailyNoteFromBackend(dateKey = getDateKey(currentDate), options = {}) {
+    if (!isBackendDailyNoteModeEnabled()) {
+        updateDailySummary();
+        return allDailyNotesData[dateKey] || null;
+    }
+
+    try {
+        const response = await cloudSyncRequest(`/api/daily-notes/${encodeURIComponent(dateKey)}`, { method: 'GET' });
+        if (!response || !response.content) {
+            delete allDailyNotesData[dateKey];
+        } else {
+            allDailyNotesData[dateKey] = {
+                content: response.content,
+                updatedAt: response.updatedAt || new Date().toISOString()
+            };
+        }
+        await persistAppState({ skipAutoCloudSync: true });
+        await updateStorageStatus();
+        if (dateKey === getDateKey(currentDate)) {
+            updateDailySummary();
+        }
+        return allDailyNotesData[dateKey] || null;
+    } catch (error) {
+        console.error(error);
+        if (!options.silent) {
+            showToast('今日状态记录加载失败，请检查后端连接');
+        }
+        return allDailyNotesData[dateKey] || null;
+    }
+}
+
 function loadProfile() {
     profile = profile || {};
 }
 
 async function saveProfile() {
+    if (isBackendProfileModeEnabled()) {
+        const response = await cloudSyncRequest('/api/profile', {
+            method: 'PUT',
+            body: JSON.stringify({
+                name: profile.name || '',
+                gender: profile.gender || '',
+                age: profile.age || '',
+                height: profile.height || '',
+                weight: profile.weight || '',
+                bloodType: profile.bloodType || '',
+                bloodPressure: profile.bloodPressure || '',
+                bloodSugar: profile.bloodSugar || '',
+                chronicConditions: profile.chronicConditions || '',
+                allergies: profile.allergies || '',
+                medications: profile.medications || '',
+                healthGoals: profile.healthGoals || '',
+                notes: profile.notes || ''
+            })
+        });
+        profile = normalizeBackendProfile(response);
+        await persistAppState({ skipAutoCloudSync: true });
+        await updateStorageStatus();
+        return;
+    }
+
     await persistAppState();
     await updateStorageStatus();
 }
@@ -2778,16 +3261,38 @@ async function handleReminderSubmit(e) {
     };
 
     try {
-        if (editingReminderId) {
-            reminders = reminders.map(item => item.id === editingReminderId ? reminder : item);
+        if (isBackendReminderModeEnabled()) {
+            const savedReminder = await cloudSyncRequest(
+                editingReminderId ? `/api/reminders/${encodeURIComponent(editingReminderId)}` : '/api/reminders',
+                {
+                    method: editingReminderId ? 'PUT' : 'POST',
+                    body: JSON.stringify(toBackendReminderPayload(reminder))
+                }
+            );
+            const normalized = normalizeBackendReminderRecord(savedReminder);
+            const currentList = [...reminders];
+            const targetIndex = currentList.findIndex(item => item.id === normalized.id);
+            if (targetIndex > -1) {
+                currentList[targetIndex] = normalized;
+            } else {
+                currentList.push(normalized);
+            }
+            reminders = normalizeReminders(currentList);
+            await persistAppState({ skipAutoCloudSync: true });
+            await syncRemindersToServiceWorker();
+            await updateStorageStatus();
         } else {
-            reminders.push(reminder);
+            if (editingReminderId) {
+                reminders = reminders.map(item => item.id === editingReminderId ? reminder : item);
+            } else {
+                reminders.push(reminder);
+            }
+            reminders = normalizeReminders(reminders);
+            await saveReminders();
         }
-        reminders = normalizeReminders(reminders);
-        await saveReminders();
     } catch (error) {
         console.error(error);
-        showToast('保存失败：图片过大或本地存储空间不足');
+        showToast(isBackendReminderModeEnabled() ? '保存失败，请检查后端连接或登录状态' : '保存失败：图片过大或本地存储空间不足');
         submitLocks.reminder = false;
         return;
     }
@@ -2847,6 +3352,50 @@ function resetReminderImageInputs() {
 window.completeReminder = function(id) {
     const reminder = reminders.find(r => r.id === id);
     if (reminder) {
+        if (isBackendReminderModeEnabled()) {
+            const actionPath = reminder.completed ? 'reopen' : 'complete';
+            const createNextPromise = (!reminder.completed && isRepeatingReminder(reminder.repeat))
+                ? cloudSyncRequest('/api/reminders', {
+                    method: 'POST',
+                    body: JSON.stringify(toBackendReminderPayload({
+                        ...reminder,
+                        date: getNextReminderDate(reminder.date, reminder.repeat),
+                        completed: false,
+                        completedAt: null,
+                        snoozeUntil: null,
+                        snoozeCount: 0
+                    }))
+                }).catch(error => {
+                    console.error(error);
+                    return null;
+                })
+                : Promise.resolve(null);
+
+            cloudSyncRequest(`/api/reminders/${encodeURIComponent(id)}/${actionPath}`, {
+                method: 'POST'
+            })
+                .then(async updatedReminder => {
+                    const normalized = normalizeBackendReminderRecord(updatedReminder);
+                    reminders = normalizeReminders(reminders.map(item => item.id === id ? normalized : item));
+                    const nextReminder = await createNextPromise;
+                    if (nextReminder) {
+                        reminders.push(normalizeBackendReminderRecord(nextReminder));
+                        reminders = normalizeReminders(reminders);
+                    }
+                    await persistAppState({ skipAutoCloudSync: true });
+                    await syncRemindersToServiceWorker();
+                    await updateStorageStatus();
+                    renderReminderTabs('today');
+                    updateRemindersDisplay();
+                    if (activeReminderAlertId === id) {
+                        closeReminderAlertModal();
+                    }
+                    showToast(normalized.completed ? '提醒已完成！' : '提醒已恢复');
+                })
+                .catch(() => showToast('操作失败，请检查后端连接'));
+            return;
+        }
+
         reminder.completed = !reminder.completed;
         reminder.completedAt = reminder.completed ? new Date().toISOString() : null;
         reminder.snoozeUntil = reminder.completed ? null : reminder.snoozeUntil;
@@ -2891,6 +3440,21 @@ window.completeReminder = function(id) {
 // 删除提醒
 window.deleteReminder = function(id) {
     if (confirm('确定要删除这个提醒吗？')) {
+        if (isBackendReminderModeEnabled()) {
+            cloudSyncRequest(`/api/reminders/${encodeURIComponent(id)}`, {
+                method: 'DELETE'
+            }).then(async () => {
+                reminders = reminders.filter(r => r.id !== id);
+                await persistAppState({ skipAutoCloudSync: true });
+                await syncRemindersToServiceWorker();
+                await updateStorageStatus();
+                renderReminderTabs('today');
+                updateRemindersDisplay();
+                showToast('提醒已删除');
+            }).catch(() => showToast('删除失败，请检查后端连接'));
+            return;
+        }
+
         reminders = reminders.filter(r => r.id !== id);
         saveReminders().then(() => {
             renderReminderTabs('today');
@@ -2970,13 +3534,39 @@ async function saveDailyNote() {
     }
 
     try {
-        await persistAppState();
-        await updateStorageStatus();
+        if (isBackendDailyNoteModeEnabled()) {
+            if (!content) {
+                await cloudSyncRequest(`/api/daily-notes/${encodeURIComponent(dateKey)}`, {
+                    method: 'DELETE'
+                }).catch(error => {
+                    if (!String(error.message || '').includes('SYNC_HTTP_404')) {
+                        throw error;
+                    }
+                });
+            } else {
+                const response = await cloudSyncRequest(`/api/daily-notes/${encodeURIComponent(dateKey)}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        noteDate: dateKey,
+                        content
+                    })
+                });
+                allDailyNotesData[dateKey] = {
+                    content: response?.content || content,
+                    updatedAt: response?.updatedAt || new Date().toISOString()
+                };
+            }
+            await persistAppState({ skipAutoCloudSync: true });
+            await updateStorageStatus();
+        } else {
+            await persistAppState();
+            await updateStorageStatus();
+        }
         updateDailySummary();
         showToast('今日状态记录已保存');
     } catch (error) {
         console.error(error);
-        showToast('保存失败：本地存储空间不足');
+        showToast(isBackendDailyNoteModeEnabled() ? '保存失败，请检查后端连接或登录状态' : '保存失败：本地存储空间不足');
     }
 }
 
@@ -3094,6 +3684,24 @@ function snoozeActiveReminder() {
         return;
     }
 
+    if (isBackendReminderModeEnabled()) {
+        cloudSyncRequest(`/api/reminders/${encodeURIComponent(reminder.id)}/snooze`, {
+            method: 'POST',
+            body: JSON.stringify({ minutes })
+        }).then(async updatedReminder => {
+            const normalized = normalizeBackendReminderRecord(updatedReminder);
+            reminders = normalizeReminders(reminders.map(item => item.id === normalized.id ? normalized : item));
+            await persistAppState({ skipAutoCloudSync: true });
+            await syncRemindersToServiceWorker();
+            await updateStorageStatus();
+            updateRemindersDisplay();
+            renderReminderTabs('today');
+            closeReminderAlertModal();
+            showToast(`提醒已延后 ${minutes} 分钟`);
+        }).catch(() => showToast('延后失败，请检查后端连接'));
+        return;
+    }
+
     const snoozeUntil = new Date();
     snoozeUntil.setMinutes(snoozeUntil.getMinutes() + minutes);
     reminder.snoozeUntil = snoozeUntil.toISOString();
@@ -3124,11 +3732,26 @@ function completeActiveReminder() {
 function getCloudSyncConfig() {
     const config = metadata?.cloudSync || {};
     return {
-        endpoint: config.endpoint || '',
+        endpoint: config.endpoint || 'http://170.106.101.55:8081',
         apiKey: config.apiKey || '',
+        account: config.account || '',
+        user: config.user || null,
         autoSync: Boolean(config.autoSync),
         lastSyncedAt: config.lastSyncedAt || ''
     };
+}
+
+function isCloudSyncAuthenticated(config = getCloudSyncConfig()) {
+    return Boolean(config.endpoint && config.apiKey);
+}
+
+function updateCloudSyncActionState(config = getCloudSyncConfig()) {
+    const pushBtn = document.getElementById('cloudPushBtn');
+    const pullBtn = document.getElementById('cloudPullBtn');
+    const logoutBtn = document.getElementById('cloudAuthLogoutBtn');
+    if (pushBtn) pushBtn.disabled = !isCloudSyncAuthenticated(config);
+    if (pullBtn) pullBtn.disabled = !isCloudSyncAuthenticated(config);
+    if (logoutBtn) logoutBtn.disabled = !config.apiKey;
 }
 
 function setCloudSyncStatus(text, isError = false) {
@@ -3138,15 +3761,38 @@ function setCloudSyncStatus(text, isError = false) {
     status.style.color = isError ? '#d32f2f' : 'var(--text-secondary)';
 }
 
+function setCloudAuthStatus(text, isError = false) {
+    const status = document.getElementById('cloudAuthStatus');
+    if (!status) return;
+    status.textContent = text;
+    status.style.color = isError ? '#d32f2f' : 'var(--text-secondary)';
+}
+
+function getCloudAuthSummary(config = getCloudSyncConfig()) {
+    if (config.user?.nickname) {
+        return `已登录：${config.user.nickname}（${config.account || config.user.account || '云端账号'}）`;
+    }
+    if (config.account && config.apiKey) {
+        return `已登录：${config.account}`;
+    }
+    return '未登录，无法同步云端数据。';
+}
+
 function hydrateCloudSyncForm() {
     const envInput = document.getElementById('cloudEnvId');
+    const accountInput = document.getElementById('cloudAccount');
+    const passwordInput = document.getElementById('cloudPassword');
     const autoSync = document.getElementById('cloudAutoSync');
-    if (!envInput || !autoSync) return;
+    if (!envInput || !accountInput || !passwordInput || !autoSync) return;
 
     const config = getCloudSyncConfig();
     envInput.value = config.endpoint;
+    accountInput.value = config.account;
+    passwordInput.value = '';
     autoSync.checked = config.autoSync;
-    setCloudSyncStatus(config.lastSyncedAt ? `最近同步：${new Date(config.lastSyncedAt).toLocaleString('zh-CN')}` : '请先填写同步服务地址。');
+    setCloudSyncStatus(config.lastSyncedAt ? `最近同步：${new Date(config.lastSyncedAt).toLocaleString('zh-CN')}` : '请先填写同步服务地址并登录后端账号。');
+    setCloudAuthStatus(getCloudAuthSummary(config));
+    updateCloudSyncActionState(config);
 }
 
 function openCloudSyncModal() {
@@ -3156,19 +3802,25 @@ function openCloudSyncModal() {
 
 async function saveCloudSyncConfig() {
     const endpointInput = document.getElementById('cloudEnvId');
+    const accountInput = document.getElementById('cloudAccount');
     const autoSync = document.getElementById('cloudAutoSync');
-    if (!endpointInput || !autoSync) return;
+    if (!endpointInput || !accountInput || !autoSync) return;
 
     const prev = getCloudSyncConfig();
     const endpoint = endpointInput.value.trim().replace(/\/+$/, '');
+    const account = accountInput.value.trim();
     metadata.cloudSync = {
         ...prev,
         endpoint,
+        account,
         autoSync: autoSync.checked
     };
 
     await persistAppState({ skipAutoCloudSync: true });
-    setCloudSyncStatus(endpoint ? '配置已保存，可测试连接或立即同步。' : '已清空同步服务地址。');
+    const nextConfig = getCloudSyncConfig();
+    setCloudSyncStatus(endpoint ? '配置已保存，请登录后再同步数据。' : '已清空同步服务地址。');
+    setCloudAuthStatus(getCloudAuthSummary(nextConfig));
+    updateCloudSyncActionState(nextConfig);
     showToast('云同步配置已保存');
 }
 
@@ -3239,9 +3891,119 @@ async function ensureCloudSyncLogin() {
     }
 }
 
+async function submitCloudAuthRequest(path) {
+    const endpoint = document.getElementById('cloudEnvId')?.value.trim().replace(/\/+$/, '');
+    const account = document.getElementById('cloudAccount')?.value.trim() || '';
+    const password = document.getElementById('cloudPassword')?.value || '';
+
+    if (!endpoint) {
+        setCloudSyncStatus('请先填写同步服务地址。', true);
+        showToast('请先配置同步地址');
+        return false;
+    }
+    if (!account || !password) {
+        setCloudAuthStatus('请输入账号和密码后再操作。', true);
+        showToast('请填写账号和密码');
+        return false;
+    }
+
+    setCloudAuthStatus(path.endsWith('/register') ? '正在注册并登录...' : '正在登录后端...');
+    try {
+        const response = await fetch(`${endpoint}${path}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ account, password })
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('AUTH_INVALID_CREDENTIALS');
+            }
+            if (response.status === 409) {
+                throw new Error('AUTH_ACCOUNT_EXISTS');
+            }
+            throw new Error(`AUTH_HTTP_${response.status}`);
+        }
+
+        const data = await response.json();
+        const prev = getCloudSyncConfig();
+        metadata.cloudSync = {
+            ...prev,
+            endpoint,
+            account,
+            apiKey: data?.token || '',
+            user: data?.user || null
+        };
+        await persistAppState({ skipAutoCloudSync: true });
+
+        const summary = getCloudAuthSummary(getCloudSyncConfig());
+        setCloudAuthStatus(summary);
+        setCloudSyncStatus('登录成功，可开始上传或恢复数据。');
+        updateCloudSyncActionState(getCloudSyncConfig());
+        document.getElementById('cloudPassword').value = '';
+        await refreshActivitiesFromBackend(getDateKey(currentDate), { silent: true });
+        await refreshHealthRecordsFromBackend(getDateKey(currentDate), { silent: true });
+        await refreshSymptomRecordsFromBackend(getDateKey(currentDate), { silent: true });
+        await refreshRemindersFromBackend({ silent: true });
+        await refreshProfileFromBackend({ silent: true });
+        await refreshDailyNoteFromBackend(getDateKey(currentDate), { silent: true });
+        showToast(path.endsWith('/register') ? '已注册并登录' : '后端登录成功');
+        return true;
+    } catch (error) {
+        console.error(error);
+        if (String(error.message || '').includes('AUTH_INVALID_CREDENTIALS')) {
+            setCloudAuthStatus('登录失败，账号或密码不正确。', true);
+            showToast('账号或密码错误');
+            return false;
+        }
+        if (String(error.message || '').includes('AUTH_ACCOUNT_EXISTS')) {
+            setCloudAuthStatus('该账号已存在，请直接登录。', true);
+            showToast('账号已存在');
+            return false;
+        }
+        setCloudAuthStatus('登录失败，请检查服务地址、跨域或后端状态。', true);
+        showToast('后端登录失败');
+        return false;
+    }
+}
+
+function loginCloudSyncAccount() {
+    return submitCloudAuthRequest('/api/auth/login');
+}
+
+function registerCloudSyncAccount() {
+    return submitCloudAuthRequest('/api/auth/register');
+}
+
+async function logoutCloudSyncAccount() {
+    const prev = getCloudSyncConfig();
+    metadata.cloudSync = {
+        ...prev,
+        apiKey: '',
+        user: null
+    };
+    await persistAppState({ skipAutoCloudSync: true });
+    const passwordInput = document.getElementById('cloudPassword');
+    if (passwordInput) {
+        passwordInput.value = '';
+    }
+    setCloudAuthStatus('已退出登录。');
+    setCloudSyncStatus(prev.endpoint ? '已保留同步地址，请重新登录后再同步数据。' : '请先填写同步服务地址并登录后端账号。');
+    updateCloudSyncActionState(getCloudSyncConfig());
+    loadActivities();
+    loadHealthRecords();
+    loadSymptomRecords();
+    loadReminders();
+    loadProfile();
+    renderReminderTabs('today');
+    updateRemindersDisplay();
+    updateDisplay();
+    showToast('已退出云端账号');
+}
+
 function scheduleCloudAutoSync() {
     const config = getCloudSyncConfig();
-    if (!config.autoSync || !config.endpoint) return;
+    if (!config.autoSync || !isCloudSyncAuthenticated(config)) return;
 
     if (cloudSyncTimer) {
         clearTimeout(cloudSyncTimer);
@@ -3255,6 +4017,11 @@ async function pushSnapshotToCloud(manual = false) {
     const config = getCloudSyncConfig();
     if (!config.endpoint) {
         if (manual) showToast('请先配置同步服务地址');
+        return false;
+    }
+    if (!isCloudSyncAuthenticated(config)) {
+        setCloudSyncStatus('请先登录后再上传云端数据。', true);
+        if (manual) showToast('请先登录后再同步');
         return false;
     }
     if (cloudSyncBusy) return false;
@@ -3295,6 +4062,11 @@ async function pullSnapshotFromCloud() {
     const config = getCloudSyncConfig();
     if (!config.endpoint) {
         showToast('请先配置同步服务地址');
+        return;
+    }
+    if (!isCloudSyncAuthenticated(config)) {
+        setCloudSyncStatus('请先登录后再恢复云端数据。', true);
+        showToast('请先登录后再同步');
         return;
     }
     if (cloudSyncBusy) return;
@@ -3397,9 +4169,14 @@ async function handleProfileSubmit(e) {
         notes: document.getElementById('profileNotes').value.trim()
     };
 
-    await saveProfile();
-    document.getElementById('profileModal').style.display = 'none';
-    showToast('个人信息已保存');
+    try {
+        await saveProfile();
+        document.getElementById('profileModal').style.display = 'none';
+        showToast('个人信息已保存');
+    } catch (error) {
+        console.error(error);
+        showToast(isBackendProfileModeEnabled() ? '保存失败，请检查后端连接或登录状态' : '个人信息保存失败');
+    }
 }
 
 // 请求通知权限

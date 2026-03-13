@@ -18,7 +18,6 @@
             <div class="header-top">
                 <h1>📅 今日活动记录</h1>
                 <div class="header-tools">
-                    <button id="aiDiagnosisBtn" class="header-tool-btn">🤖 AI诊断</button>
                     <button id="cloudSyncBtn" class="header-tool-btn">云同步</button>
                     <button id="profileBtn" class="header-tool-btn">个人信息</button>
                     <button id="seedDemoBtn" class="header-tool-btn">示例数据</button>
@@ -939,31 +938,67 @@
         </div>
 
         <div id="cloudSyncModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>☁️ 数据云同步</h2>
+            <div class="modal-content cloud-sync-dialog">
+                <div class="modal-header cloud-sync-header">
+                    <div class="cloud-sync-header-copy">
+                        <div class="cloud-sync-kicker">SYNC CENTER</div>
+                        <h2>数据云同步</h2>
+                        <p>先连接后端账号，再进行上传或恢复。同步入口只保留必要操作。</p>
+                    </div>
                     <span class="close">&times;</span>
                 </div>
-                <div class="storage-panel">
-                    <div class="form-group">
+                <div class="storage-panel cloud-sync-panel">
+                    <div class="cloud-sync-section">
+                        <div class="cloud-sync-section-head">
+                            <span class="cloud-sync-section-tag">01</span>
+                            <div>
+                                <h3>连接服务</h3>
+                                <p>填写后端地址和账号，用登录态保护同步数据。</p>
+                            </div>
+                        </div>
+                        <div class="form-group">
                         <label for="cloudEnvId">同步服务地址</label>
-                        <input id="cloudEnvId" type="text" placeholder="例如：https://api.example.com/sync">
+                        <input id="cloudEnvId" type="text" placeholder="默认：http://170.106.101.55:8081">
                     </div>
+                    <div class="cloud-auth-grid">
+                        <div class="form-group">
+                            <label for="cloudAccount">后端账号</label>
+                            <input id="cloudAccount" type="text" placeholder="请输入登录账号">
+                        </div>
+                        <div class="form-group">
+                            <label for="cloudPassword">登录密码</label>
+                            <input id="cloudPassword" type="password" placeholder="请输入登录密码">
+                        </div>
+                    </div>
+                    <div class="cloud-auth-bar">
+                        <div id="cloudAuthStatus" class="storage-helper-text">请先登录后再同步数据。</div>
+                        <div class="cloud-auth-actions">
+                            <button id="cloudAuthLoginBtn" type="button" class="section-order-btn">登录后端</button>
+                            <button id="cloudAuthRegisterBtn" type="button" class="section-order-btn">注册并登录</button>
+                            <button id="cloudAuthLogoutBtn" type="button" class="section-export-btn">退出登录</button>
+                        </div>
+                    </div>
+                    </div>
+                    <div class="cloud-sync-section">
+                        <div class="cloud-sync-section-head">
+                            <span class="cloud-sync-section-tag">02</span>
+                            <div>
+                                <h3>同步选项</h3>
+                                <p>登录成功后，才能上传当前数据或从云端恢复。</p>
+                            </div>
+                        </div>
                     <div class="form-group">
                         <label class="checkbox-label">
                             <input id="cloudAutoSync" type="checkbox">
                             开启自动同步（本地保存后自动上传）
                         </label>
                     </div>
-                    <div id="cloudSyncStatus" class="storage-helper-text">请先填写同步服务地址。</div>
+                    <div id="cloudSyncStatus" class="storage-helper-text">请先填写同步服务地址并登录后端账号。</div>
                     <div class="sync-actions">
                         <button id="saveCloudConfigBtn" type="button" class="section-order-btn">保存配置</button>
-                        <button id="cloudLoginBtn" type="button" class="section-order-btn">测试连接</button>
                         <button id="cloudPushBtn" type="button" class="section-export-btn">上传到云端</button>
                         <button id="cloudPullBtn" type="button" class="section-export-btn">从云端恢复</button>
                     </div>
-                    <div class="storage-helper-text">
-                        接口约定：<code>PUT /snapshot</code> 上传快照，<code>GET /snapshot</code> 下载快照，建议提供 <code>GET /health</code> 健康检查。
                     </div>
                 </div>
             </div>
