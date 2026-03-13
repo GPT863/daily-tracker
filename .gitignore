@@ -1,0 +1,8 @@
+*.log
+*.err.log
+*.out.log
+frontend-*.log
+frontend-*.err.log
+backend/.tmp-*.log
+test-connection.html
+.vercel/

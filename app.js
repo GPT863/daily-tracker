@@ -996,9 +996,9 @@ function setupEventListeners() {
     document.getElementById('confirmImportReplace').addEventListener('click', () => confirmImport('replace'));
     document.getElementById('snoozeMinutes').addEventListener('change', toggleCustomSnoozeField);
     document.getElementById('saveCloudConfigBtn').addEventListener('click', saveCloudSyncConfig);
-    document.getElementById('cloudAuthLoginBtn').addEventListener('click', loginCloudSyncAccount);
-    document.getElementById('cloudAuthRegisterBtn').addEventListener('click', registerCloudSyncAccount);
+    document.getElementById('cloudAuthSubmitBtn').addEventListener('click', submitCloudAuth);
     document.getElementById('cloudAuthLogoutBtn').addEventListener('click', logoutCloudSyncAccount);
+    document.getElementById('toggleCloudPasswordBtn').addEventListener('click', toggleCloudPasswordVisibility);
     document.getElementById('cloudPushBtn').addEventListener('click', () => pushSnapshotToCloud(true));
     document.getElementById('cloudPullBtn').addEventListener('click', pullSnapshotFromCloud);
     document.getElementById('saveDailyNoteBtn').addEventListener('click', saveDailyNote);
@@ -3749,9 +3749,15 @@ function updateCloudSyncActionState(config = getCloudSyncConfig()) {
     const pushBtn = document.getElementById('cloudPushBtn');
     const pullBtn = document.getElementById('cloudPullBtn');
     const logoutBtn = document.getElementById('cloudAuthLogoutBtn');
-    if (pushBtn) pushBtn.disabled = !isCloudSyncAuthenticated(config);
-    if (pullBtn) pullBtn.disabled = !isCloudSyncAuthenticated(config);
-    if (logoutBtn) logoutBtn.disabled = !config.apiKey;
+    const optionsSection = document.getElementById('cloudSyncOptionsSection');
+    const optionsContent = document.getElementById('cloudSyncOptionsContent');
+    const isReady = isCloudSyncAuthenticated(config);
+
+    if (pushBtn) pushBtn.disabled = !isReady;
+    if (pullBtn) pullBtn.disabled = !isReady;
+    if (logoutBtn) logoutBtn.classList.toggle('hidden', !config.apiKey);
+    if (optionsSection) optionsSection.classList.toggle('hidden', !isReady);
+    if (optionsContent) optionsContent.classList.toggle('hidden', !isReady);
 }
 
 function setCloudSyncStatus(text, isError = false) {
@@ -3775,7 +3781,7 @@ function getCloudAuthSummary(config = getCloudSyncConfig()) {
     if (config.account && config.apiKey) {
         return `已登录：${config.account}`;
     }
-    return '未登录，无法同步云端数据。';
+    return '未登录，无法进行数据同步';
 }
 
 function hydrateCloudSyncForm() {
@@ -3787,10 +3793,10 @@ function hydrateCloudSyncForm() {
 
     const config = getCloudSyncConfig();
     envInput.value = config.endpoint;
-    accountInput.value = config.account;
+    accountInput.value = '';
     passwordInput.value = '';
     autoSync.checked = config.autoSync;
-    setCloudSyncStatus(config.lastSyncedAt ? `最近同步：${new Date(config.lastSyncedAt).toLocaleString('zh-CN')}` : '请先填写同步服务地址并登录后端账号。');
+    setCloudSyncStatus(config.lastSyncedAt ? `最近同步：${new Date(config.lastSyncedAt).toLocaleString('zh-CN')}` : '登录后可同步。');
     setCloudAuthStatus(getCloudAuthSummary(config));
     updateCloudSyncActionState(config);
 }
@@ -3818,7 +3824,7 @@ async function saveCloudSyncConfig() {
 
     await persistAppState({ skipAutoCloudSync: true });
     const nextConfig = getCloudSyncConfig();
-    setCloudSyncStatus(endpoint ? '配置已保存，请登录后再同步数据。' : '已清空同步服务地址。');
+    setCloudSyncStatus(endpoint ? '配置已保存。' : '已清空同步服务地址。');
     setCloudAuthStatus(getCloudAuthSummary(nextConfig));
     updateCloudSyncActionState(nextConfig);
     showToast('云同步配置已保存');
@@ -3967,12 +3973,35 @@ async function submitCloudAuthRequest(path) {
     }
 }
 
-function loginCloudSyncAccount() {
-    return submitCloudAuthRequest('/api/auth/login');
+async function submitCloudAuth() {
+    const loginOk = await submitCloudAuthRequest('/api/auth/login');
+    if (loginOk) {
+        return true;
+    }
+
+    const authStatus = document.getElementById('cloudAuthStatus')?.textContent || '';
+    if (!authStatus.includes('账号或密码不正确')) {
+        return false;
+    }
+
+    const registerOk = await submitCloudAuthRequest('/api/auth/register');
+    if (registerOk) {
+        setCloudAuthStatus('已创建账号并登录。');
+        showToast('已自动创建账号并登录');
+        return true;
+    }
+
+    return false;
 }
 
-function registerCloudSyncAccount() {
-    return submitCloudAuthRequest('/api/auth/register');
+function toggleCloudPasswordVisibility() {
+    const passwordInput = document.getElementById('cloudPassword');
+    const toggleBtn = document.getElementById('toggleCloudPasswordBtn');
+    if (!passwordInput || !toggleBtn) return;
+
+    const nextType = passwordInput.type === 'password' ? 'text' : 'password';
+    passwordInput.type = nextType;
+    toggleBtn.textContent = nextType === 'password' ? '👁' : '🙈';
 }
 
 async function logoutCloudSyncAccount() {

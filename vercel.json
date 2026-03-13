@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "daily-tracker",
   "builds": [
     {
       "src": "/*",

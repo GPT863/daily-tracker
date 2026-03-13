@@ -940,68 +940,64 @@
         <div id="cloudSyncModal" class="modal">
             <div class="modal-content cloud-sync-dialog">
                 <div class="modal-header cloud-sync-header">
-                    <div class="cloud-sync-header-copy">
-                        <div class="cloud-sync-kicker">SYNC CENTER</div>
-                        <h2>数据云同步</h2>
-                        <p>先连接后端账号，再进行上传或恢复。同步入口只保留必要操作。</p>
-                    </div>
+                    <h2>数据云同步</h2>
                     <span class="close">&times;</span>
                 </div>
                 <div class="storage-panel cloud-sync-panel">
-                    <div class="cloud-sync-section">
-                        <div class="cloud-sync-section-head">
-                            <span class="cloud-sync-section-tag">01</span>
-                            <div>
-                                <h3>连接服务</h3>
-                                <p>填写后端地址和账号，用登录态保护同步数据。</p>
+                    <div class="cloud-sync-section cloud-sync-form-section">
+                        <div class="cloud-sync-field-label">
+                            <span class="cloud-sync-field-icon">🖥</span>
+                            <label for="cloudEnvId">同步服务地址</label>
+                        </div>
+                        <div class="form-group">
+                            <input id="cloudEnvId" type="text" placeholder="默认：http://170.106.101.55:8081">
+                        </div>
+                        <div class="cloud-auth-tip">
+                            <span class="cloud-auth-tip-icon">!</span>
+                            <span id="cloudAuthStatus" class="storage-helper-text">未登录，无法进行数据同步</span>
+                        </div>
+                        <div class="form-group">
+                            <div class="cloud-sync-field-label">
+                                <span class="cloud-sync-field-icon">👤</span>
+                                <label for="cloudAccount">账号</label>
+                            </div>
+                            <input id="cloudAccount" type="text">
+                        </div>
+                        <div class="form-group">
+                            <div class="cloud-sync-field-label">
+                                <span class="cloud-sync-field-icon">🔒</span>
+                                <label for="cloudPassword">登录密码</label>
+                            </div>
+                            <div class="cloud-password-wrap">
+                                <input id="cloudPassword" type="password">
+                                <button id="toggleCloudPasswordBtn" type="button" class="cloud-password-toggle" aria-label="显示或隐藏密码">👁</button>
                             </div>
                         </div>
-                        <div class="form-group">
-                        <label for="cloudEnvId">同步服务地址</label>
-                        <input id="cloudEnvId" type="text" placeholder="默认：http://170.106.101.55:8081">
-                    </div>
-                    <div class="cloud-auth-grid">
-                        <div class="form-group">
-                            <label for="cloudAccount">后端账号</label>
-                            <input id="cloudAccount" type="text" placeholder="请输入登录账号">
-                        </div>
-                        <div class="form-group">
-                            <label for="cloudPassword">登录密码</label>
-                            <input id="cloudPassword" type="password" placeholder="请输入登录密码">
-                        </div>
-                    </div>
-                    <div class="cloud-auth-bar">
-                        <div id="cloudAuthStatus" class="storage-helper-text">请先登录后再同步数据。</div>
                         <div class="cloud-auth-actions">
-                            <button id="cloudAuthLoginBtn" type="button" class="section-order-btn">登录后端</button>
-                            <button id="cloudAuthRegisterBtn" type="button" class="section-order-btn">注册并登录</button>
-                            <button id="cloudAuthLogoutBtn" type="button" class="section-export-btn">退出登录</button>
+                            <button id="cloudAuthSubmitBtn" type="button" class="section-order-btn cloud-auth-submit-btn">登录（未注册将自动创建账号）</button>
+                            <button id="cloudAuthLogoutBtn" type="button" class="cloud-auth-text-btn hidden">退出登录</button>
                         </div>
                     </div>
-                    </div>
-                    <div class="cloud-sync-section">
-                        <div class="cloud-sync-section-head">
-                            <span class="cloud-sync-section-tag">02</span>
-                            <div>
-                                <h3>同步选项</h3>
-                                <p>登录成功后，才能上传当前数据或从云端恢复。</p>
+                    <div id="cloudSyncOptionsSection" class="cloud-sync-section cloud-sync-actions-section hidden">
+                        <div id="cloudSyncOptionsContent">
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input id="cloudAutoSync" type="checkbox">
+                                    开启自动同步（本地保存后自动上传）
+                                </label>
+                            </div>
+                            <div id="cloudSyncStatus" class="storage-helper-text">请先填写同步服务地址并登录后端账号。</div>
+                            <div class="sync-actions">
+                                <button id="saveCloudConfigBtn" type="button" class="section-order-btn">保存配置</button>
+                                <button id="cloudPushBtn" type="button" class="section-export-btn">上传到云端</button>
+                                <button id="cloudPullBtn" type="button" class="section-export-btn">从云端恢复</button>
                             </div>
                         </div>
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input id="cloudAutoSync" type="checkbox">
-                            开启自动同步（本地保存后自动上传）
-                        </label>
                     </div>
-                    <div id="cloudSyncStatus" class="storage-helper-text">请先填写同步服务地址并登录后端账号。</div>
-                    <div class="sync-actions">
-                        <button id="saveCloudConfigBtn" type="button" class="section-order-btn">保存配置</button>
-                        <button id="cloudPushBtn" type="button" class="section-export-btn">上传到云端</button>
-                        <button id="cloudPullBtn" type="button" class="section-export-btn">从云端恢复</button>
-                    </div>
-                    </div>
+                    <div class="cloud-sync-footer">© 2023 数据云同步服务 | 版本 v1.0.0</div>
                 </div>
             </div>
+        </div>
         </div>
 
         <!-- 到点提醒弹窗 -->
