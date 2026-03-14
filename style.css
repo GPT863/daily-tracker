@@ -490,7 +490,7 @@ body.elder-mode .form-actions button {
     padding: var(--space-md);
     display: flex;
     flex-direction: column;
-    gap: var(--space-lg);
+    gap: 18px;
 }
 
 /* Section 通用样式优化 */
@@ -499,7 +499,7 @@ body.elder-mode .form-actions button {
 .timeline-section {
     background: var(--card-bg);
     border-radius: var(--radius-lg);
-    padding: var(--space-md);
+    padding: 16px;
     box-shadow: var(--shadow);
     border: 1px solid rgba(40,122,68,0.06);
 }
@@ -508,8 +508,8 @@ body.elder-mode .form-actions button {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    margin-bottom: var(--space-md);
+    gap: 8px;
+    margin-bottom: 12px;
 }
 
 .section-heading h2,
@@ -688,8 +688,8 @@ body.elder-mode .form-actions button {
 .timeline-item {
     background: #fafcfa;
     border: 1px solid rgba(40,122,68,0.08);
-    margin-bottom: 14px;
-    padding: 16px;
+    margin-bottom: 10px;
+    padding: 13px 14px;
     border-radius: var(--radius-md);
     box-shadow: 0 1px 6px rgba(31,122,61,0.06);
     position: relative;
@@ -766,8 +766,8 @@ body.elder-mode .form-actions button {
 }
 
 .timeline-image-wrap {
-    margin: 14px 0 10px;
-    border-radius: 16px;
+    margin: 10px 0 8px;
+    border-radius: 12px;
     overflow: hidden;
     background: linear-gradient(135deg, rgba(223, 245, 228, 0.85), rgba(255, 255, 255, 0.92));
     box-shadow: inset 0 0 0 1px rgba(40, 122, 68, 0.08);
@@ -830,6 +830,17 @@ body.elder-mode .form-actions button {
     color: white;
 }
 
+.btn-complete {
+    background: transparent;
+    border: 1.5px solid var(--forest-color);
+    color: var(--forest-color);
+}
+
+.btn-complete:hover {
+    background: var(--forest-color);
+    color: white;
+}
+
 /* 空状态 */
 .empty-state {
     text-align: center;
@@ -852,7 +863,7 @@ body.elder-mode .form-actions button {
         radial-gradient(circle at top right, rgba(223, 245, 228, 0.28), transparent 34%),
         linear-gradient(135deg, #2f8f4c 0%, var(--forest-color) 55%, var(--primary-color) 100%);
     border-radius: var(--radius-lg);
-    padding: var(--space-md);
+    padding: 14px;
     box-shadow: var(--shadow-md);
 }
 
@@ -892,11 +903,11 @@ body.elder-mode .form-actions button {
 
 .reminder-item {
     background: rgba(255,255,255,0.95);
-    padding: 12px 15px;
+    padding: 10px 13px;
     border-radius: 10px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     cursor: pointer;
     transition: transform 0.3s;
 }
@@ -1378,7 +1389,7 @@ body.elder-mode .form-actions button {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 18px 20px;
+    padding: 14px 18px;
     border-bottom: 1px solid var(--border-color);
     position: sticky;
     top: 0;
@@ -1765,7 +1776,7 @@ body.elder-mode .form-actions button {
 
 .tab-content {
     display: none;
-    padding: 20px;
+    padding: 14px;
 }
 
 .tab-content.active {
@@ -1780,7 +1791,7 @@ body.elder-mode .form-actions button {
 
 .reminder-detail-item {
     background: var(--bg-color);
-    padding: 15px;
+    padding: 12px;
     border-radius: 10px;
     border-left: 4px solid var(--forest-color);
 }
@@ -1827,7 +1838,7 @@ body.elder-mode .form-actions button {
 
 .reminder-detail-image {
     width: 100%;
-    max-height: 180px;
+    max-height: 90px;
     object-fit: cover;
     display: block;
 }
@@ -3121,11 +3132,12 @@ body.elder-mode .stats-card-value {
     }
 
     .reminder-detail-actions {
-        flex-direction: column;
+        flex-wrap: wrap;
     }
 
     .reminder-detail-actions > * {
-        width: 100%;
+        flex: 1;
+        min-width: 80px;
     }
 
     .alert-actions button {
@@ -3207,9 +3219,13 @@ body.elder-mode .stats-card-value {
     }
 
     .reminder-tabs {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
+        display: flex;
+        overflow-x: auto;
+    }
+
+    .reminder-tabs .tab-btn {
+        padding: 10px 6px;
+        font-size: 0.8rem;
     }
 
     .health-section,

@@ -3190,7 +3190,7 @@ function renderReminderHistoryItem(reminder) {
 
             <div class="reminder-detail-actions">
                 ${!isCompleted ? `<button class="btn-action btn-edit" onclick="editReminder('${reminder.id}')">编辑</button>` : ''}
-                <button class="btn-action btn-edit" onclick="completeReminder('${reminder.id}')">
+                <button class="btn-action btn-complete" onclick="completeReminder('${reminder.id}')">
                     ${isCompleted ? '恢复未完成' : '标记完成'}
                 </button>
                 <button class="btn-action btn-delete" onclick="deleteReminder('${reminder.id}')">删除</button>
@@ -3230,7 +3230,7 @@ function renderReminderItem(reminder, showDate = false) {
             ${(reminder.notes || snoozeInfo || getReminderRepeatLabel(reminder.repeat)) ? `<div class="reminder-detail-notes">${escapeHtml([reminder.notes, snoozeInfo, getReminderRepeatLabel(reminder.repeat)].filter(Boolean).join(' · '))}</div>` : ''}
             <div class="reminder-detail-actions">
                 ${!isCompleted ? `<button class="btn-action btn-edit" onclick="editReminder('${reminder.id}')">编辑</button>` : ''}
-                <button class="btn-action btn-edit" onclick="completeReminder('${reminder.id}')">
+                <button class="btn-action btn-complete" onclick="completeReminder('${reminder.id}')">
                     ${isCompleted ? '✓ 已完成' : '标记完成'}
                 </button>
                 <button class="btn-action btn-delete" onclick="deleteReminder('${reminder.id}')">删除</button>
