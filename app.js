@@ -17,6 +17,8 @@ let pendingSymptomImage = null;
 let profile = {};
 let metadata = {};
 let activeReminderAlertId = null;
+const triggeredTodayIds = new Set(); // 当前 session 中已弹出过的提醒 ID（防止关闭后每分钟重复弹出）
+let reminderCheckerDay = ''; // 记录 checker 当天日期，用于午夜重置
 let templates = [];
 let selectedTemplateIcon = '💊';
 let aiConfig = {
@@ -3026,12 +3028,7 @@ function populateReminderForm(reminder = null) {
 
 // 渲染今日提醒
 function renderTodayReminders() {
-    const today = getDateKey(new Date());
-    const todayReminders = reminders.filter(r => {
-        const reminderDate = new Date(r.date);
-        const reminderDateKey = getDateKey(reminderDate);
-        return reminderDateKey === today && !r.completed;
-    });
+    const todayReminders = reminders.filter(r => isReminderForToday(r));
 
     const container = document.getElementById('todayReminderList');
     container.innerHTML = todayReminders.length === 0
@@ -3489,12 +3486,8 @@ window.deleteReminder = function(id) {
 
 // 更新主页提醒显示
 function updateRemindersDisplay() {
-    const today = getDateKey(new Date());
-    const todayReminders = reminders.filter(r => {
-        const reminderDate = new Date(r.date);
-        const reminderDateKey = getDateKey(reminderDate);
-        return reminderDateKey === today && !r.completed;
-    }).sort((a, b) => a.time.localeCompare(b.time));
+    const todayReminders = reminders.filter(r => isReminderForToday(r))
+        .sort((a, b) => a.time.localeCompare(b.time));
 
     const container = document.getElementById('todayReminders');
     const emptyState = document.getElementById('noReminders');
@@ -3596,10 +3589,26 @@ async function saveDailyNote() {
 // 检查提醒（每分钟调用）
 function checkReminders() {
     const now = new Date();
-    const dueReminder = reminders.find(reminder => shouldTriggerReminder(reminder, now));
+    const today = getDateKey(now);
 
+    // 午夜跨日：重置已触发集合，让新一天的提醒可以正常弹出
+    if (reminderCheckerDay && reminderCheckerDay !== today) {
+        triggeredTodayIds.clear();
+    }
+    reminderCheckerDay = today;
+
+    const dueReminder = reminders.find(reminder => shouldTriggerReminder(reminder, now));
     if (!dueReminder) return;
     if (activeReminderAlertId === dueReminder.id) return;
+
+    // 标记已触发（防止 dismiss 后每分钟重弹）
+    triggeredTodayIds.add(dueReminder.id);
+
+    // 贪睡时间到期后清除 snoozeUntil，避免页面刷新后再次触发
+    if (dueReminder.snoozeUntil) {
+        dueReminder.snoozeUntil = null;
+        saveReminders().catch(() => {});
+    }
 
     showNotification(dueReminder);
     openReminderAlertModal(dueReminder);
@@ -3622,13 +3631,44 @@ function showNotification(reminder) {
     }
 }
 
+// 判断提醒是否应该在今天显示（含重复提醒的跨天逻辑）
+function isReminderForToday(reminder) {
+    if (!reminder || reminder.completed) return false;
+    const today = getDateKey(new Date());
+    const reminderDateKey = reminder.date;
+    if (reminderDateKey === today) return true;
+    if (reminderDateKey > today) return false;
+    if (!isRepeatingReminder(reminder.repeat)) return false;
+    const repeat = normalizeReminderRepeat(reminder.repeat);
+    const originDate = new Date(reminder.date + 'T00:00:00');
+    const todayDate = new Date(today + 'T00:00:00');
+    const daysDiff = Math.round((todayDate - originDate) / (1000 * 60 * 60 * 24));
+    if (daysDiff <= 0) return false;
+    switch (repeat) {
+        case 'daily': return true;
+        case 'weekly': return daysDiff % 7 === 0;
+        case 'biweekly': return daysDiff % 14 === 0;
+        case 'monthly': return originDate.getDate() === todayDate.getDate();
+        default: return false;
+    }
+}
+
 function shouldTriggerReminder(reminder, now) {
     if (!reminder || reminder.completed) return false;
+    if (!isReminderForToday(reminder)) return false;
+    const today = getDateKey(now);
 
-    const triggerTime = getReminderTriggerTime(reminder);
-    if (!triggerTime) return false;
+    // 贪睡优先：贪睡时间到了就触发（不受 triggeredTodayIds 限制）
+    if (reminder.snoozeUntil) {
+        const snoozeTime = new Date(reminder.snoozeUntil);
+        return getDateKey(snoozeTime) === today && snoozeTime <= now;
+    }
 
-    return getDateKey(triggerTime) === getDateKey(now) && triggerTime <= now;
+    // 本 session 内已触发过（用户关闭弹窗后不再重复弹出）
+    if (triggeredTodayIds.has(reminder.id)) return false;
+
+    const triggerTime = new Date(`${today}T${reminder.time}`);
+    return triggerTime <= now;
 }
 
 function getReminderTriggerTime(reminder) {
