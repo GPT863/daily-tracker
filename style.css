@@ -1655,6 +1655,27 @@ body.elder-mode .form-actions button {
     color: var(--text-color);
 }
 
+.page-cancel-btn {
+    width: auto;
+    height: auto;
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #4f6b59;
+}
+
+.page-cancel-btn:hover {
+    background: transparent;
+    color: #234e36;
+}
+
+.modal.page-mode .page-cancel-btn {
+    display: inline-flex;
+}
+
 /* 表单样式 */
 .activity-form {
     padding: 20px;
