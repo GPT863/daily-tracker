@@ -164,6 +164,7 @@
                             <strong>导出数据</strong>
                             <small>导出当前记录与统计数据</small>
                         </span>
+                        <span class="my-panel-arrow" aria-hidden="true"></span>
                     </button>
                     <button id="cloudSyncBtn" class="my-panel-action">
                         <span class="my-panel-icon">☁</span>
@@ -171,6 +172,7 @@
                             <strong>云同步</strong>
                             <small>登录云端并同步本地数据</small>
                         </span>
+                        <span class="my-panel-arrow" aria-hidden="true"></span>
                     </button>
                     <button id="profileBtn" class="my-panel-action">
                         <span class="my-panel-icon">🪪</span>
@@ -178,6 +180,7 @@
                             <strong>个人信息</strong>
                             <small>维护基础档案和长期健康信息</small>
                         </span>
+                        <span class="my-panel-arrow" aria-hidden="true"></span>
                     </button>
                     <button id="seedDemoBtn" class="my-panel-action">
                         <span class="my-panel-icon">📂</span>
@@ -422,7 +425,8 @@
         <!-- 导出模态框 -->
         <div id="exportModal" class="modal">
             <div class="modal-content large">
-                <div class="modal-header">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="exportModal" aria-label="返回"></button>
                     <h2>数据管理</h2>
                     <span class="close">&times;</span>
                 </div>
@@ -915,7 +919,8 @@
         <!-- 个人信息模态框 -->
         <div id="profileModal" class="modal">
             <div class="modal-content large">
-                <div class="modal-header">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="profileModal" aria-label="返回"></button>
                     <h2>👤 个人信息</h2>
                     <span class="close">&times;</span>
                 </div>
@@ -1012,7 +1017,8 @@
 
         <div id="cloudSyncModal" class="modal">
             <div class="modal-content cloud-sync-dialog">
-                <div class="modal-header cloud-sync-header">
+                <div class="modal-header cloud-sync-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="cloudSyncModal" aria-label="返回"></button>
                     <h2>数据云同步</h2>
                     <span class="close">&times;</span>
                 </div>

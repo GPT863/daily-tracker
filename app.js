@@ -975,6 +975,13 @@ function setupEventListeners() {
             closeModal(e.target.closest('.modal'));
         });
     });
+    document.querySelectorAll('.page-back-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const modalId = btn.dataset.backModal;
+            if (!modalId) return;
+            closeModal(document.getElementById(modalId));
+        });
+    });
 
     // 点击模态框外部关闭
     window.addEventListener('click', (e) => {
@@ -1234,32 +1241,48 @@ function updatePageDisplay() {
     const recordsPage = document.getElementById('recordsPage');
     const reminderPage = document.getElementById('reminderModal');
     const myPage = document.getElementById('myModal');
+    const exportPage = document.getElementById('exportModal');
+    const cloudSyncPage = document.getElementById('cloudSyncModal');
+    const profilePage = document.getElementById('profileModal');
     const homeBtn = document.getElementById('homeBtn');
     const recordBtn = document.getElementById('recordBtn');
     const reminderBtn = document.getElementById('reminderBtn');
     const myBtn = document.getElementById('myBtn');
-    if (!homePage || !recordsPage || !reminderPage || !myPage || !homeBtn || !recordBtn || !reminderBtn || !myBtn) return;
+    if (!homePage || !recordsPage || !reminderPage || !myPage || !exportPage || !cloudSyncPage || !profilePage || !homeBtn || !recordBtn || !reminderBtn || !myBtn) return;
 
     const isHome = currentPage === 'home';
     const isRecords = currentPage === 'records';
     const isReminders = currentPage === 'reminders';
     const isMy = currentPage === 'my';
+    const isExport = currentPage === 'export';
+    const isCloudSync = currentPage === 'cloud-sync';
+    const isProfile = currentPage === 'profile';
     homePage.classList.toggle('hidden', !isHome);
     recordsPage.classList.toggle('hidden', !isRecords);
     reminderPage.classList.toggle('page-mode', isReminders);
     reminderPage.style.display = isReminders ? 'block' : 'none';
     myPage.classList.toggle('page-mode', isMy);
     myPage.style.display = isMy ? 'block' : 'none';
+    exportPage.classList.toggle('page-mode', isExport);
+    exportPage.style.display = isExport ? 'block' : 'none';
+    cloudSyncPage.classList.toggle('page-mode', isCloudSync);
+    cloudSyncPage.style.display = isCloudSync ? 'block' : 'none';
+    profilePage.classList.toggle('page-mode', isProfile);
+    profilePage.style.display = isProfile ? 'block' : 'none';
     homeBtn.classList.toggle('nav-active', isHome);
     recordBtn.classList.toggle('nav-active', isRecords);
     reminderBtn.classList.toggle('nav-active', isReminders);
-    myBtn.classList.toggle('nav-active', isMy);
+    myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile);
 }
 
 function openReminderPage(tab = 'today') {
     currentReminderTab = tab;
     switchPage('reminders');
     renderReminderTabs(tab);
+}
+
+function openMySubPage(page) {
+    switchPage(page);
 }
 
 function setCurrentRecordView(view) {
@@ -2417,7 +2440,11 @@ async function exportJson() {
     metadata.lastBackupAt = new Date().toISOString();
     await persistAppState();
     updateStorageStatus();
-    document.getElementById('exportModal').style.display = 'none';
+    if (currentPage === 'export') {
+        switchPage('my');
+    } else {
+        document.getElementById('exportModal').style.display = 'none';
+    }
     showToast('数据已导出！');
 }
 
@@ -2494,7 +2521,7 @@ window.deleteSymptomRecord = function(id) {
 }
 
 function openExportModal() {
-    document.getElementById('exportModal').style.display = 'block';
+    openMySubPage('export');
     updateStorageStatus();
     updateExportPreview();
 }
@@ -2715,7 +2742,11 @@ function exportCsv() {
 
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     downloadFile(blob, `daily-tracker-${dateRange}.csv`);
-    document.getElementById('exportModal').style.display = 'none';
+    if (currentPage === 'export') {
+        switchPage('my');
+    } else {
+        document.getElementById('exportModal').style.display = 'none';
+    }
     showToast('数据已导出！');
 }
 
@@ -3877,6 +3908,13 @@ function closeModal(modal) {
         return;
     }
 
+    if ((modal.id === 'exportModal' && currentPage === 'export')
+        || (modal.id === 'cloudSyncModal' && currentPage === 'cloud-sync')
+        || (modal.id === 'profileModal' && currentPage === 'profile')) {
+        switchPage('my');
+        return;
+    }
+
     modal.style.display = 'none';
 }
 
@@ -4016,7 +4054,7 @@ function hydrateCloudSyncForm() {
 
 function openCloudSyncModal() {
     hydrateCloudSyncForm();
-    document.getElementById('cloudSyncModal').style.display = 'block';
+    openMySubPage('cloud-sync');
 }
 
 async function saveCloudSyncConfig() {
@@ -4366,7 +4404,7 @@ async function pullSnapshotFromCloud() {
 
 function openProfileModal() {
     populateProfileForm();
-    document.getElementById('profileModal').style.display = 'block';
+    openMySubPage('profile');
 }
 
 function populateProfileForm() {
@@ -4413,7 +4451,11 @@ async function handleProfileSubmit(e) {
 
     try {
         await saveProfile();
-        document.getElementById('profileModal').style.display = 'none';
+        if (currentPage === 'profile') {
+            switchPage('my');
+        } else {
+            document.getElementById('profileModal').style.display = 'none';
+        }
         showToast('个人信息已保存');
     } catch (error) {
         console.error(error);

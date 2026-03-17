@@ -1422,8 +1422,8 @@ body.elder-mode .form-actions button {
 
 .my-panel {
     display: grid;
-    gap: 12px;
-    padding: 18px;
+    gap: 10px;
+    padding: 14px;
 }
 
 .my-panel-action {
@@ -1431,7 +1431,7 @@ body.elder-mode .form-actions button {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 16px 18px;
+    padding: 15px 16px;
     background: linear-gradient(145deg, rgba(223, 245, 228, 0.62), rgba(255, 255, 255, 0.96));
     border: 1px solid rgba(40, 122, 68, 0.12);
     border-radius: 16px;
@@ -1439,6 +1439,8 @@ body.elder-mode .form-actions button {
     text-align: left;
     color: var(--text-color);
     transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
 }
 
 .my-panel-action:hover {
@@ -1474,16 +1476,28 @@ body.elder-mode .form-actions button {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex: 1;
 }
 
 .my-panel-text strong {
-    font-size: 1rem;
+    font-size: 0.98rem;
     font-weight: 700;
 }
 
 .my-panel-text small {
-    font-size: 0.86rem;
+    font-size: 0.82rem;
     color: var(--text-secondary);
+}
+
+.my-panel-arrow {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    border-top: 3px solid #7ea799;
+    border-right: 3px solid #7ea799;
+    transform: rotate(45deg);
+    margin-right: 4px;
+    opacity: 0.95;
 }
 
 /* 模态框 */
@@ -1542,8 +1556,7 @@ body.elder-mode .form-actions button {
     overflow: visible;
 }
 
-.modal.page-mode .reminder-page-header .close,
-.modal.page-mode .my-page-header .close {
+.modal.page-mode .close {
     display: none;
 }
 
@@ -1581,6 +1594,46 @@ body.elder-mode .form-actions button {
 .modal-header h2 {
     font-size: 1.15rem;
     color: var(--text-color);
+}
+
+.page-nav-header {
+    justify-content: flex-start;
+    gap: 12px;
+}
+
+.page-nav-header h2 {
+    flex: 1;
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #173a25;
+}
+
+.page-back-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 999px;
+    position: relative;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.page-back-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    border-left: 2.5px solid #234e36;
+    border-bottom: 2.5px solid #234e36;
+    transform: translate(-35%, -50%) rotate(45deg);
+}
+
+.page-back-btn:hover {
+    background: rgba(31, 122, 61, 0.06);
 }
 
 .close {
@@ -3794,7 +3847,8 @@ body {
 }
 
 .modal.page-mode .reminder-page-header,
-.modal.page-mode .my-page-header {
+.modal.page-mode .my-page-header,
+.modal.page-mode .page-nav-header {
     border-radius: 0;
 }
 
