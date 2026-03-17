@@ -1156,12 +1156,13 @@
             </div>
         </div>
 
-        <!-- 药品编辑模态框 -->
-        <div id="medicineEditModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
+        <!-- 药品编辑页面 -->
+        <div id="medicineEditModal" class="modal page-mode">
+            <div class="modal-content large">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="medicineEditModal" aria-label="返回"></button>
                     <h2 id="medicineEditTitle">添加药品</h2>
-                    <span class="close">&times;</span>
+                    <button type="button" id="medicineEditCancelBtn" class="header-text-btn">取消</button>
                 </div>
                 <form id="medicineForm" class="activity-form">
                     <input type="hidden" id="medicineId">
@@ -1207,9 +1208,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn-cancel">取消</button>
-                        <button type="submit" class="btn-submit">保存</button>
+                    <div class="form-actions single">
+                        <button type="submit" class="btn-submit full-width">保存</button>
                     </div>
                 </form>
             </div>

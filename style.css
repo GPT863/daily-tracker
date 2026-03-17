@@ -1899,6 +1899,15 @@ body.elder-mode .form-actions button {
     opacity: 0.9;
 }
 
+/* 单按钮表单操作区 */
+.form-actions.single {
+    justify-content: center;
+}
+
+.form-actions.single .full-width {
+    flex: 1;
+}
+
 /* 导出按钮 */
 .export-options {
     padding: 20px;
@@ -4353,6 +4362,22 @@ body.elder-mode .ai-result-content {
 
 .header-add-btn:hover {
     background: var(--forest-color);
+}
+
+.header-text-btn {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.header-text-btn:hover {
+    color: var(--primary-color);
 }
 
 .medicine-box-content {

@@ -991,7 +991,20 @@ function setupEventListeners() {
         btn.addEventListener('click', () => {
             const modalId = btn.dataset.backModal;
             if (!modalId) return;
-            closeModal(document.getElementById(modalId));
+            const modal = document.getElementById(modalId);
+            // 如果是页面模式，返回到上一页
+            if (modal && modal.classList.contains('page-mode')) {
+                if (modalId === 'medicineEditModal') {
+                    switchPage('medicine-box');
+                } else if (modalId === 'medicineBoxModal' || modalId === 'exportModal' ||
+                           modalId === 'cloudSyncModal' || modalId === 'profileModal') {
+                    switchPage('my');
+                } else if (modalId === 'reminderModal') {
+                    switchPage('reminders');
+                }
+            } else {
+                closeModal(modal);
+            }
         });
     });
 
@@ -1260,6 +1273,7 @@ function updatePageDisplay() {
     const cloudSyncPage = document.getElementById('cloudSyncModal');
     const profilePage = document.getElementById('profileModal');
     const medicineBoxPage = document.getElementById('medicineBoxModal');
+    const medicineEditPage = document.getElementById('medicineEditModal');
     const homeBtn = document.getElementById('homeBtn');
     const recordBtn = document.getElementById('recordBtn');
     const reminderBtn = document.getElementById('reminderBtn');
@@ -1274,6 +1288,7 @@ function updatePageDisplay() {
     const isCloudSync = currentPage === 'cloud-sync';
     const isProfile = currentPage === 'profile';
     const isMedicineBox = currentPage === 'medicine-box';
+    const isMedicineEdit = currentPage === 'medicine-edit';
     homePage.classList.toggle('hidden', !isHome);
     recordsPage.classList.toggle('hidden', !isRecords);
     reminderPage.classList.toggle('page-mode', isReminders);
@@ -1290,10 +1305,14 @@ function updatePageDisplay() {
         medicineBoxPage.classList.toggle('page-mode', isMedicineBox);
         medicineBoxPage.style.display = isMedicineBox ? 'block' : 'none';
     }
+    if (medicineEditPage) {
+        medicineEditPage.classList.toggle('page-mode', isMedicineEdit);
+        medicineEditPage.style.display = isMedicineEdit ? 'block' : 'none';
+    }
     homeBtn.classList.toggle('nav-active', isHome);
     recordBtn.classList.toggle('nav-active', isRecords);
     reminderBtn.classList.toggle('nav-active', isReminders);
-    myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile || isMedicineBox);
+    myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile || isMedicineBox || isMedicineEdit);
 }
 
 function openReminderPage(tab = 'today') {
@@ -3334,7 +3353,7 @@ function openMedicineEditModal(med) {
         if (hint) hint.classList.remove('hidden');
     }
 
-    document.getElementById('medicineEditModal').style.display = 'block';
+    switchPage('medicine-edit');
 }
 
 async function handleMedicineFormSubmit(e) {
@@ -3384,7 +3403,7 @@ async function handleMedicineFormSubmit(e) {
         }
 
         await persistAppState();
-        document.getElementById('medicineEditModal').style.display = 'none';
+        switchPage('medicine-box');
         renderMedicineList();
         showToast(editingMedicineId ? '药品已更新' : '药品已添加');
         editingMedicineId = null;
@@ -3444,6 +3463,14 @@ function setupMedicineEventListeners() {
 
     const medicineForm = document.getElementById('medicineForm');
     if (medicineForm) medicineForm.addEventListener('submit', handleMedicineFormSubmit);
+
+    // 药品表单取消按钮（右上角）
+    const medicineEditCancelBtn = document.getElementById('medicineEditCancelBtn');
+    if (medicineEditCancelBtn) {
+        medicineEditCancelBtn.addEventListener('click', () => {
+            switchPage('medicine-box');
+        });
+    }
 
     const medicineSearchInput = document.getElementById('medicineSearchInput');
     if (medicineSearchInput) {
