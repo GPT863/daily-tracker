@@ -19,6 +19,7 @@ let metadata = {};
 let activeReminderAlertId = null;
 const triggeredTodayIds = new Set(); // 当前 session 中已弹出过的提醒 ID（防止关闭后每分钟重复弹出）
 let reminderCheckerDay = ''; // 记录 checker 当天日期，用于午夜重置
+let currentReminderTab = 'today';
 let templates = [];
 let selectedTemplateIcon = '💊';
 let aiConfig = {
@@ -918,13 +919,8 @@ function setupEventListeners() {
     });
 
     // 提醒按钮
-    document.getElementById('reminderBtn').addEventListener('click', () => {
-        document.getElementById('reminderModal').style.display = 'block';
-        renderReminderTabs('today');
-    });
-    document.getElementById('myBtn').addEventListener('click', () => {
-        document.getElementById('myModal').style.display = 'block';
-    });
+    document.getElementById('reminderBtn').addEventListener('click', () => openReminderPage('today'));
+    document.getElementById('myBtn').addEventListener('click', () => switchPage('my'));
     document.getElementById('addHealthBtnInline').addEventListener('click', () => openHealthModal());
     document.getElementById('toggleHealthSectionBtn').addEventListener('click', toggleHealthSection);
 
@@ -940,7 +936,7 @@ function setupEventListeners() {
     document.getElementById('seedDemoBtn').addEventListener('click', loadDemoData);
     document.getElementById('resetDataBtn').addEventListener('click', resetAllData);
     document.querySelector('#myModal .my-panel')?.addEventListener('click', (e) => {
-        if (e.target.closest('button')) {
+        if (currentPage !== 'my' && e.target.closest('button')) {
             closeModal(document.getElementById('myModal'));
         }
     });
@@ -970,8 +966,7 @@ function setupEventListeners() {
 
     // 查看全部提醒
     document.getElementById('viewAllReminders').addEventListener('click', () => {
-        document.getElementById('reminderModal').style.display = 'block';
-        renderReminderTabs('today');
+        openReminderPage('all');
     });
 
     // 模态框关闭
@@ -983,7 +978,7 @@ function setupEventListeners() {
 
     // 点击模态框外部关闭
     window.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal')) {
+        if (e.target.classList.contains('modal') && !e.target.classList.contains('page-mode')) {
             closeModal(e.target);
         }
 
@@ -1222,6 +1217,9 @@ function updateDisplay() {
     updateHealthDisplay();
     updateTimeline();
     updateRecordsPage();
+    if (currentPage === 'reminders') {
+        renderReminderTabs(currentReminderTab);
+    }
     updateDailySummary();
     updateStats();
 }
@@ -1234,15 +1232,34 @@ function switchPage(page) {
 function updatePageDisplay() {
     const homePage = document.getElementById('homePage');
     const recordsPage = document.getElementById('recordsPage');
+    const reminderPage = document.getElementById('reminderModal');
+    const myPage = document.getElementById('myModal');
     const homeBtn = document.getElementById('homeBtn');
     const recordBtn = document.getElementById('recordBtn');
-    if (!homePage || !recordsPage || !homeBtn || !recordBtn) return;
+    const reminderBtn = document.getElementById('reminderBtn');
+    const myBtn = document.getElementById('myBtn');
+    if (!homePage || !recordsPage || !reminderPage || !myPage || !homeBtn || !recordBtn || !reminderBtn || !myBtn) return;
 
     const isHome = currentPage === 'home';
+    const isRecords = currentPage === 'records';
+    const isReminders = currentPage === 'reminders';
+    const isMy = currentPage === 'my';
     homePage.classList.toggle('hidden', !isHome);
-    recordsPage.classList.toggle('hidden', isHome);
+    recordsPage.classList.toggle('hidden', !isRecords);
+    reminderPage.classList.toggle('page-mode', isReminders);
+    reminderPage.style.display = isReminders ? 'block' : 'none';
+    myPage.classList.toggle('page-mode', isMy);
+    myPage.style.display = isMy ? 'block' : 'none';
     homeBtn.classList.toggle('nav-active', isHome);
-    recordBtn.classList.toggle('nav-active', !isHome);
+    recordBtn.classList.toggle('nav-active', isRecords);
+    reminderBtn.classList.toggle('nav-active', isReminders);
+    myBtn.classList.toggle('nav-active', isMy);
+}
+
+function openReminderPage(tab = 'today') {
+    currentReminderTab = tab;
+    switchPage('reminders');
+    renderReminderTabs(tab);
 }
 
 function setCurrentRecordView(view) {
@@ -3073,6 +3090,7 @@ function setupProfileListeners() {
 
 // 渲染提醒标签
 function renderReminderTabs(tab) {
+    currentReminderTab = tab;
     // 更新标签按钮状态
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
@@ -3849,6 +3867,16 @@ function closeModal(modal) {
         return;
     }
 
+    if (modal.id === 'reminderModal' && currentPage === 'reminders') {
+        switchPage('home');
+        return;
+    }
+
+    if (modal.id === 'myModal' && currentPage === 'my') {
+        switchPage('home');
+        return;
+    }
+
     modal.style.display = 'none';
 }
 
@@ -4406,13 +4434,11 @@ function requestNotificationPermission() {
 
 // 打开提醒模态框（从主页提醒卡片）
 window.openReminderModal = function() {
-    document.getElementById('reminderModal').style.display = 'block';
-    renderReminderTabs('today');
+    openReminderPage('today');
 }
 
 window.openReminderManagerFor = function(id) {
-    document.getElementById('reminderModal').style.display = 'block';
-    renderReminderTabs('today');
+    openReminderPage('today');
     if (id) {
         const reminder = reminders.find(item => item.id === id);
         if (reminder) {
@@ -4429,8 +4455,7 @@ window.editReminder = function(id) {
         return;
     }
 
-    document.getElementById('reminderModal').style.display = 'block';
-    renderReminderTabs('add');
+    openReminderPage('add');
     populateReminderForm(reminder);
 }
 

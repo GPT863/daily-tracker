@@ -1499,6 +1499,19 @@ body.elder-mode .form-actions button {
     animation: fadeIn 0.3s;
 }
 
+.modal.page-mode {
+    display: block;
+    z-index: 900;
+    top: 0;
+    bottom: 0;
+    height: 100vh;
+    background: transparent;
+    padding: 12px 0 80px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -1515,6 +1528,23 @@ body.elder-mode .form-actions button {
     overflow-y: auto;
     animation: slideUp 0.28s ease-out;
     box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.modal.page-mode .modal-content {
+    position: relative;
+    width: min(800px, calc(100% - 32px));
+    max-width: 800px !important;
+    margin: 0 auto !important;
+    max-height: none;
+    border-radius: var(--radius-lg) !important;
+    animation: none;
+    box-shadow: var(--shadow);
+    overflow: visible;
+}
+
+.modal.page-mode .reminder-page-header .close,
+.modal.page-mode .my-page-header .close {
+    display: none;
 }
 
 .modal-content.large {
@@ -2021,6 +2051,10 @@ body.elder-mode .form-actions button {
 
 .reminder-form input[type="checkbox"] {
     width: auto;
+}
+
+.modal.page-mode .reminder-content {
+    min-height: calc(100vh - 220px);
 }
 
 /* 提醒历史页面样式 */
@@ -3224,6 +3258,37 @@ body.elder-mode .stats-card-value {
         background: rgba(31, 122, 61, 0.08);
     }
 
+    .modal.page-mode {
+        top: 0;
+        bottom: var(--nav-height);
+        height: auto;
+        padding-bottom: var(--nav-height);
+    }
+
+    .modal.page-mode .modal-content {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        right: auto;
+        width: 100% !important;
+        margin: 0 !important;
+        max-height: none;
+        min-height: calc(100vh - var(--nav-height));
+        border-radius: 0 !important;
+        animation: none;
+        box-shadow: none;
+        overflow: visible;
+    }
+
+    .modal.page-mode .modal-content::before {
+        display: none;
+    }
+
+    .modal.page-mode .reminder-page-header,
+    .modal.page-mode .my-page-header {
+        border-radius: 0;
+    }
+
     /* ── Modal：底部 Sheet 滑入 ── */
     .modal-content {
         position: absolute;
@@ -3236,6 +3301,10 @@ body.elder-mode .stats-card-value {
         max-height: 92vh;
         border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
         animation: slideUpSheet 0.3s ease-out;
+    }
+
+    .modal.page-mode .modal-content {
+        position: relative;
     }
 
     /* Sheet 顶部拖拽手柄 */
@@ -3554,6 +3623,210 @@ body.elder-mode .stats-card-value {
 /* 提醒区域 h2 颜色：保持白色 */
 .reminder-header h2::before {
     background: rgba(255,255,255,0.6);
+}
+
+/* ==================== 全局移动端外观 ==================== */
+:root {
+    --mobile-shell-width: 430px;
+}
+
+body {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top, rgba(223, 245, 228, 0.9), transparent 26%),
+        linear-gradient(180deg, #edf4ed 0%, #dbe8dc 100%);
+}
+
+.app-container {
+    width: min(100vw, var(--mobile-shell-width));
+    max-width: var(--mobile-shell-width);
+    min-height: 100vh;
+    background: #f7fbf7;
+    box-shadow: 0 24px 60px rgba(31, 72, 45, 0.16);
+    position: relative;
+}
+
+.app-header {
+    padding: 12px 14px 10px;
+}
+
+.header-top {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.app-header h1 {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    font-size: 1rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+}
+
+.app-main {
+    padding: 14px;
+    gap: 14px;
+}
+
+.date-selector {
+    gap: 8px;
+}
+
+.date-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+}
+
+.current-date-btn {
+    padding: 8px 12px;
+    font-size: 0.92rem;
+    min-height: 40px;
+}
+
+.bottom-actions {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 0;
+    width: min(100vw, var(--mobile-shell-width));
+    height: var(--nav-height);
+    max-width: var(--mobile-shell-width);
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(31, 122, 61, 0.1);
+    box-shadow: 0 -4px 24px rgba(31, 122, 61, 0.08);
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: space-around;
+    gap: 0;
+    padding: 0;
+    border-radius: 0;
+    z-index: 1000;
+}
+
+.fab-home, .fab-record, .fab-reminder, .fab-my {
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    box-shadow: none;
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+    padding: 7px 4px 9px;
+    background: none;
+    color: #999;
+    font-size: 1.3rem;
+}
+
+.fab-home:hover, .fab-record:hover, .fab-reminder:hover, .fab-my:hover {
+    background: rgba(31, 122, 61, 0.06);
+    transform: none;
+    box-shadow: none;
+}
+
+.nav-label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 600;
+}
+
+.fab-record .nav-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--forest-color), var(--primary-color));
+    color: white;
+    border-radius: 50%;
+    font-size: 1.3rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 2px 8px rgba(31,122,61,0.35);
+}
+
+.fab-record .nav-label { color: var(--forest-color); font-weight: 700; }
+.fab-home .nav-icon { color: #376d95; font-size: 1.3rem; }
+.fab-home .nav-label { color: #376d95; }
+.fab-reminder .nav-icon { color: #1a6e3c; font-size: 1.35rem; }
+.fab-reminder .nav-label { color: #1a6e3c; }
+.fab-my .nav-icon { color: #54637e; font-size: 1.3rem; }
+.fab-my .nav-label { color: #54637e; }
+
+.nav-active {
+    box-shadow: none;
+    background: rgba(31, 122, 61, 0.08);
+}
+
+.modal.page-mode {
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(100vw, var(--mobile-shell-width));
+    max-width: var(--mobile-shell-width);
+    top: 0;
+    bottom: var(--nav-height);
+    height: auto;
+    padding-bottom: var(--nav-height);
+}
+
+.modal.page-mode .modal-content {
+    position: relative;
+    width: 100% !important;
+    max-width: var(--mobile-shell-width) !important;
+    margin: 0 !important;
+    min-height: calc(100vh - var(--nav-height));
+    border-radius: 0 !important;
+    box-shadow: none;
+    overflow: visible;
+}
+
+.modal.page-mode .modal-content::before {
+    display: none;
+}
+
+.modal.page-mode .reminder-page-header,
+.modal.page-mode .my-page-header {
+    border-radius: 0;
+}
+
+.records-page-header {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.records-primary-btn {
+    width: 100%;
+}
+
+.records-tab-bar {
+    gap: 8px;
+    padding: 5px;
+}
+
+.my-panel {
+    padding: 14px;
+    gap: 10px;
+}
+
+.my-panel-action {
+    padding: 14px;
+    border-radius: 14px;
+}
+
+.my-panel-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    font-size: 1.2rem;
 }
 
 /* ==================== AI诊断模态框样式 ==================== */
