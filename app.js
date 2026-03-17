@@ -3243,6 +3243,7 @@ function renderMedicineList() {
     const emptyEl = document.getElementById('medicineEmptyState');
     const countLabel = document.getElementById('medicineCountLabel');
     const sortBtn = document.getElementById('medicineSortBtn');
+    const addBtn = document.getElementById('addMedicineBtn');
     if (!listEl) return;
 
     // 更新 tab badge
@@ -3264,6 +3265,15 @@ function renderMedicineList() {
 
     if (countLabel) countLabel.textContent = `共 ${filtered.length} 种药品`;
     if (sortBtn) sortBtn.textContent = medicineSortOrder === 'asc' ? '过期日期 ↑' : '过期日期 ↓';
+
+    // 控制底部添加按钮的显示：列表为空时显示，有数据时隐藏
+    if (addBtn) {
+        if (medicines.length === 0) {
+            addBtn.classList.remove('hidden');
+        } else {
+            addBtn.classList.add('hidden');
+        }
+    }
 
     if (filtered.length === 0) {
         listEl.innerHTML = '';
@@ -3428,6 +3438,9 @@ function setupMedicineEventListeners() {
 
     const addMedicineBtn = document.getElementById('addMedicineBtn');
     if (addMedicineBtn) addMedicineBtn.addEventListener('click', () => openMedicineEditModal());
+
+    const addMedicineHeaderBtn = document.getElementById('addMedicineHeaderBtn');
+    if (addMedicineHeaderBtn) addMedicineHeaderBtn.addEventListener('click', () => openMedicineEditModal());
 
     const medicineForm = document.getElementById('medicineForm');
     if (medicineForm) medicineForm.addEventListener('submit', handleMedicineFormSubmit);

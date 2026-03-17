@@ -4338,6 +4338,23 @@ body.elder-mode .ai-result-content {
 }
 
 /* ==================== 药品管理模块 ==================== */
+.header-add-btn {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border: none;
+    background: var(--primary-color);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.header-add-btn:hover {
+    background: var(--forest-color);
+}
+
 .medicine-box-content {
     padding: 16px;
 }
