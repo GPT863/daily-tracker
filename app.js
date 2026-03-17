@@ -14,6 +14,9 @@ let pendingActivityImage = null;
 let pendingReminderImage = null;
 let pendingHealthImage = null;
 let pendingSymptomImage = null;
+let medicines = [];
+let medicineSortOrder = 'asc';
+let pendingMedicineImage = null;
 let profile = {};
 let metadata = {};
 let activeReminderAlertId = null;
@@ -62,6 +65,7 @@ const defaultTemplates = [
 let editingHealthId = null;
 let editingSymptomId = null;
 let editingReminderId = null;
+let editingMedicineId = null;
 let serviceWorkerRegistration = null;
 let pendingImportData = null;
 let submitLocks = {
@@ -69,7 +73,8 @@ let submitLocks = {
     health: false,
     symptom: false,
     reminder: false,
-    import: false
+    import: false,
+    medicine: false
 };
 
 const STORAGE_SCHEMA_VERSION = 2;
@@ -80,6 +85,7 @@ const legacyStorageKeys = {
     symptomRecords: 'dailyTracker_symptomRecords',
     dailyNotes: 'dailyTracker_dailyNotes',
     reminders: 'dailyTracker_reminders',
+    medicines: 'dailyTracker_medicines',
     profile: 'dailyTracker_profile',
     metadata: 'dailyTracker_metadata'
 };
@@ -188,6 +194,7 @@ function createEmptyState() {
         symptomRecords: {},
         dailyNotes: {},
         reminders: [],
+        medicines: [],
         profile: {},
         metadata: getDefaultMetadata()
     };
@@ -261,6 +268,7 @@ async function initializeStorageState() {
         symptomRecords: getLocalStorageJSON(legacyStorageKeys.symptomRecords, {}),
         dailyNotes: getLocalStorageJSON(legacyStorageKeys.dailyNotes, {}),
         reminders: getLocalStorageJSON(legacyStorageKeys.reminders, []),
+        medicines: getLocalStorageJSON(legacyStorageKeys.medicines, []),
         profile: getLocalStorageJSON(legacyStorageKeys.profile, {}),
         metadata: {
             ...getDefaultMetadata(),
@@ -270,7 +278,7 @@ async function initializeStorageState() {
 
     try {
         await openIndexedDB();
-        const keys = ['activities', 'healthRecords', 'symptomRecords', 'dailyNotes', 'reminders', 'profile', 'metadata'];
+        const keys = ['activities', 'healthRecords', 'symptomRecords', 'dailyNotes', 'reminders', 'medicines', 'profile', 'metadata'];
         const indexedState = {};
 
         for (const key of keys) {
@@ -345,6 +353,7 @@ async function persistAppState(options = {}) {
         symptomRecords: allSymptomRecordsData,
         dailyNotes: allDailyNotesData,
         reminders,
+        medicines,
         profile,
         metadata
     };
@@ -360,6 +369,7 @@ async function persistAppState(options = {}) {
         setLocalStorageJSON(legacyStorageKeys.symptomRecords, allSymptomRecordsData);
         setLocalStorageJSON(legacyStorageKeys.dailyNotes, allDailyNotesData);
         setLocalStorageJSON(legacyStorageKeys.reminders, reminders);
+        setLocalStorageJSON(legacyStorageKeys.medicines, medicines);
         setLocalStorageJSON(legacyStorageKeys.profile, profile);
         setLocalStorageJSON(legacyStorageKeys.metadata, metadata);
     } catch (error) {
@@ -378,6 +388,7 @@ async function initDB() {
     allSymptomRecordsData = state.symptomRecords || {};
     allDailyNotesData = state.dailyNotes || {};
     reminders = normalizeReminders(state.reminders || []);
+    medicines = state.medicines || [];
     profile = state.profile || {};
     metadata = {
         ...getDefaultMetadata(),
@@ -641,6 +652,7 @@ async function resetAllData() {
     allSymptomRecordsData = {};
     allDailyNotesData = {};
     reminders = [];
+    medicines = [];
     profile = {};
     metadata = {
         ...getDefaultMetadata(),
@@ -1074,6 +1086,9 @@ function setupEventListeners() {
 
     // 初始化AI诊断事件
     initAiDiagnosisEvents();
+
+    // 初始化药箱管理事件
+    setupMedicineEventListeners();
 }
 
 // 更改日期
@@ -1244,6 +1259,7 @@ function updatePageDisplay() {
     const exportPage = document.getElementById('exportModal');
     const cloudSyncPage = document.getElementById('cloudSyncModal');
     const profilePage = document.getElementById('profileModal');
+    const medicineBoxPage = document.getElementById('medicineBoxModal');
     const homeBtn = document.getElementById('homeBtn');
     const recordBtn = document.getElementById('recordBtn');
     const reminderBtn = document.getElementById('reminderBtn');
@@ -1257,6 +1273,7 @@ function updatePageDisplay() {
     const isExport = currentPage === 'export';
     const isCloudSync = currentPage === 'cloud-sync';
     const isProfile = currentPage === 'profile';
+    const isMedicineBox = currentPage === 'medicine-box';
     homePage.classList.toggle('hidden', !isHome);
     recordsPage.classList.toggle('hidden', !isRecords);
     reminderPage.classList.toggle('page-mode', isReminders);
@@ -1269,10 +1286,14 @@ function updatePageDisplay() {
     cloudSyncPage.style.display = isCloudSync ? 'block' : 'none';
     profilePage.classList.toggle('page-mode', isProfile);
     profilePage.style.display = isProfile ? 'block' : 'none';
+    if (medicineBoxPage) {
+        medicineBoxPage.classList.toggle('page-mode', isMedicineBox);
+        medicineBoxPage.style.display = isMedicineBox ? 'block' : 'none';
+    }
     homeBtn.classList.toggle('nav-active', isHome);
     recordBtn.classList.toggle('nav-active', isRecords);
     reminderBtn.classList.toggle('nav-active', isReminders);
-    myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile);
+    myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile || isMedicineBox);
 }
 
 function openReminderPage(tab = 'today') {
@@ -3068,7 +3089,304 @@ async function saveProfile() {
     await updateStorageStatus();
 }
 
-// 设置提醒相关事件监听
+// ==================== 药箱管理 ====================
+
+function openMedicineBoxModal() {
+    openMySubPage('medicine-box');
+    renderMedicineList();
+}
+
+function getMedicineExpiryDays(med) {
+    if (!med.expirationDate) return Infinity;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expDate = new Date(med.expirationDate + 'T00:00:00');
+    return Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+}
+
+function getMedicineExpiryStatus(days) {
+    if (days < 0) return { label: `已过期 ${Math.abs(days)} 天`, color: '#888', className: 'expired', cardClass: 'expiry-expired' };
+    if (days <= 30) return { label: `还剩 ${days} 天`, color: '#e74c3c', className: 'warn-1m', cardClass: 'expiry-1m' };
+    if (days <= 90) return { label: `还剩 ${days} 天`, color: '#e67e22', className: 'warn-3m', cardClass: 'expiry-3m' };
+    if (days <= 180) return { label: `还剩 ${days} 天`, color: '#f5a623', className: 'warn-6m', cardClass: 'expiry-6m' };
+    return { label: `还剩 ${days} 天`, color: '#27ae60', className: 'safe', cardClass: 'expiry-safe' };
+}
+
+function getFilteredMedicines() {
+    const searchInput = document.getElementById('medicineSearchInput');
+    const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+    const activeFilterBtn = document.querySelector('.medicine-filter-btn.active');
+    const filter = activeFilterBtn ? activeFilterBtn.dataset.filter : 'all';
+
+    let filtered = medicines.filter(med => {
+        if (query && !med.name.toLowerCase().includes(query)) return false;
+        if (filter === 'all') return true;
+        const days = getMedicineExpiryDays(med);
+        if (filter === 'expired') return days < 0;
+        const maxDays = parseInt(filter);
+        return days >= 0 && days <= maxDays;
+    });
+
+    filtered.sort((a, b) => {
+        const dA = a.expirationDate || '9999-12-31';
+        const dB = b.expirationDate || '9999-12-31';
+        return medicineSortOrder === 'asc' ? dA.localeCompare(dB) : dB.localeCompare(dA);
+    });
+
+    return filtered;
+}
+
+function getMedicineFilterCounts() {
+    const counts = { all: medicines.length, expired: 0, 30: 0, 90: 0, 180: 0 };
+    medicines.forEach(med => {
+        const days = getMedicineExpiryDays(med);
+        if (days < 0) counts.expired++;
+        if (days >= 0 && days <= 30) counts['30']++;
+        if (days >= 0 && days <= 90) counts['90']++;
+        if (days >= 0 && days <= 180) counts['180']++;
+    });
+    return counts;
+}
+
+function renderMedicineList() {
+    const listEl = document.getElementById('medicineList');
+    const emptyEl = document.getElementById('medicineEmptyState');
+    const countLabel = document.getElementById('medicineCountLabel');
+    const sortBtn = document.getElementById('medicineSortBtn');
+    if (!listEl) return;
+
+    // 更新 tab badge
+    const counts = getMedicineFilterCounts();
+    document.querySelectorAll('.medicine-filter-btn').forEach(btn => {
+        const f = btn.dataset.filter;
+        const count = counts[f] ?? 0;
+        const existingBadge = btn.querySelector('.medicine-filter-badge');
+        if (existingBadge) existingBadge.remove();
+        if (count > 0 || f === 'all') {
+            const badge = document.createElement('span');
+            badge.className = 'medicine-filter-badge';
+            badge.textContent = count;
+            btn.appendChild(badge);
+        }
+    });
+
+    const filtered = getFilteredMedicines();
+
+    if (countLabel) countLabel.textContent = `共 ${filtered.length} 种药品`;
+    if (sortBtn) sortBtn.textContent = medicineSortOrder === 'asc' ? '过期日期 ↑' : '过期日期 ↓';
+
+    if (filtered.length === 0) {
+        listEl.innerHTML = '';
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        return;
+    }
+    if (emptyEl) emptyEl.classList.add('hidden');
+
+    listEl.innerHTML = filtered.map(med => {
+        const days = getMedicineExpiryDays(med);
+        const status = getMedicineExpiryStatus(days);
+        const metaParts = [];
+        if (med.manufacturer) metaParts.push(med.manufacturer);
+        if (med.indication) metaParts.push(med.indication.length > 20 ? med.indication.substring(0, 20) + '...' : med.indication);
+        const metaText = metaParts.join(' · ');
+        const imgHtml = med.image ? `<img src="${med.image}" class="medicine-card-image" alt="${med.name}">` : '';
+
+        return `<div class="medicine-card ${status.cardClass}" data-id="${med.id}">
+            <div class="medicine-card-body">
+                <div class="medicine-card-header">
+                    <span class="medicine-card-name">${med.name}</span>
+                    <span class="medicine-expiry-badge ${status.className}">${status.label}</span>
+                </div>
+                ${metaText ? `<div class="medicine-card-meta">${metaText}</div>` : ''}
+                <div class="medicine-card-actions">
+                    <button type="button" class="medicine-edit-btn" data-id="${med.id}">编辑</button>
+                    <button type="button" class="medicine-delete-btn" data-id="${med.id}">删除</button>
+                </div>
+            </div>
+            ${imgHtml}
+        </div>`;
+    }).join('');
+}
+
+function openMedicineEditModal(med) {
+    editingMedicineId = med ? med.id : null;
+    pendingMedicineImage = med ? med.image || null : null;
+
+    document.getElementById('medicineEditTitle').textContent = med ? '编辑药品' : '添加药品';
+    document.getElementById('medicineId').value = med ? med.id : '';
+    document.getElementById('medicineName').value = med ? med.name : '';
+    document.getElementById('medicineExpirationDate').value = med ? med.expirationDate : '';
+    document.getElementById('medicineProductionDate').value = med ? med.productionDate || '' : '';
+    document.getElementById('medicineIndication').value = med ? med.indication || '' : '';
+    document.getElementById('medicineContraindication').value = med ? med.contraindication || '' : '';
+    document.getElementById('medicineManufacturer').value = med ? med.manufacturer || '' : '';
+    document.getElementById('medicineNotes').value = med ? med.notes || '' : '';
+
+    const preview = document.getElementById('medicineImagePreview');
+    const previewImg = document.getElementById('medicineImagePreviewImg');
+    const hint = document.getElementById('medicineImageHint');
+    if (pendingMedicineImage) {
+        previewImg.src = pendingMedicineImage;
+        preview.classList.remove('hidden');
+        if (hint) hint.classList.add('hidden');
+    } else {
+        preview.classList.add('hidden');
+        if (hint) hint.classList.remove('hidden');
+    }
+
+    document.getElementById('medicineEditModal').style.display = 'block';
+}
+
+async function handleMedicineFormSubmit(e) {
+    e.preventDefault();
+    if (submitLocks.medicine) return;
+    submitLocks.medicine = true;
+
+    try {
+        const name = document.getElementById('medicineName').value.trim();
+        const expirationDate = document.getElementById('medicineExpirationDate').value;
+        if (!name || !expirationDate) {
+            showToast('请填写药品名称和过期日期');
+            return;
+        }
+
+        const now = new Date().toISOString();
+        if (editingMedicineId) {
+            const idx = medicines.findIndex(m => m.id === editingMedicineId);
+            if (idx !== -1) {
+                medicines[idx] = {
+                    ...medicines[idx],
+                    name,
+                    expirationDate,
+                    productionDate: document.getElementById('medicineProductionDate').value || '',
+                    indication: document.getElementById('medicineIndication').value.trim(),
+                    contraindication: document.getElementById('medicineContraindication').value.trim(),
+                    manufacturer: document.getElementById('medicineManufacturer').value.trim(),
+                    notes: document.getElementById('medicineNotes').value.trim(),
+                    image: pendingMedicineImage,
+                    updatedAt: now
+                };
+            }
+        } else {
+            medicines.push({
+                id: 'med_' + Date.now(),
+                name,
+                expirationDate,
+                productionDate: document.getElementById('medicineProductionDate').value || '',
+                indication: document.getElementById('medicineIndication').value.trim(),
+                contraindication: document.getElementById('medicineContraindication').value.trim(),
+                manufacturer: document.getElementById('medicineManufacturer').value.trim(),
+                notes: document.getElementById('medicineNotes').value.trim(),
+                image: pendingMedicineImage,
+                createdAt: now,
+                updatedAt: now
+            });
+        }
+
+        await persistAppState();
+        document.getElementById('medicineEditModal').style.display = 'none';
+        renderMedicineList();
+        showToast(editingMedicineId ? '药品已更新' : '药品已添加');
+        editingMedicineId = null;
+        pendingMedicineImage = null;
+    } finally {
+        submitLocks.medicine = false;
+    }
+}
+
+async function deleteMedicine(id) {
+    if (!confirm('确定要删除这个药品吗？')) return;
+    medicines = medicines.filter(m => m.id !== id);
+    await persistAppState();
+    renderMedicineList();
+    showToast('药品已删除');
+}
+
+async function handleMedicineImageChange(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+        pendingMedicineImage = await readAndCompressImage(file);
+        const preview = document.getElementById('medicineImagePreview');
+        const previewImg = document.getElementById('medicineImagePreviewImg');
+        const hint = document.getElementById('medicineImageHint');
+        previewImg.src = pendingMedicineImage;
+        preview.classList.remove('hidden');
+        if (hint) hint.classList.add('hidden');
+    } catch (err) {
+        showToast('图片处理失败');
+    }
+    e.target.value = '';
+}
+
+function clearPendingMedicineImage() {
+    pendingMedicineImage = null;
+    const preview = document.getElementById('medicineImagePreview');
+    const hint = document.getElementById('medicineImageHint');
+    if (preview) preview.classList.add('hidden');
+    if (hint) hint.classList.remove('hidden');
+}
+
+function toggleMedicineSortOrder() {
+    medicineSortOrder = medicineSortOrder === 'asc' ? 'desc' : 'asc';
+    renderMedicineList();
+}
+
+function setupMedicineEventListeners() {
+    const medicineBoxBtn = document.getElementById('medicineBoxBtn');
+    if (medicineBoxBtn) medicineBoxBtn.addEventListener('click', openMedicineBoxModal);
+
+    const addMedicineBtn = document.getElementById('addMedicineBtn');
+    if (addMedicineBtn) addMedicineBtn.addEventListener('click', () => openMedicineEditModal());
+
+    const medicineForm = document.getElementById('medicineForm');
+    if (medicineForm) medicineForm.addEventListener('submit', handleMedicineFormSubmit);
+
+    const medicineSearchInput = document.getElementById('medicineSearchInput');
+    if (medicineSearchInput) {
+        let searchTimer;
+        medicineSearchInput.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(renderMedicineList, 300);
+        });
+    }
+
+    const medicineSortBtn = document.getElementById('medicineSortBtn');
+    if (medicineSortBtn) medicineSortBtn.addEventListener('click', toggleMedicineSortOrder);
+
+    document.querySelectorAll('.medicine-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.medicine-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderMedicineList();
+        });
+    });
+
+    const medicineImageUpload = document.getElementById('medicineImageUpload');
+    if (medicineImageUpload) medicineImageUpload.addEventListener('change', handleMedicineImageChange);
+
+    const removeMedicineImage = document.getElementById('removeMedicineImage');
+    if (removeMedicineImage) removeMedicineImage.addEventListener('click', clearPendingMedicineImage);
+
+    // 事件委托：编辑/删除按钮
+    const medicineList = document.getElementById('medicineList');
+    if (medicineList) {
+        medicineList.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.medicine-edit-btn');
+            if (editBtn) {
+                const med = medicines.find(m => m.id === editBtn.dataset.id);
+                if (med) openMedicineEditModal(med);
+                return;
+            }
+            const deleteBtn = e.target.closest('.medicine-delete-btn');
+            if (deleteBtn) {
+                deleteMedicine(deleteBtn.dataset.id);
+            }
+        });
+    }
+}
+
+// ==================== 设置提醒相关事件监听 ====================
 function setupReminderListeners() {
     // 标签切换
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -3910,7 +4228,8 @@ function closeModal(modal) {
 
     if ((modal.id === 'exportModal' && currentPage === 'export')
         || (modal.id === 'cloudSyncModal' && currentPage === 'cloud-sync')
-        || (modal.id === 'profileModal' && currentPage === 'profile')) {
+        || (modal.id === 'profileModal' && currentPage === 'profile')
+        || (modal.id === 'medicineBoxModal' && currentPage === 'medicine-box')) {
         switchPage('my');
         return;
     }
@@ -4375,6 +4694,7 @@ async function pullSnapshotFromCloud() {
         allSymptomRecordsData = normalized.symptomRecordsByDate || {};
         allDailyNotesData = normalized.dailyNotesByDate || {};
         reminders = normalizeReminders(normalized.reminders || []);
+        medicines = normalized.medicines || [];
         profile = normalized.profile || {};
         metadata.lastImportAt = new Date().toISOString();
         metadata.cloudSync = {
@@ -4594,6 +4914,7 @@ function buildFullExportPayload() {
         symptomRecordsByDate: allSymptomRecordsData,
         dailyNotesByDate: allDailyNotesData,
         reminders,
+        medicines,
         profile,
         metadata
     }));
@@ -4631,6 +4952,7 @@ function normalizeImportPayload(parsed) {
             symptomRecordsByDate: { [dateKey]: parsed.symptomRecords || [] },
             dailyNotesByDate: parsed.dailyNotesByDate || {},
             reminders: parsed.reminders || [],
+            medicines: parsed.medicines || [],
             profile: parsed.profile || {},
             metadata: parsed.metadata || {}
         };
@@ -4642,6 +4964,7 @@ function normalizeImportPayload(parsed) {
         symptomRecordsByDate: parsed.symptomRecordsByDate || {},
         dailyNotesByDate: parsed.dailyNotesByDate || {},
         reminders: parsed.reminders || [],
+        medicines: parsed.medicines || [],
         profile: parsed.profile || {},
         metadata: parsed.metadata || {}
     };
@@ -4653,11 +4976,12 @@ function summarizeImportPayload(payload) {
     const symptomCount = Object.values(payload.symptomRecordsByDate).reduce((sum, list) => sum + list.length, 0);
     const noteCount = Object.keys(payload.dailyNotesByDate || {}).length;
     const reminderCount = payload.reminders.length;
+    const medicineCount = (payload.medicines || []).length;
     const dates = Object.keys(payload.activitiesByDate)
         .concat(Object.keys(payload.healthRecordsByDate), Object.keys(payload.symptomRecordsByDate), Object.keys(payload.dailyNotesByDate || {}))
         .sort();
     const rangeText = dates.length ? `${dates[0]} 至 ${dates[dates.length - 1]}` : '未包含日期记录';
-    return `检测到 ${activityCount} 条活动、${healthCount} 条健康数据、${symptomCount} 条症状记录、${noteCount} 条状态记录、${reminderCount} 条提醒；日期范围：${rangeText}`;
+    return `检测到 ${activityCount} 条活动、${healthCount} 条健康数据、${symptomCount} 条症状记录、${noteCount} 条状态记录、${reminderCount} 条提醒、${medicineCount} 种药品；日期范围：${rangeText}`;
 }
 
 async function confirmImport(strategy) {
@@ -4672,6 +4996,7 @@ async function confirmImport(strategy) {
             allSymptomRecordsData = pendingImportData.symptomRecordsByDate;
             allDailyNotesData = pendingImportData.dailyNotesByDate || {};
             reminders = normalizeReminders(pendingImportData.reminders);
+            medicines = pendingImportData.medicines || [];
             profile = pendingImportData.profile || {};
         } else {
             allActivitiesData = mergeDateBuckets(allActivitiesData, pendingImportData.activitiesByDate, normalizeActivity, getActivitySortTime);
@@ -4682,6 +5007,10 @@ async function confirmImport(strategy) {
                 ...(pendingImportData.dailyNotesByDate || {})
             };
             reminders = mergeReminders(reminders, pendingImportData.reminders);
+            // 合并药品：按 id 去重
+            const importedMeds = pendingImportData.medicines || [];
+            const existingIds = new Set(medicines.map(m => m.id));
+            medicines = [...medicines, ...importedMeds.filter(m => !existingIds.has(m.id))];
             profile = {
                 ...profile,
                 ...(pendingImportData.profile || {})

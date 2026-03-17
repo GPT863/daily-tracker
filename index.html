@@ -182,6 +182,14 @@
                         </span>
                         <span class="my-panel-arrow" aria-hidden="true"></span>
                     </button>
+                    <button id="medicineBoxBtn" class="my-panel-action">
+                        <span class="my-panel-icon">💊</span>
+                        <span class="my-panel-text">
+                            <strong>药箱管理</strong>
+                            <small>管理家庭药品，追踪有效期</small>
+                        </span>
+                        <span class="my-panel-arrow" aria-hidden="true"></span>
+                    </button>
                     <button id="seedDemoBtn" class="my-panel-action">
                         <span class="my-panel-icon">📂</span>
                         <span class="my-panel-text">
@@ -1114,6 +1122,98 @@
                 </div>
             </div>
         </div>
+        <!-- 药箱列表模态框 -->
+        <div id="medicineBoxModal" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="medicineBoxModal" aria-label="返回"></button>
+                    <h2>💊 药箱管理</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="medicine-box-content">
+                    <div class="medicine-search-bar">
+                        <input type="text" id="medicineSearchInput" placeholder="搜索药品名称...">
+                    </div>
+                    <div class="medicine-filter-tabs" role="tablist">
+                        <button class="medicine-filter-btn active" data-filter="all">全部</button>
+                        <button class="medicine-filter-btn" data-filter="expired">已过期</button>
+                        <button class="medicine-filter-btn" data-filter="30">≤1月</button>
+                        <button class="medicine-filter-btn" data-filter="90">≤3月</button>
+                        <button class="medicine-filter-btn" data-filter="180">≤6月</button>
+                    </div>
+                    <div class="medicine-sort-bar">
+                        <span id="medicineCountLabel" class="medicine-count-label">共 0 种药品</span>
+                        <button id="medicineSortBtn" class="section-order-btn" type="button">过期日期 ↑</button>
+                    </div>
+                    <div id="medicineList" class="medicine-list"></div>
+                    <div id="medicineEmptyState" class="empty-state small">
+                        <p>药箱还是空的</p>
+                        <p>点击下方按钮添加第一个药品吧</p>
+                    </div>
+                    <button id="addMedicineBtn" class="create-template-btn">+ 添加药品</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 药品编辑模态框 -->
+        <div id="medicineEditModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="medicineEditTitle">添加药品</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <form id="medicineForm" class="activity-form">
+                    <input type="hidden" id="medicineId">
+                    <div class="form-group">
+                        <label for="medicineName">药品名称 *</label>
+                        <input type="text" id="medicineName" placeholder="例如：阿莫西林胶囊" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineExpirationDate">过期日期 *</label>
+                        <input type="date" id="medicineExpirationDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineProductionDate">生产日期</label>
+                        <input type="date" id="medicineProductionDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineIndication">适应症</label>
+                        <textarea id="medicineIndication" rows="2" placeholder="例如：细菌感染、上呼吸道感染"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineContraindication">禁忌</label>
+                        <textarea id="medicineContraindication" rows="2" placeholder="例如：青霉素过敏者禁用"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineManufacturer">厂商</label>
+                        <input type="text" id="medicineManufacturer" placeholder="例如：阿莫西林制药厂">
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineNotes">备注</label>
+                        <textarea id="medicineNotes" rows="2" placeholder="例如：存放位置、用法用量"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>药品图片</label>
+                        <div class="image-upload-card">
+                            <div class="image-upload-actions">
+                                <label for="medicineImageUpload" class="image-upload-btn">上传图片</label>
+                            </div>
+                            <input type="file" id="medicineImageUpload" accept="image/*" hidden>
+                            <div id="medicineImageHint" class="image-upload-hint">可拍照或上传药品包装、说明书图片。</div>
+                            <div id="medicineImagePreview" class="activity-image-preview hidden">
+                                <img id="medicineImagePreviewImg" alt="药品图片预览">
+                                <button type="button" id="removeMedicineImage" class="remove-image-btn">移除图片</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel">取消</button>
+                        <button type="submit" class="btn-submit">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 
     <script src="app.js"></script>

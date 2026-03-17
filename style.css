@@ -4336,3 +4336,220 @@ body.elder-mode .ai-result-content {
     font-size: 1.1rem;
     line-height: 1.8;
 }
+
+/* ==================== 药箱管理模块 ==================== */
+.medicine-box-content {
+    padding: 16px;
+}
+
+.medicine-search-bar {
+    margin-bottom: 12px;
+}
+
+.medicine-search-bar input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    background: #fafcfa;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.medicine-search-bar input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.12);
+    outline: none;
+    background: #fff;
+}
+
+.medicine-filter-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 4px;
+    background: #f0f4f0;
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    overflow-x: auto;
+}
+
+.medicine-filter-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 6px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, color 0.2s;
+}
+
+.medicine-filter-btn:hover {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.medicine-filter-btn.active {
+    background: #fff;
+    color: var(--forest-color);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.medicine-filter-badge {
+    display: inline-block;
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px;
+    padding: 0 5px;
+    margin-left: 4px;
+    border-radius: 9px;
+    background: var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.medicine-filter-btn.active .medicine-filter-badge {
+    background: var(--forest-color);
+    color: #fff;
+}
+
+.medicine-sort-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.medicine-count-label {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.medicine-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.medicine-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--primary-color);
+    box-shadow: var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.medicine-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.medicine-card.expiry-safe { border-left-color: #27ae60; }
+.medicine-card.expiry-6m { border-left-color: #f5a623; }
+.medicine-card.expiry-3m { border-left-color: #e67e22; }
+.medicine-card.expiry-1m { border-left-color: #e74c3c; }
+.medicine-card.expiry-expired { border-left-color: #999; opacity: 0.75; }
+
+.medicine-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.medicine-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+}
+
+.medicine-card-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-color);
+    word-break: break-all;
+}
+
+.medicine-card.expiry-expired .medicine-card-name {
+    text-decoration: line-through;
+    color: #999;
+}
+
+.medicine-expiry-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.medicine-expiry-badge.safe { background: #dff5e4; color: #1f7a3d; }
+.medicine-expiry-badge.warn-6m { background: #fef3cd; color: #856404; }
+.medicine-expiry-badge.warn-3m { background: #fde8d0; color: #a84300; }
+.medicine-expiry-badge.warn-1m { background: #fdd; color: #c0392b; }
+.medicine-expiry-badge.expired { background: #eee; color: #888; }
+
+.medicine-card-meta {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.medicine-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.medicine-card-actions button {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    background: transparent;
+}
+
+.medicine-edit-btn {
+    border: 1.5px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+.medicine-edit-btn:hover {
+    background: var(--primary-color);
+    color: #fff;
+}
+
+.medicine-delete-btn {
+    border: 1.5px solid #e74c3c;
+    color: #e74c3c;
+}
+
+.medicine-delete-btn:hover {
+    background: #e74c3c;
+    color: #fff;
+}
+
+.medicine-card-image {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
