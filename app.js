@@ -1087,7 +1087,7 @@ function setupEventListeners() {
     // 初始化AI诊断事件
     initAiDiagnosisEvents();
 
-    // 初始化药箱管理事件
+    // 初始化药品管理事件
     setupMedicineEventListeners();
 }
 
@@ -3089,10 +3089,100 @@ async function saveProfile() {
     await updateStorageStatus();
 }
 
-// ==================== 药箱管理 ====================
+// ==================== 药品管理 ====================
 
 function openMedicineBoxModal() {
     openMySubPage('medicine-box');
+
+    // 如果列表为空，添加 mock 数据
+    if (medicines.length === 0) {
+        const today = new Date();
+        const formatDate = (daysOffset) => {
+            const d = new Date(today);
+            d.setDate(d.getDate() + daysOffset);
+            return d.toISOString().split('T')[0];
+        };
+
+        medicines = [
+            {
+                id: 'med_' + Date.now() + '_1',
+                name: '阿莫西林胶囊',
+                expirationDate: formatDate(15),
+                productionDate: '2024-06-15',
+                indication: '用于敏感菌所致的各种感染',
+                manufacturer: '华润双鹤药业',
+                notes: '饭后服用，每日3次'
+            },
+            {
+                id: 'med_' + Date.now() + '_2',
+                name: '布洛芬缓释胶囊',
+                expirationDate: formatDate(45),
+                productionDate: '2024-09-01',
+                indication: '用于缓解轻至中度疼痛',
+                manufacturer: '芬必得',
+                contraindication: '孕妇及哺乳期妇女禁用',
+                notes: '整粒吞服，不得嚼碎'
+            },
+            {
+                id: 'med_' + Date.now() + '_3',
+                name: '感冒灵颗粒',
+                expirationDate: formatDate(85),
+                productionDate: '2024-12-01',
+                indication: '用于感冒引起的头痛、发热、鼻塞',
+                manufacturer: '999感冒灵',
+                notes: '开水冲服'
+            },
+            {
+                id: 'med_' + Date.now() + '_4',
+                name: '维生素C片',
+                expirationDate: formatDate(-5),
+                productionDate: '2022-03-10',
+                indication: '用于预防坏血病',
+                manufacturer: '汤臣倍健',
+                notes: '已过期，请丢弃'
+            },
+            {
+                id: 'med_' + Date.now() + '_5',
+                name: '奥美拉唑肠溶胶囊',
+                expirationDate: formatDate(120),
+                productionDate: '2024-11-20',
+                indication: '用于胃溃疡、十二指肠溃疡',
+                manufacturer: '阿斯利康',
+                contraindication: '严重肾功能不全者禁用',
+                notes: '晨起吞服'
+            },
+            {
+                id: 'med_' + Date.now() + '_6',
+                name: '氯雷他定片',
+                expirationDate: formatDate(200),
+                productionDate: '2025-01-05',
+                indication: '用于过敏性鼻炎、慢性荨麻疹',
+                manufacturer: '开瑞坦',
+                notes: '每日1次，每次1片'
+            },
+            {
+                id: 'med_' + Date.now() + '_7',
+                name: '头孢克肟分散片',
+                expirationDate: formatDate(7),
+                productionDate: '2024-08-15',
+                indication: '对头孢克肟敏感的菌所致感染',
+                manufacturer: '白云山制药',
+                contraindication: '对头孢菌素类抗生素过敏者禁用',
+                notes: '即将过期，优先使用'
+            },
+            {
+                id: 'med_' + Date.now() + '_8',
+                name: '蒙脱石散',
+                expirationDate: formatDate(300),
+                productionDate: '2025-02-01',
+                indication: '用于成人及儿童急、慢性腹泻',
+                manufacturer: '思密达',
+                notes: '倒入50ml温水中搅匀服用'
+            }
+        ];
+        saveState();
+    }
+
     renderMedicineList();
 }
 
