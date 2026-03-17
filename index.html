@@ -7,7 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>日常活动记录器</title>
+    <title>健康日记</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -49,79 +49,97 @@
         </header>
 
         <main class="app-main">
-            <section class="health-section">
-                <div class="section-heading">
-                    <h2>📋 健康数据</h2>
-                    <div class="section-tools">
-                        <button id="toggleHealthSectionBtn" class="section-order-btn">查看健康数据</button>
-                        <button id="addHealthBtnInline" class="section-order-btn">记录健康数据</button>
-                    </div>
-                </div>
-                <div id="healthSectionBody" class="health-section-body hidden">
-                    <div id="healthSummary" class="health-summary-grid"></div>
-                    <div id="healthEmptyState" class="empty-state small">
-                        <p>当天还没有健康数据</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 今日提醒 -->
-            <section class="reminder-section">
-                <div class="reminder-header">
-                    <h2>🔔 今日提醒</h2>
-                    <button id="viewAllReminders" class="text-btn">查看全部</button>
-                </div>
-                <div id="todayReminders" class="reminder-list"></div>
-                <div id="noReminders" class="empty-state small">
-                    <p>今天没有提醒</p>
-                </div>
-            </section>
-
-            <section class="daily-summary-section">
-                <div class="section-heading">
-                    <h2>🧾 今日状态记录</h2>
-                </div>
-                <div id="dailySummaryCard" class="daily-summary-card">
-                    <textarea id="dailyNoteInput" class="daily-note-input" placeholder="记录今天的感受、状态变化、需要关注的事项..."></textarea>
-                    <div class="daily-note-actions">
-                        <span id="dailyNoteMeta" class="daily-note-meta">尚未保存</span>
-                        <div class="daily-note-action-buttons">
-                            <button id="saveDailyNoteBtn" class="section-order-btn">保存状态记录</button>
-                            <button id="quickAiDiagnosisBtn" class="section-order-btn">一键AI诊断</button>
+            <div id="homePage" class="app-page">
+                <section class="health-section">
+                    <div class="section-heading">
+                        <h2>📋 健康数据</h2>
+                        <div class="section-tools">
+                            <button id="toggleHealthSectionBtn" class="section-order-btn">查看健康数据</button>
+                            <button id="addHealthBtnInline" class="section-order-btn">记录健康数据</button>
                         </div>
                     </div>
-                </div>
-            </section>
-
-            <!-- 时间线 -->
-            <section class="timeline-section">
-                <div class="section-heading">
-                    <h2>📝 时间线</h2>
-                    <div class="section-tools">
-                        <button id="timelineOrderBtn" class="section-order-btn">倒序显示</button>
+                    <div id="healthSectionBody" class="health-section-body hidden">
+                        <div id="healthSummary" class="health-summary-grid"></div>
+                        <div id="healthEmptyState" class="empty-state small">
+                            <p>当天还没有健康数据</p>
+                        </div>
                     </div>
-                </div>
-                <div id="timeline" class="timeline"></div>
-                <div id="emptyState" class="empty-state">
-                    <p>今天还没有记录哦</p>
-                    <p>点击下方按钮添加活动吧！</p>
-                </div>
-            </section>
+                </section>
+
+                <section class="reminder-section">
+                    <div class="reminder-header">
+                        <h2>🔔 今日提醒</h2>
+                        <button id="viewAllReminders" class="text-btn">查看全部</button>
+                    </div>
+                    <div id="todayReminders" class="reminder-list"></div>
+                    <div id="noReminders" class="empty-state small">
+                        <p>今天没有提醒</p>
+                    </div>
+                </section>
+
+                <section class="daily-summary-section">
+                    <div class="section-heading">
+                        <h2>🧾 今日状态记录</h2>
+                    </div>
+                    <div id="dailySummaryCard" class="daily-summary-card">
+                        <textarea id="dailyNoteInput" class="daily-note-input" placeholder="记录今天的感受、状态变化、需要关注的事项..."></textarea>
+                        <div class="daily-note-actions">
+                            <span id="dailyNoteMeta" class="daily-note-meta">尚未保存</span>
+                            <div class="daily-note-action-buttons">
+                                <button id="saveDailyNoteBtn" class="section-order-btn">保存状态记录</button>
+                                <button id="quickAiDiagnosisBtn" class="section-order-btn">一键AI诊断</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="timeline-section">
+                    <div class="section-heading">
+                        <h2>📝 时间线</h2>
+                        <div class="section-tools">
+                            <button id="timelineOrderBtn" class="section-order-btn">倒序显示</button>
+                        </div>
+                    </div>
+                    <div id="timeline" class="timeline"></div>
+                    <div id="emptyState" class="empty-state">
+                        <p>今天还没有记录哦</p>
+                        <p>点击下方导航进入记录页添加内容吧！</p>
+                    </div>
+                </section>
+            </div>
+
+            <div id="recordsPage" class="app-page hidden">
+                <section class="records-page-section">
+                    <div class="records-page-header">
+                        <div>
+                            <h2 id="recordsPageTitle">记录</h2>
+                            <p id="recordsPageSubtitle" class="records-page-subtitle">按类型查看当天记录</p>
+                        </div>
+                        <button id="recordPrimaryActionBtn" class="records-primary-btn">新增活动</button>
+                    </div>
+                    <div class="records-tab-bar" role="tablist" aria-label="记录类型切换">
+                        <button id="recordTabActivity" class="records-tab-btn active" type="button" data-record-view="activity">活动</button>
+                        <button id="recordTabHealth" class="records-tab-btn" type="button" data-record-view="health">测量</button>
+                        <button id="recordTabSymptom" class="records-tab-btn" type="button" data-record-view="symptom">症状</button>
+                    </div>
+                    <div id="recordsList" class="timeline"></div>
+                    <div id="recordsEmptyState" class="empty-state">
+                        <p id="recordsEmptyTitle">今天还没有活动记录</p>
+                        <p id="recordsEmptyHint">点击右上角按钮添加第一条内容。</p>
+                    </div>
+                </section>
+            </div>
         </main>
 
         <!-- 底部导航/FAB 按钮 -->
         <div class="bottom-actions">
-            <button id="addBtn" class="fab-add">
-                <span class="nav-icon">＋</span>
-                <span class="nav-label">活动</span>
+            <button id="homeBtn" class="fab-home nav-active">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">首页</span>
             </button>
-            <button id="healthBtn" class="fab-health">
-                <span class="nav-icon">📋</span>
-                <span class="nav-label">健康</span>
-            </button>
-            <button id="symptomBtn" class="fab-symptom">
-                <span class="nav-icon">🩹</span>
-                <span class="nav-label">症状</span>
+            <button id="recordBtn" class="fab-record">
+                <span class="nav-icon">📝</span>
+                <span class="nav-label">记录</span>
             </button>
             <button id="reminderBtn" class="fab-reminder">
                 <span class="nav-icon">🔔</span>

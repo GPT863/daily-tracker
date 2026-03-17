@@ -1,5 +1,5 @@
 {
-  "name": "日常活动记录器",
+  "name": "健康日记",
   "short_name": "活动记录",
   "description": "记录每天的活动、饮食和感受",
   "start_url": "./index.html",

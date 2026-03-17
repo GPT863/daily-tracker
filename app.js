@@ -35,6 +35,8 @@ let aiConversationBusy = false;
 let cloudSyncBusy = false;
 let cloudSyncTimer = null;
 let calendarViewDate = new Date();
+let currentPage = 'home';
+let currentRecordView = 'activity';
 
 // 获取类型标签
 function getTypeLabel(type) {
@@ -908,16 +910,18 @@ function setupEventListeners() {
     document.getElementById('calendarDayGrid').addEventListener('click', handleCalendarDayClick);
     document.getElementById('currentDatePanel').addEventListener('click', handleCalendarPanelClick);
 
-    // 添加按钮
-    document.getElementById('addBtn').addEventListener('click', () => openModal());
+    document.getElementById('homeBtn').addEventListener('click', () => switchPage('home'));
+    document.getElementById('recordBtn').addEventListener('click', () => switchPage('records'));
+    document.getElementById('recordPrimaryActionBtn').addEventListener('click', openCurrentRecordModal);
+    document.querySelectorAll('.records-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => setCurrentRecordView(btn.dataset.recordView));
+    });
 
     // 提醒按钮
     document.getElementById('reminderBtn').addEventListener('click', () => {
         document.getElementById('reminderModal').style.display = 'block';
         renderReminderTabs('today');
     });
-    document.getElementById('healthBtn').addEventListener('click', () => openHealthModal());
-    document.getElementById('symptomBtn').addEventListener('click', () => openSymptomModal());
     document.getElementById('myBtn').addEventListener('click', () => {
         document.getElementById('myModal').style.display = 'block';
     });
@@ -1212,12 +1216,121 @@ async function runQuickTodayAiDiagnosis() {
 // 更新显示
 function updateDisplay() {
     updateDateDisplay();
+    updatePageDisplay();
     updateTimelineOrderButton();
     updateHealthSectionButton();
     updateHealthDisplay();
     updateTimeline();
+    updateRecordsPage();
     updateDailySummary();
     updateStats();
+}
+
+function switchPage(page) {
+    currentPage = page;
+    updatePageDisplay();
+}
+
+function updatePageDisplay() {
+    const homePage = document.getElementById('homePage');
+    const recordsPage = document.getElementById('recordsPage');
+    const homeBtn = document.getElementById('homeBtn');
+    const recordBtn = document.getElementById('recordBtn');
+    if (!homePage || !recordsPage || !homeBtn || !recordBtn) return;
+
+    const isHome = currentPage === 'home';
+    homePage.classList.toggle('hidden', !isHome);
+    recordsPage.classList.toggle('hidden', isHome);
+    homeBtn.classList.toggle('nav-active', isHome);
+    recordBtn.classList.toggle('nav-active', !isHome);
+}
+
+function setCurrentRecordView(view) {
+    currentRecordView = view;
+    updateRecordsPage();
+}
+
+function openCurrentRecordModal() {
+    if (currentRecordView === 'health') {
+        openHealthModal();
+        return;
+    }
+    if (currentRecordView === 'symptom') {
+        openSymptomModal();
+        return;
+    }
+    openModal();
+}
+
+function getCurrentRecordConfig() {
+    if (currentRecordView === 'health') {
+        return {
+            title: '测量记录',
+            subtitle: '查看当天的健康测量数据',
+            actionLabel: '记录测量',
+            emptyTitle: '今天还没有测量记录',
+            emptyHint: '点击右上角按钮添加第一条测量数据。',
+            items: [...healthRecords].sort((a, b) => sortTimeValues(a.time, b.time)).map(renderHealthTimelineItem)
+        };
+    }
+
+    if (currentRecordView === 'symptom') {
+        return {
+            title: '症状记录',
+            subtitle: '集中查看当天症状与处理情况',
+            actionLabel: '记录症状',
+            emptyTitle: '今天还没有症状记录',
+            emptyHint: '点击右上角按钮记录症状变化和处理措施。',
+            items: [...symptomRecords].sort((a, b) => sortTimeValues(a.time, b.time)).map(renderSymptomTimelineItem)
+        };
+    }
+
+    return {
+        title: '活动记录',
+        subtitle: '查看当天的饮食、运动、睡眠等活动',
+        actionLabel: '新增活动',
+        emptyTitle: '今天还没有活动记录',
+        emptyHint: '点击右上角按钮添加第一条活动。',
+        items: [...activities]
+            .map(normalizeActivity)
+            .sort((a, b) => sortTimeValues(getActivitySortTime(a), getActivitySortTime(b)))
+            .map(renderActivityTimelineItem)
+    };
+}
+
+function sortTimeValues(a, b) {
+    return timelineOrder === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
+}
+
+function updateRecordsPage() {
+    const title = document.getElementById('recordsPageTitle');
+    const subtitle = document.getElementById('recordsPageSubtitle');
+    const actionBtn = document.getElementById('recordPrimaryActionBtn');
+    const list = document.getElementById('recordsList');
+    const emptyState = document.getElementById('recordsEmptyState');
+    const emptyTitle = document.getElementById('recordsEmptyTitle');
+    const emptyHint = document.getElementById('recordsEmptyHint');
+    if (!title || !subtitle || !actionBtn || !list || !emptyState || !emptyTitle || !emptyHint) return;
+
+    document.querySelectorAll('.records-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.recordView === currentRecordView);
+    });
+
+    const config = getCurrentRecordConfig();
+    title.textContent = config.title;
+    subtitle.textContent = config.subtitle;
+    actionBtn.textContent = config.actionLabel;
+    emptyTitle.textContent = config.emptyTitle;
+    emptyHint.textContent = config.emptyHint;
+
+    if (config.items.length === 0) {
+        list.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+    }
+
+    emptyState.style.display = 'none';
+    list.innerHTML = config.items.join('');
 }
 
 function toggleHealthSection() {
@@ -1355,6 +1468,7 @@ function toggleTimelineOrder() {
     localStorage.setItem('dailyTracker_timelineOrder', timelineOrder);
     updateTimelineOrderButton();
     updateTimeline();
+    updateRecordsPage();
     showToast(timelineOrder === 'desc' ? '已切换为倒序显示' : '已切换为顺序显示');
 }
 

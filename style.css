@@ -61,8 +61,8 @@ body.elder-mode #currentDate {
 }
 
 body.elder-mode .date-btn,
-body.elder-mode .fab-add,
-body.elder-mode .fab-health,
+body.elder-mode .fab-home,
+body.elder-mode .fab-record,
 body.elder-mode .fab-reminder,
 body.elder-mode .fab-my {
     width: 68px;
@@ -489,6 +489,12 @@ body.elder-mode .form-actions button {
 /* 主内容区 */
 .app-main {
     padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.app-page {
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -1296,7 +1302,7 @@ body.elder-mode .form-actions button {
     z-index: 1000;
 }
 
-.fab-add, .fab-health, .fab-symptom, .fab-reminder, .fab-my {
+.fab-home, .fab-record, .fab-reminder, .fab-my {
     width: 56px;
     height: 56px;
     border-radius: 50%;
@@ -1313,13 +1319,13 @@ body.elder-mode .form-actions button {
     gap: 3px;
 }
 
-.fab-add {
-    background: linear-gradient(135deg, var(--forest-color), var(--primary-color));
+.fab-home {
+    background: linear-gradient(135deg, #376d95, #5aa3d6);
+    font-size: 1.35rem;
 }
 
-.fab-health {
-    background: linear-gradient(135deg, #1a7a5c, #4ab88a);
-    font-size: 1.4rem;
+.fab-record {
+    background: linear-gradient(135deg, var(--forest-color), var(--primary-color));
 }
 
 .fab-reminder {
@@ -1327,19 +1333,87 @@ body.elder-mode .form-actions button {
     font-size: 1.5rem;
 }
 
-.fab-symptom {
-    background: linear-gradient(135deg, #b55030, #e07850);
-    font-size: 1.4rem;
-}
-
 .fab-my {
     background: linear-gradient(135deg, #4f5d75, #7f8da6);
     font-size: 1.35rem;
 }
 
-.fab-add:hover, .fab-health:hover, .fab-symptom:hover, .fab-reminder:hover, .fab-my:hover {
+.fab-home:hover, .fab-record:hover, .fab-reminder:hover, .fab-my:hover {
     transform: scale(1.1) translateY(-2px);
     box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+}
+
+.nav-active {
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.22), 0 8px 20px rgba(0,0,0,0.32);
+}
+
+.records-page-section {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(40,122,68,0.06);
+}
+
+.records-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.records-page-header h2 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--forest-color);
+    margin-bottom: 4px;
+}
+
+.records-page-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+}
+
+.records-primary-btn {
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--forest-color), var(--primary-color));
+    color: white;
+    min-height: 42px;
+    padding: 0 16px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(31,122,61,0.18);
+}
+
+.records-tab-bar {
+    display: flex;
+    gap: 10px;
+    background: rgba(223, 245, 228, 0.55);
+    border-radius: 16px;
+    padding: 6px;
+    margin-bottom: 16px;
+}
+
+.records-tab-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 12px;
+    min-height: 42px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.records-tab-btn.active {
+    background: #fff;
+    color: var(--forest-color);
+    box-shadow: 0 8px 18px rgba(31,122,61,0.08);
 }
 
 .my-modal-content {
@@ -3093,7 +3167,7 @@ body.elder-mode .stats-card-value {
         z-index: 1000;
     }
 
-    .fab-add, .fab-health, .fab-symptom, .fab-reminder, .fab-my {
+    .fab-home, .fab-record, .fab-reminder, .fab-my {
         width: auto;
         height: auto;
         border-radius: 0;
@@ -3107,7 +3181,7 @@ body.elder-mode .stats-card-value {
         font-size: 1.3rem;
     }
 
-    .fab-add:hover, .fab-health:hover, .fab-symptom:hover, .fab-reminder:hover, .fab-my:hover {
+    .fab-home:hover, .fab-record:hover, .fab-reminder:hover, .fab-my:hover {
         background: rgba(31, 122, 61, 0.06);
         transform: none;
         box-shadow: none;
@@ -3120,7 +3194,7 @@ body.elder-mode .stats-card-value {
     }
 
     /* + 图标：用圆形底色突出主操作 */
-    .fab-add .nav-icon {
+    .fab-record .nav-icon {
         width: 32px;
         height: 32px;
         background: linear-gradient(135deg, var(--forest-color), var(--primary-color));
@@ -3134,19 +3208,21 @@ body.elder-mode .stats-card-value {
         line-height: 1;
         box-shadow: 0 2px 8px rgba(31,122,61,0.35);
     }
-    .fab-add .nav-label { color: var(--forest-color); font-weight: 700; }
+    .fab-record .nav-label { color: var(--forest-color); font-weight: 700; }
 
-    .fab-health .nav-icon { color: #1a7a5c; font-size: 1.35rem; }
-    .fab-health .nav-label { color: #1a7a5c; }
-
-    .fab-symptom .nav-icon { color: #b55030; font-size: 1.35rem; }
-    .fab-symptom .nav-label { color: #b55030; }
+    .fab-home .nav-icon { color: #376d95; font-size: 1.3rem; }
+    .fab-home .nav-label { color: #376d95; }
 
     .fab-reminder .nav-icon { color: #1a6e3c; font-size: 1.35rem; }
     .fab-reminder .nav-label { color: #1a6e3c; }
 
     .fab-my .nav-icon { color: #54637e; font-size: 1.3rem; }
     .fab-my .nav-label { color: #54637e; }
+
+    .nav-active {
+        box-shadow: none;
+        background: rgba(31, 122, 61, 0.08);
+    }
 
     /* ── Modal：底部 Sheet 滑入 ── */
     .modal-content {
@@ -3175,6 +3251,20 @@ body.elder-mode .stats-card-value {
 
     .modal-header {
         border-radius: 0;
+    }
+
+    .records-page-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .records-primary-btn {
+        width: 100%;
+    }
+
+    .records-tab-bar {
+        gap: 8px;
+        padding: 5px;
     }
 
     .my-panel {
@@ -3327,7 +3417,8 @@ body.elder-mode .stats-card-value {
     .health-section,
     .daily-summary-section,
     .timeline-section,
-    .reminder-section {
+    .reminder-section,
+    .records-page-section {
         padding: 14px;
     }
 }
