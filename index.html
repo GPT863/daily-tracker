@@ -17,19 +17,6 @@
         <header class="app-header">
             <div class="header-top">
                 <h1>📅 今日活动记录</h1>
-                <div class="header-tools">
-                    <button id="exportBtn" class="header-export-btn">导出</button>
-                    <div class="header-secondary-wrap">
-                        <!-- 桌面端：直接显示所有按钮；移动端：折叠到 ⋮ 菜单 -->
-                        <button id="headerMoreBtn" class="header-more-btn" type="button" aria-label="更多功能" aria-expanded="false">⋮</button>
-                        <div id="headerMoreMenu" class="header-more-menu" role="menu">
-                            <button id="cloudSyncBtn" class="header-tool-btn">☁ 云同步</button>
-                            <button id="profileBtn" class="header-tool-btn">👤 个人信息</button>
-                            <button id="seedDemoBtn" class="header-tool-btn">📂 示例数据</button>
-                            <button id="resetDataBtn" class="header-tool-btn danger">🗑 清空</button>
-                        </div>
-                    </div>
-                </div>
             </div>
             <div class="date-selector">
                 <button id="prevDay" class="date-btn">◀</button>
@@ -126,7 +113,7 @@
         <div class="bottom-actions">
             <button id="addBtn" class="fab-add">
                 <span class="nav-icon">＋</span>
-                <span class="nav-label">记录</span>
+                <span class="nav-label">活动</span>
             </button>
             <button id="healthBtn" class="fab-health">
                 <span class="nav-icon">📋</span>
@@ -140,6 +127,56 @@
                 <span class="nav-icon">🔔</span>
                 <span class="nav-label">提醒</span>
             </button>
+            <button id="myBtn" class="fab-my">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">我的</span>
+            </button>
+        </div>
+
+        <div id="myModal" class="modal">
+            <div class="modal-content my-modal-content">
+                <div class="modal-header">
+                    <h2>👤 我的</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="my-panel">
+                    <button id="exportBtn" class="my-panel-action">
+                        <span class="my-panel-icon">📤</span>
+                        <span class="my-panel-text">
+                            <strong>导出数据</strong>
+                            <small>导出当前记录与统计数据</small>
+                        </span>
+                    </button>
+                    <button id="cloudSyncBtn" class="my-panel-action">
+                        <span class="my-panel-icon">☁</span>
+                        <span class="my-panel-text">
+                            <strong>云同步</strong>
+                            <small>登录云端并同步本地数据</small>
+                        </span>
+                    </button>
+                    <button id="profileBtn" class="my-panel-action">
+                        <span class="my-panel-icon">🪪</span>
+                        <span class="my-panel-text">
+                            <strong>个人信息</strong>
+                            <small>维护基础档案和长期健康信息</small>
+                        </span>
+                    </button>
+                    <button id="seedDemoBtn" class="my-panel-action">
+                        <span class="my-panel-icon">📂</span>
+                        <span class="my-panel-text">
+                            <strong>示例数据</strong>
+                            <small>快速填充一份演示内容</small>
+                        </span>
+                    </button>
+                    <button id="resetDataBtn" class="my-panel-action danger">
+                        <span class="my-panel-icon">🗑</span>
+                        <span class="my-panel-text">
+                            <strong>清空数据</strong>
+                            <small>删除当前浏览器中的所有本地记录</small>
+                        </span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- 添加/编辑活动表单模态框 -->

@@ -63,7 +63,8 @@ body.elder-mode #currentDate {
 body.elder-mode .date-btn,
 body.elder-mode .fab-add,
 body.elder-mode .fab-health,
-body.elder-mode .fab-reminder {
+body.elder-mode .fab-reminder,
+body.elder-mode .fab-my {
     width: 68px;
     height: 68px;
 }
@@ -1295,7 +1296,7 @@ body.elder-mode .form-actions button {
     z-index: 1000;
 }
 
-.fab-add, .fab-health, .fab-symptom, .fab-reminder {
+.fab-add, .fab-health, .fab-symptom, .fab-reminder, .fab-my {
     width: 56px;
     height: 56px;
     border-radius: 50%;
@@ -1331,9 +1332,84 @@ body.elder-mode .form-actions button {
     font-size: 1.4rem;
 }
 
-.fab-add:hover, .fab-health:hover, .fab-symptom:hover, .fab-reminder:hover {
+.fab-my {
+    background: linear-gradient(135deg, #4f5d75, #7f8da6);
+    font-size: 1.35rem;
+}
+
+.fab-add:hover, .fab-health:hover, .fab-symptom:hover, .fab-reminder:hover, .fab-my:hover {
     transform: scale(1.1) translateY(-2px);
     box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+}
+
+.my-modal-content {
+    max-width: 520px;
+}
+
+.my-panel {
+    display: grid;
+    gap: 12px;
+    padding: 18px;
+}
+
+.my-panel-action {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: linear-gradient(145deg, rgba(223, 245, 228, 0.62), rgba(255, 255, 255, 0.96));
+    border: 1px solid rgba(40, 122, 68, 0.12);
+    border-radius: 16px;
+    cursor: pointer;
+    text-align: left;
+    color: var(--text-color);
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.my-panel-action:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(40, 122, 68, 0.22);
+}
+
+.my-panel-action.danger {
+    background: linear-gradient(145deg, rgba(255, 238, 236, 0.95), rgba(255, 255, 255, 0.98));
+    border-color: rgba(192, 57, 43, 0.14);
+}
+
+.my-panel-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(31, 122, 61, 0.1);
+    color: var(--forest-color);
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+
+.my-panel-action.danger .my-panel-icon {
+    background: rgba(192, 57, 43, 0.1);
+    color: #c0392b;
+}
+
+.my-panel-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.my-panel-text strong {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.my-panel-text small {
+    font-size: 0.86rem;
+    color: var(--text-secondary);
 }
 
 /* 模态框 */
@@ -3017,7 +3093,7 @@ body.elder-mode .stats-card-value {
         z-index: 1000;
     }
 
-    .fab-add, .fab-health, .fab-symptom, .fab-reminder {
+    .fab-add, .fab-health, .fab-symptom, .fab-reminder, .fab-my {
         width: auto;
         height: auto;
         border-radius: 0;
@@ -3031,7 +3107,7 @@ body.elder-mode .stats-card-value {
         font-size: 1.3rem;
     }
 
-    .fab-add:hover, .fab-health:hover, .fab-symptom:hover, .fab-reminder:hover {
+    .fab-add:hover, .fab-health:hover, .fab-symptom:hover, .fab-reminder:hover, .fab-my:hover {
         background: rgba(31, 122, 61, 0.06);
         transform: none;
         box-shadow: none;
@@ -3069,6 +3145,9 @@ body.elder-mode .stats-card-value {
     .fab-reminder .nav-icon { color: #1a6e3c; font-size: 1.35rem; }
     .fab-reminder .nav-label { color: #1a6e3c; }
 
+    .fab-my .nav-icon { color: #54637e; font-size: 1.3rem; }
+    .fab-my .nav-label { color: #54637e; }
+
     /* ── Modal：底部 Sheet 滑入 ── */
     .modal-content {
         position: absolute;
@@ -3096,6 +3175,23 @@ body.elder-mode .stats-card-value {
 
     .modal-header {
         border-radius: 0;
+    }
+
+    .my-panel {
+        padding: 14px;
+        gap: 10px;
+    }
+
+    .my-panel-action {
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .my-panel-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        font-size: 1.2rem;
     }
 
     /* ── Section tools：不再强制 column ── */

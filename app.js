@@ -918,10 +918,13 @@ function setupEventListeners() {
     });
     document.getElementById('healthBtn').addEventListener('click', () => openHealthModal());
     document.getElementById('symptomBtn').addEventListener('click', () => openSymptomModal());
+    document.getElementById('myBtn').addEventListener('click', () => {
+        document.getElementById('myModal').style.display = 'block';
+    });
     document.getElementById('addHealthBtnInline').addEventListener('click', () => openHealthModal());
     document.getElementById('toggleHealthSectionBtn').addEventListener('click', toggleHealthSection);
 
-    // 导出入口
+    // 我的模块入口
     ['exportBtn'].forEach(id => {
         document.getElementById(id).addEventListener('click', openExportModal);
     });
@@ -932,8 +935,13 @@ function setupEventListeners() {
     // 数据辅助入口
     document.getElementById('seedDemoBtn').addEventListener('click', loadDemoData);
     document.getElementById('resetDataBtn').addEventListener('click', resetAllData);
+    document.querySelector('#myModal .my-panel')?.addEventListener('click', (e) => {
+        if (e.target.closest('button')) {
+            closeModal(document.getElementById('myModal'));
+        }
+    });
 
-    // Header 汉堡菜单（移动端）
+    // Header 汉堡菜单（兼容旧结构）
     const headerMoreBtn = document.getElementById('headerMoreBtn');
     const headerMoreMenu = document.getElementById('headerMoreMenu');
     if (headerMoreBtn && headerMoreMenu) {
