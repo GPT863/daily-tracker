@@ -4708,6 +4708,12 @@ body.elder-mode .ai-result-content {
     transform: scale(0.9);
 }
 
+.medicine-type-icon-text.icon-rx {
+    font-family: "Times New Roman", Georgia, serif;
+    font-style: italic;
+    font-weight: 700;
+}
+
 .medicine-type-icon-mark.compact {
     margin-left: 6px;
 }
@@ -4759,14 +4765,14 @@ body.elder-mode .ai-result-content {
 .type-rx {
     width: 20px;
     height: 20px;
-    border-radius: 2px;
-    border: 1px solid rgba(206, 24, 24, 0.25);
-    background: linear-gradient(180deg, #ff3f32 0%, #e11717 100%);
+    border-radius: 50%;
+    border: 1px solid rgba(34, 99, 206, 0.24);
+    background: linear-gradient(180deg, #5f95ff 0%, #2d6bf0 100%);
 }
 
 .type-rx .medicine-type-icon-text {
     color: #fff;
-    font-size: 0.92rem;
+    font-size: 0.72rem;
     transform: translateY(-0.5px);
 }
 
@@ -4838,6 +4844,16 @@ body.elder-mode .ai-result-content {
 
 .medicine-card-indication-muted {
     color: #9aa3af;
+}
+
+.medicine-card-contraindication {
+    font-size: 0.88rem;
+    color: #8f4e36;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .medicine-expiry-badge {

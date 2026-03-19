@@ -648,7 +648,7 @@ function createMockMedicines() {
             productionDate: '2023-08-01',
             indication: '缓解轻至中度疼痛、发热',
             dosage: '口服。疼痛或发热时服用，间隔 4-6 小时一次',
-            contraindication: '孕妇及哺乳期妇女慎用',
+            contraindication: '活动性消化道出血患者禁用',
             manufacturer: '中美天津史克制药有限公司',
             notes: '饭后服用，不可超过推荐剂量',
             createdAt: createDate,
@@ -662,7 +662,7 @@ function createMockMedicines() {
             productionDate: '2024-03-01',
             indication: '过敏性鼻炎、慢性荨麻疹',
             dosage: '每日 1 次，每次 1 片',
-            contraindication: '严重肝肾功能不全者禁用',
+            contraindication: '对本品成分过敏者禁用',
             manufacturer: '西安杨森制药有限公司',
             notes: '季节性鼻炎发作时使用',
             createdAt: createDate,
@@ -676,7 +676,7 @@ function createMockMedicines() {
             productionDate: '2023-12-10',
             indication: '胃溃疡、十二指肠溃疡、反流性食管炎',
             dosage: '晨起空腹服用，每日 1 次，每次 1 粒',
-            contraindication: '严重肾功能不全者禁用',
+            contraindication: '对苯并咪唑类药物过敏者禁用',
             manufacturer: '阿斯利康制药有限公司',
             notes: '整粒吞服，不可咀嚼',
             createdAt: createDate,
@@ -690,7 +690,7 @@ function createMockMedicines() {
             productionDate: '2023-11-01',
             indication: '补充维生素C，增强免疫力',
             dosage: '每日 1 片，用温水冲服',
-            contraindication: '肾结石患者慎用',
+            contraindication: '高草酸尿症患者慎用',
             manufacturer: '拜耳医药保健有限公司',
             notes: '建议随餐或餐后使用',
             createdAt: createDate,
@@ -704,7 +704,7 @@ function createMockMedicines() {
             productionDate: '2024-01-20',
             indication: '胸闷、心绞痛、冠心病',
             dosage: '一次 10 丸，一日 3 次，可舌下含服',
-            contraindication: '孕妇慎用',
+            contraindication: '孕妇禁用',
             manufacturer: '天士力医药集团股份有限公司',
             notes: '密封避光保存',
             createdAt: createDate,
@@ -732,7 +732,7 @@ function createMockMedicines() {
             productionDate: '2023-08-15',
             indication: '感冒、头痛、发热',
             dosage: '开水冲服，一次 1 袋，一日 3 次',
-            contraindication: '严重肝肾功能不全者禁用',
+            contraindication: '严重肝肾功能不全者慎用',
             manufacturer: '华润三九医药股份有限公司',
             notes: '服药期间避免烟酒及辛辣食物',
             createdAt: createDate,
@@ -3275,98 +3275,7 @@ function openMedicineBoxModal() {
 
     // 如果列表为空，添加 mock 数据
     if (medicines.length === 0) {
-        const today = new Date();
-        const formatDate = (daysOffset) => {
-            const d = new Date(today);
-            d.setDate(d.getDate() + daysOffset);
-            return d.toISOString().split('T')[0];
-        };
-
-        medicines = [
-            {
-                id: 'med_' + Date.now() + '_1',
-                name: '阿莫西林胶囊',
-                expirationDate: formatDate(15),
-                productionDate: '2024-06-15',
-                indication: '用于敏感菌所致的各种感染',
-                dosage: '饭后服用，每日3次，每次2粒',
-                manufacturer: '华润双鹤药业',
-                notes: '建议放在药箱上层便于取用'
-            },
-            {
-                id: 'med_' + Date.now() + '_2',
-                name: '布洛芬缓释胶囊',
-                expirationDate: formatDate(45),
-                productionDate: '2024-09-01',
-                indication: '用于缓解轻至中度疼痛',
-                dosage: '整粒吞服，必要时服用',
-                manufacturer: '芬必得',
-                contraindication: '孕妇及哺乳期妇女禁用',
-                notes: '不得嚼碎'
-            },
-            {
-                id: 'med_' + Date.now() + '_3',
-                name: '感冒灵颗粒',
-                expirationDate: formatDate(85),
-                productionDate: '2024-12-01',
-                indication: '用于感冒引起的头痛、发热、鼻塞',
-                dosage: '开水冲服，一次1袋，一日3次',
-                manufacturer: '999感冒灵',
-                notes: '夜间服用后注意休息'
-            },
-            {
-                id: 'med_' + Date.now() + '_4',
-                name: '维生素C片',
-                expirationDate: formatDate(-5),
-                productionDate: '2022-03-10',
-                indication: '用于预防坏血病',
-                dosage: '每日1次，每次1片',
-                manufacturer: '汤臣倍健',
-                notes: '已过期，请丢弃'
-            },
-            {
-                id: 'med_' + Date.now() + '_5',
-                name: '奥美拉唑肠溶胶囊',
-                expirationDate: formatDate(120),
-                productionDate: '2024-11-20',
-                indication: '用于胃溃疡、十二指肠溃疡',
-                dosage: '晨起吞服，每日1次，每次1粒',
-                manufacturer: '阿斯利康',
-                contraindication: '严重肾功能不全者禁用',
-                notes: '整粒吞服，不可咀嚼'
-            },
-            {
-                id: 'med_' + Date.now() + '_6',
-                name: '氯雷他定片',
-                expirationDate: formatDate(200),
-                productionDate: '2025-01-05',
-                indication: '用于过敏性鼻炎、慢性荨麻疹',
-                dosage: '每日1次，每次1片',
-                manufacturer: '开瑞坦',
-                notes: '过敏季可提前备药'
-            },
-            {
-                id: 'med_' + Date.now() + '_7',
-                name: '头孢克肟分散片',
-                expirationDate: formatDate(7),
-                productionDate: '2024-08-15',
-                indication: '对头孢克肟敏感的菌所致感染',
-                dosage: '遵医嘱按疗程服用',
-                manufacturer: '白云山制药',
-                contraindication: '对头孢菌素类抗生素过敏者禁用',
-                notes: '即将过期，优先使用'
-            },
-            {
-                id: 'med_' + Date.now() + '_8',
-                name: '蒙脱石散',
-                expirationDate: formatDate(300),
-                productionDate: '2025-02-01',
-                indication: '用于成人及儿童急、慢性腹泻',
-                dosage: '倒入50ml温水中搅匀服用',
-                manufacturer: '思密达',
-                notes: '注意补充水分'
-            }
-        ];
+        medicines = createMockMedicines();
         saveState();
     }
 
@@ -3426,7 +3335,7 @@ function renderMedicineTypeIcon(type, extraClass = '') {
     const classText = ['medicine-type-icon-mark', getMedicineTypeIconClass(type), extraClass].filter(Boolean).join(' ');
     const iconContentMap = {
         otc: '<span class="medicine-type-icon-text" aria-hidden="true">OTC</span>',
-        prescription: '<span class="medicine-type-icon-text icon-single-cn" aria-hidden="true">外</span>',
+        prescription: '<span class="medicine-type-icon-text icon-rx" aria-hidden="true">Rx</span>',
         psychotropic: '<span class="medicine-type-icon-text icon-psy" aria-hidden="true"><span>精神</span><span>药品</span></span>',
         supplement: '<span class="medicine-type-icon-text icon-single-cn" aria-hidden="true">健</span>',
         chinese: '<span class="medicine-type-icon-text icon-single-cn" aria-hidden="true">中</span>',
@@ -3608,6 +3517,9 @@ function renderMedicineList() {
         const indicationHtml = med.indication
             ? `<div class="medicine-card-indication">${escapeHtml(med.indication)}</div>`
             : '<div class="medicine-card-indication medicine-card-indication-muted">暂未填写适应症说明</div>';
+        const contraindicationHtml = med.contraindication
+            ? `<div class="medicine-card-contraindication">禁忌：${escapeHtml(med.contraindication)}</div>`
+            : '';
 
         return `<div class="medicine-card ${status.cardClass}" data-id="${med.id}">
             <div class="medicine-card-row">
@@ -3618,6 +3530,7 @@ function renderMedicineList() {
                         <span class="medicine-expiry-badge ${status.className}">${badgeLabel}</span>
                     </div>
                     ${indicationHtml}
+                    ${contraindicationHtml}
                 </div>
             </div>
         </div>`;
