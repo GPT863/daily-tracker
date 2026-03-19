@@ -4539,12 +4539,6 @@ body.elder-mode .ai-result-content {
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 
-.medicine-card-thumb-placeholder::before {
-    content: '💊';
-    font-size: 1.45rem;
-    opacity: 0.42;
-}
-
 .medicine-card-body {
     flex: 1;
     min-width: 0;
@@ -4576,6 +4570,169 @@ body.elder-mode .ai-result-content {
 
 .medicine-card.expiry-expired .medicine-card-name {
     color: #5d6470;
+}
+
+.medicine-type-icon-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    vertical-align: middle;
+    position: relative;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+}
+
+.medicine-type-icon-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Times New Roman", Georgia, serif;
+    font-style: italic;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
+.medicine-type-icon-text.icon-single-cn {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    font-style: normal;
+    font-weight: 800;
+}
+
+.medicine-type-icon-text.icon-psy {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 1px;
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.medicine-type-icon-text.icon-psy span {
+    display: block;
+    transform: scale(0.9);
+}
+
+.medicine-type-icon-mark.compact {
+    margin-left: 6px;
+}
+
+.medicine-card-thumb-placeholder .medicine-type-icon-mark,
+.medicine-detail-image-placeholder .medicine-type-icon-mark {
+    width: 34px;
+    height: 34px;
+    margin-left: 0;
+}
+
+.medicine-card-thumb-placeholder .type-otc,
+.medicine-detail-image-placeholder .type-otc {
+    width: 56px;
+    height: 32px;
+}
+
+.medicine-card-thumb-placeholder .medicine-type-icon-mark {
+    box-shadow: 0 8px 18px rgba(47, 54, 64, 0.08);
+}
+
+.medicine-type-icon-core {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.type-otc {
+    width: 34px;
+    height: 20px;
+    border-radius: 999px;
+    border: 1px solid rgba(198, 72, 12, 0.24);
+    background: linear-gradient(180deg, #f26c1a 0%, #d84b08 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.type-otc .medicine-type-icon-text {
+    color: #fff;
+    font-size: 0.78rem;
+    transform: translateY(-0.5px);
+}
+
+.medicine-card-thumb-placeholder .type-otc .medicine-type-icon-text,
+.medicine-detail-image-placeholder .type-otc .medicine-type-icon-text {
+    font-size: 1.22rem;
+}
+
+.type-rx {
+    width: 20px;
+    height: 20px;
+    border-radius: 2px;
+    border: 1px solid rgba(206, 24, 24, 0.25);
+    background: linear-gradient(180deg, #ff3f32 0%, #e11717 100%);
+}
+
+.type-rx .medicine-type-icon-text {
+    color: #fff;
+    font-size: 0.92rem;
+    transform: translateY(-0.5px);
+}
+
+.type-psychotropic {
+    width: 22px;
+    height: 22px;
+    border-radius: 2px;
+    border: 1px solid rgba(104, 196, 46, 0.28);
+    background: linear-gradient(180deg, #a5ef69 0%, #69cf2f 100%);
+}
+
+.type-psychotropic .medicine-type-icon-text {
+    color: #fff;
+    font-size: 0.4rem;
+    letter-spacing: 0;
+}
+
+.type-supplement {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid rgba(212, 165, 31, 0.28);
+    background: linear-gradient(180deg, #f4d548 0%, #d6ad1a 100%);
+}
+
+.type-supplement .medicine-type-icon-text {
+    color: #fff;
+    font-size: 0.78rem;
+}
+
+.type-chinese {
+    width: 20px;
+    height: 20px;
+    border-radius: 2px;
+    border: 1px solid rgba(184, 100, 49, 0.26);
+    background: linear-gradient(180deg, #d88952 0%, #b86431 100%);
+}
+
+.type-chinese .medicine-type-icon-text {
+    color: #fff;
+    font-size: 0.78rem;
+}
+
+.type-other,
+.type-default {
+    width: 20px;
+    height: 20px;
+    border-radius: 2px;
+    border: 1px solid rgba(95, 107, 122, 0.24);
+    background: linear-gradient(180deg, #8a98a8 0%, #677485 100%);
+}
+
+.type-other .medicine-type-icon-text,
+.type-default .medicine-type-icon-text {
+    color: #fff;
+    font-size: 0.78rem;
+}
 }
 
 .medicine-card-indication {
@@ -4648,8 +4805,15 @@ body.elder-mode .ai-result-content {
 }
 
 .medicine-detail-image-section {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-bottom: 20px;
+    min-height: 188px;
+    background: linear-gradient(180deg, #f7fbf8 0%, #eef6f1 100%);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
 }
 
 #detailMedicineImage {
@@ -4657,6 +4821,22 @@ body.elder-mode .ai-result-content {
     max-height: 200px;
     border-radius: var(--radius-md);
     object-fit: contain;
+}
+
+.medicine-detail-image-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    min-height: 188px;
+    padding: 20px;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    background:
+        radial-gradient(circle at top left, rgba(126, 189, 150, 0.18), transparent 42%),
+        radial-gradient(circle at bottom right, rgba(115, 163, 203, 0.16), transparent 46%);
 }
 
 .medicine-detail-section {
@@ -4674,6 +4854,10 @@ body.elder-mode .ai-result-content {
     font-weight: 700;
     color: var(--text-color);
     margin-bottom: 8px;
+}
+
+.medicine-detail-header-section {
+    padding-top: 0;
 }
 
 .medicine-detail-badges {
@@ -4696,14 +4880,8 @@ body.elder-mode .ai-result-content {
     word-break: break-word;
 }
 
-.medicine-detail-meta {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-top: 4px;
-}
-
 /* 隐藏空值字段 */
-.medicine-detail-section:not(:has(.detail-value:not(:empty))) {
+.medicine-detail-section:not(.medicine-detail-header-section):not(:has(.detail-value:not(:empty))) {
     display: none;
 }
 

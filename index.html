@@ -1164,39 +1164,57 @@
                     <h2 id="medicineEditTitle">添加药品</h2>
                     <button type="button" id="medicineEditCancelBtn" class="header-text-btn">取消</button>
                 </div>
-                <form id="medicineForm" class="activity-form">
-                    <input type="hidden" id="medicineId">
-                    <div class="form-group">
-                        <label for="medicineName">药品名称 *</label>
-                        <input type="text" id="medicineName" placeholder="例如：阿莫西林胶囊" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="medicineExpirationDate">过期日期 *</label>
-                        <input type="date" id="medicineExpirationDate" required>
-                    </div>
+	                <form id="medicineForm" class="activity-form">
+	                    <input type="hidden" id="medicineId">
+	                    <div class="form-group">
+	                        <label>药品图片</label>
+	                        <div class="image-upload-card">
+	                            <div class="image-upload-actions">
+	                                <label for="medicineImageUpload" class="image-upload-btn">上传图片</label>
+	                            </div>
+	                            <input type="file" id="medicineImageUpload" accept="image/*" hidden>
+	                            <div id="medicineImageHint" class="image-upload-hint">可拍照或上传药品包装、说明书图片。</div>
+	                            <div id="medicineImagePreview" class="activity-image-preview hidden">
+	                                <img id="medicineImagePreviewImg" alt="药品图片预览">
+	                                <button type="button" id="removeMedicineImage" class="remove-image-btn">移除图片</button>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <div class="form-group">
+	                        <label for="medicineName">药品名称 *</label>
+	                        <input type="text" id="medicineName" placeholder="例如：阿莫西林胶囊" required>
+	                    </div>
                     <div class="form-group">
                         <label for="medicineType">药品类型</label>
                         <select id="medicineType">
                             <option value="">请选择</option>
-                            <option value="otc">OTC（非处方药）</option>
-                            <option value="prescription">处方药</option>
-                            <option value="psychotropic">精神类药品</option>
-                            <option value="supplement">保健品</option>
-                            <option value="chinese">中成药</option>
-                            <option value="other">其他</option>
+                            <option value="otc">[OTC] 非处方药</option>
+                            <option value="prescription">[Rx] 处方药</option>
+                            <option value="psychotropic">[精] 精神类药品</option>
+                            <option value="supplement">[健] 保健品</option>
+                            <option value="chinese">[中] 中成药</option>
+                            <option value="other">[其] 其他</option>
                         </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="medicineProductionDate">生产日期</label>
-                        <input type="date" id="medicineProductionDate">
                     </div>
                     <div class="form-group">
                         <label for="medicineIndication">适应症</label>
                         <textarea id="medicineIndication" rows="2" placeholder="例如：细菌感染、上呼吸道感染"></textarea>
                     </div>
                     <div class="form-group">
+                        <label for="medicineDosage">用法用量</label>
+                        <textarea id="medicineDosage" rows="2" placeholder="例如：每日3次，每次2粒，饭后服用"></textarea>
+                    </div>
+                    <div class="form-group">
                         <label for="medicineContraindication">禁忌</label>
                         <textarea id="medicineContraindication" rows="2" placeholder="例如：青霉素过敏者禁用"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineProductionDate">生产日期</label>
+                        <input type="date" id="medicineProductionDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineExpirationDate">过期日期 *</label>
+                        <input type="date" id="medicineExpirationDate" required>
                     </div>
                     <div class="form-group">
                         <label for="medicineManufacturer">厂商</label>
@@ -1204,26 +1222,12 @@
                     </div>
                     <div class="form-group">
                         <label for="medicineNotes">备注</label>
-                        <textarea id="medicineNotes" rows="2" placeholder="例如：存放位置、用法用量"></textarea>
+                        <textarea id="medicineNotes" rows="2" placeholder="例如：存放位置、注意事项"></textarea>
                     </div>
-                    <div class="form-group">
-                        <label>药品图片</label>
-                        <div class="image-upload-card">
-                            <div class="image-upload-actions">
-                                <label for="medicineImageUpload" class="image-upload-btn">上传图片</label>
-                            </div>
-                            <input type="file" id="medicineImageUpload" accept="image/*" hidden>
-                            <div id="medicineImageHint" class="image-upload-hint">可拍照或上传药品包装、说明书图片。</div>
-                            <div id="medicineImagePreview" class="activity-image-preview hidden">
-                                <img id="medicineImagePreviewImg" alt="药品图片预览">
-                                <button type="button" id="removeMedicineImage" class="remove-image-btn">移除图片</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-actions single">
-                        <button type="submit" class="btn-submit full-width">保存</button>
-                    </div>
-                </form>
+	                    <div class="form-actions single">
+	                        <button type="submit" class="btn-submit full-width">保存</button>
+	                    </div>
+	                </form>
             </div>
         </div>
     </div>
@@ -1236,52 +1240,49 @@
                 <h2>药品详情</h2>
                 <button type="button" id="medicineDetailEditBtn" class="header-add-btn">编辑</button>
             </div>
-            <div class="medicine-detail-content">
-                <div class="medicine-detail-image-section" id="detailImageSection">
-                    <img id="detailMedicineImage" alt="药品图片">
-                </div>
-                <div class="medicine-detail-section">
-                    <h3 class="medicine-detail-name" id="detailMedicineName"></h3>
-                    <div class="medicine-detail-badges">
-                        <span class="medicine-type-badge" id="detailTypeBadge"></span>
-                        <span class="medicine-expiry-badge" id="detailExpiryBadge"></span>
-                    </div>
-                </div>
-                <div class="medicine-detail-section" id="detailExpirationDateSection">
-                    <div class="detail-label">过期日期</div>
-                    <div class="detail-value" id="detailExpirationDate"></div>
-                </div>
-                <div class="medicine-detail-section" id="detailProductionDateSection">
-                    <div class="detail-label">生产日期</div>
-                    <div class="detail-value" id="detailProductionDate"></div>
-                </div>
-                <div class="medicine-detail-section" id="detailIndicationSection">
-                    <div class="detail-label">适应症</div>
-                    <div class="detail-value" id="detailIndication"></div>
-                </div>
-                <div class="medicine-detail-section" id="detailContraindicationSection">
-                    <div class="detail-label">禁忌</div>
-                    <div class="detail-value" id="detailContraindication"></div>
-                </div>
-                <div class="medicine-detail-section" id="detailManufacturerSection">
-                    <div class="detail-label">厂商</div>
-                    <div class="detail-value" id="detailManufacturer"></div>
-                </div>
-                <div class="medicine-detail-section" id="detailNotesSection">
-                    <div class="detail-label">备注</div>
-                    <div class="detail-value" id="detailNotes"></div>
-                </div>
-                <div class="medicine-detail-meta">
-                    <span class="detail-meta-label">创建时间：</span>
-                    <span class="detail-meta-value" id="detailCreatedAt"></span>
-                </div>
-                <div class="medicine-detail-meta">
-                    <span class="detail-meta-label">更新时间：</span>
-                    <span class="detail-meta-value" id="detailUpdatedAt"></span>
-                </div>
-                <div class="medicine-detail-actions">
-                    <button type="button" id="medicineDetailDeleteBtn" class="medicine-detail-delete-btn">删除药品</button>
-                </div>
+	            <div class="medicine-detail-content">
+	                <div class="medicine-detail-image-section" id="detailImageSection">
+	                    <img id="detailMedicineImage" alt="药品图片">
+	                    <div id="detailMedicineImagePlaceholder" class="medicine-detail-image-placeholder">暂无药品图片</div>
+	                </div>
+	                <div class="medicine-detail-section medicine-detail-header-section">
+	                    <h3 class="medicine-detail-name" id="detailMedicineName"></h3>
+	                    <div class="medicine-detail-badges">
+	                        <span class="medicine-type-badge" id="detailTypeBadge"></span>
+	                        <span class="medicine-expiry-badge" id="detailExpiryBadge"></span>
+	                    </div>
+	                </div>
+	                <div class="medicine-detail-section" id="detailIndicationSection">
+	                    <div class="detail-label">适应症</div>
+	                    <div class="detail-value" id="detailIndication"></div>
+	                </div>
+	                <div class="medicine-detail-section" id="detailDosageSection">
+	                    <div class="detail-label">用法用量</div>
+	                    <div class="detail-value" id="detailDosage"></div>
+	                </div>
+	                <div class="medicine-detail-section" id="detailContraindicationSection">
+	                    <div class="detail-label">禁忌</div>
+	                    <div class="detail-value" id="detailContraindication"></div>
+	                </div>
+	                <div class="medicine-detail-section" id="detailProductionDateSection">
+	                    <div class="detail-label">生产日期</div>
+	                    <div class="detail-value" id="detailProductionDate"></div>
+	                </div>
+	                <div class="medicine-detail-section" id="detailExpirationDateSection">
+	                    <div class="detail-label">过期日期</div>
+	                    <div class="detail-value" id="detailExpirationDate"></div>
+	                </div>
+	                <div class="medicine-detail-section" id="detailManufacturerSection">
+	                    <div class="detail-label">厂商</div>
+	                    <div class="detail-value" id="detailManufacturer"></div>
+	                </div>
+	                <div class="medicine-detail-section" id="detailNotesSection">
+	                    <div class="detail-label">备注</div>
+	                    <div class="detail-value" id="detailNotes"></div>
+	                </div>
+	                <div class="medicine-detail-actions">
+	                    <button type="button" id="medicineDetailDeleteBtn" class="medicine-detail-delete-btn">删除药品</button>
+	                </div>
             </div>
         </div>
     </div>

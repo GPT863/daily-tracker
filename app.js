@@ -633,9 +633,10 @@ function createMockMedicines() {
             expirationDate: '2026-12-31',
             productionDate: '2024-01-15',
             indication: '细菌感染、上呼吸道感染、扁桃体炎',
+            dosage: '每日 3 次，每次 2 粒，饭后服用',
             contraindication: '青霉素过敏者禁用',
             manufacturer: '哈药集团制药总厂',
-            notes: '存放于阴凉干燥处，每日3次，每次2粒',
+            notes: '存放于阴凉干燥处',
             createdAt: createDate,
             updatedAt: createDate
         },
@@ -646,6 +647,7 @@ function createMockMedicines() {
             expirationDate: '2025-08-20',
             productionDate: '2023-08-01',
             indication: '缓解轻至中度疼痛、发热',
+            dosage: '口服。疼痛或发热时服用，间隔 4-6 小时一次',
             contraindication: '孕妇及哺乳期妇女慎用',
             manufacturer: '中美天津史克制药有限公司',
             notes: '饭后服用，不可超过推荐剂量',
@@ -659,6 +661,7 @@ function createMockMedicines() {
             expirationDate: '2027-03-15',
             productionDate: '2024-03-01',
             indication: '过敏性鼻炎、慢性荨麻疹',
+            dosage: '每日 1 次，每次 1 片',
             contraindication: '严重肝肾功能不全者禁用',
             manufacturer: '西安杨森制药有限公司',
             notes: '季节性鼻炎发作时使用',
@@ -672,9 +675,10 @@ function createMockMedicines() {
             expirationDate: '2026-06-30',
             productionDate: '2023-12-10',
             indication: '胃溃疡、十二指肠溃疡、反流性食管炎',
+            dosage: '晨起空腹服用，每日 1 次，每次 1 粒',
             contraindication: '严重肾功能不全者禁用',
             manufacturer: '阿斯利康制药有限公司',
-            notes: '晨起空腹服用，整粒吞服',
+            notes: '整粒吞服，不可咀嚼',
             createdAt: createDate,
             updatedAt: createDate
         },
@@ -685,9 +689,10 @@ function createMockMedicines() {
             expirationDate: '2025-11-25',
             productionDate: '2023-11-01',
             indication: '补充维生素C，增强免疫力',
+            dosage: '每日 1 片，用温水冲服',
             contraindication: '肾结石患者慎用',
             manufacturer: '拜耳医药保健有限公司',
-            notes: '每日1片，用温水冲服',
+            notes: '建议随餐或餐后使用',
             createdAt: createDate,
             updatedAt: createDate
         },
@@ -698,9 +703,10 @@ function createMockMedicines() {
             expirationDate: '2026-09-18',
             productionDate: '2024-01-20',
             indication: '胸闷、心绞痛、冠心病',
+            dosage: '一次 10 丸，一日 3 次，可舌下含服',
             contraindication: '孕妇慎用',
             manufacturer: '天士力医药集团股份有限公司',
-            notes: '舌下含服或吞服',
+            notes: '密封避光保存',
             createdAt: createDate,
             updatedAt: createDate
         },
@@ -711,9 +717,10 @@ function createMockMedicines() {
             expirationDate: '2025-04-10',
             productionDate: '2023-04-01',
             indication: '焦虑、失眠、肌肉痉挛',
+            dosage: '严格遵医嘱使用，不可自行加量或停药',
             contraindication: '青光眼、重症肌无力患者禁用',
             manufacturer: '天津药物研究院药业有限责任公司',
-            notes: '精神类药品，需严格遵医嘱使用，密闭保存',
+            notes: '精神类药品，需密闭保存',
             createdAt: createDate,
             updatedAt: createDate
         },
@@ -724,9 +731,10 @@ function createMockMedicines() {
             expirationDate: '2025-02-28',
             productionDate: '2023-08-15',
             indication: '感冒、头痛、发热',
+            dosage: '开水冲服，一次 1 袋，一日 3 次',
             contraindication: '严重肝肾功能不全者禁用',
             manufacturer: '华润三九医药股份有限公司',
-            notes: '开水冲服，一次1袋，一日3次',
+            notes: '服药期间避免烟酒及辛辣食物',
             createdAt: createDate,
             updatedAt: createDate
         },
@@ -737,9 +745,10 @@ function createMockMedicines() {
             expirationDate: '2027-07-31',
             productionDate: '2024-07-01',
             indication: '补钙、预防骨质疏松',
+            dosage: '每日 1 片，随餐服用效果更佳',
             contraindication: '高钙血症患者禁用',
             manufacturer: '惠氏制药有限公司',
-            notes: '每日1片，随餐服用效果更佳',
+            notes: '避免与含铁补剂同服',
             createdAt: createDate,
             updatedAt: createDate
         },
@@ -750,9 +759,10 @@ function createMockMedicines() {
             expirationDate: '2026-01-15',
             productionDate: '2023-07-20',
             indication: '支气管炎、肺炎、膀胱炎',
+            dosage: '严格遵医嘱按疗程服用，不可擅自停药',
             contraindication: '对头孢类抗生素过敏者禁用',
             manufacturer: '广州白云山制药股份有限公司',
-            notes: '严格遵医嘱，疗程结束后继续服用2-3天',
+            notes: '疗程结束后继续观察症状变化',
             createdAt: createDate,
             updatedAt: createDate
         }
@@ -3279,8 +3289,9 @@ function openMedicineBoxModal() {
                 expirationDate: formatDate(15),
                 productionDate: '2024-06-15',
                 indication: '用于敏感菌所致的各种感染',
+                dosage: '饭后服用，每日3次，每次2粒',
                 manufacturer: '华润双鹤药业',
-                notes: '饭后服用，每日3次'
+                notes: '建议放在药箱上层便于取用'
             },
             {
                 id: 'med_' + Date.now() + '_2',
@@ -3288,9 +3299,10 @@ function openMedicineBoxModal() {
                 expirationDate: formatDate(45),
                 productionDate: '2024-09-01',
                 indication: '用于缓解轻至中度疼痛',
+                dosage: '整粒吞服，必要时服用',
                 manufacturer: '芬必得',
                 contraindication: '孕妇及哺乳期妇女禁用',
-                notes: '整粒吞服，不得嚼碎'
+                notes: '不得嚼碎'
             },
             {
                 id: 'med_' + Date.now() + '_3',
@@ -3298,8 +3310,9 @@ function openMedicineBoxModal() {
                 expirationDate: formatDate(85),
                 productionDate: '2024-12-01',
                 indication: '用于感冒引起的头痛、发热、鼻塞',
+                dosage: '开水冲服，一次1袋，一日3次',
                 manufacturer: '999感冒灵',
-                notes: '开水冲服'
+                notes: '夜间服用后注意休息'
             },
             {
                 id: 'med_' + Date.now() + '_4',
@@ -3307,6 +3320,7 @@ function openMedicineBoxModal() {
                 expirationDate: formatDate(-5),
                 productionDate: '2022-03-10',
                 indication: '用于预防坏血病',
+                dosage: '每日1次，每次1片',
                 manufacturer: '汤臣倍健',
                 notes: '已过期，请丢弃'
             },
@@ -3316,9 +3330,10 @@ function openMedicineBoxModal() {
                 expirationDate: formatDate(120),
                 productionDate: '2024-11-20',
                 indication: '用于胃溃疡、十二指肠溃疡',
+                dosage: '晨起吞服，每日1次，每次1粒',
                 manufacturer: '阿斯利康',
                 contraindication: '严重肾功能不全者禁用',
-                notes: '晨起吞服'
+                notes: '整粒吞服，不可咀嚼'
             },
             {
                 id: 'med_' + Date.now() + '_6',
@@ -3326,8 +3341,9 @@ function openMedicineBoxModal() {
                 expirationDate: formatDate(200),
                 productionDate: '2025-01-05',
                 indication: '用于过敏性鼻炎、慢性荨麻疹',
+                dosage: '每日1次，每次1片',
                 manufacturer: '开瑞坦',
-                notes: '每日1次，每次1片'
+                notes: '过敏季可提前备药'
             },
             {
                 id: 'med_' + Date.now() + '_7',
@@ -3335,6 +3351,7 @@ function openMedicineBoxModal() {
                 expirationDate: formatDate(7),
                 productionDate: '2024-08-15',
                 indication: '对头孢克肟敏感的菌所致感染',
+                dosage: '遵医嘱按疗程服用',
                 manufacturer: '白云山制药',
                 contraindication: '对头孢菌素类抗生素过敏者禁用',
                 notes: '即将过期，优先使用'
@@ -3345,8 +3362,9 @@ function openMedicineBoxModal() {
                 expirationDate: formatDate(300),
                 productionDate: '2025-02-01',
                 indication: '用于成人及儿童急、慢性腹泻',
+                dosage: '倒入50ml温水中搅匀服用',
                 manufacturer: '思密达',
-                notes: '倒入50ml温水中搅匀服用'
+                notes: '注意补充水分'
             }
         ];
         saveState();
@@ -3390,6 +3408,32 @@ function getMedicineTypeLabel(type) {
         'other': '其他'
     };
     return typeMap[type] || '';
+}
+
+function getMedicineTypeIconClass(type) {
+    const iconMap = {
+        'otc': 'type-otc',
+        'prescription': 'type-rx',
+        'psychotropic': 'type-psychotropic',
+        'supplement': 'type-supplement',
+        'chinese': 'type-chinese',
+        'other': 'type-other'
+    };
+    return iconMap[type] || 'type-default';
+}
+
+function renderMedicineTypeIcon(type, extraClass = '') {
+    const classText = ['medicine-type-icon-mark', getMedicineTypeIconClass(type), extraClass].filter(Boolean).join(' ');
+    const iconContentMap = {
+        otc: '<span class="medicine-type-icon-text" aria-hidden="true">OTC</span>',
+        prescription: '<span class="medicine-type-icon-text icon-single-cn" aria-hidden="true">外</span>',
+        psychotropic: '<span class="medicine-type-icon-text icon-psy" aria-hidden="true"><span>精神</span><span>药品</span></span>',
+        supplement: '<span class="medicine-type-icon-text icon-single-cn" aria-hidden="true">健</span>',
+        chinese: '<span class="medicine-type-icon-text icon-single-cn" aria-hidden="true">中</span>',
+        other: '<span class="medicine-type-icon-text icon-single-cn" aria-hidden="true">药</span>'
+    };
+    const innerText = iconContentMap[type] || '<span class="medicine-type-icon-text icon-single-cn" aria-hidden="true">药</span>';
+    return `<span class="${classText}" aria-label="${escapeHtml(getMedicineTypeLabel(type) || '药品类型')}">${innerText}</span>`;
 }
 
 function getFilteredMedicines() {
@@ -3476,11 +3520,12 @@ function renderMedicineList() {
         const days = getMedicineExpiryDays(med);
         const status = getMedicineExpiryStatus(days);
         const badgeLabel = getMedicineCardBadgeLabel(days);
+        const typeIcon = renderMedicineTypeIcon(med.type, 'compact');
         const imgHtml = med.image
-            ? `<img src="${med.image}" class="medicine-card-thumb" alt="${med.name}">`
-            : `<div class="medicine-card-thumb-placeholder"></div>`;
+            ? `<img src="${med.image}" class="medicine-card-thumb" alt="${escapeHtml(med.name)}">`
+            : `<div class="medicine-card-thumb-placeholder">${typeIcon}</div>`;
         const indicationHtml = med.indication
-            ? `<div class="medicine-card-indication">${med.indication}</div>`
+            ? `<div class="medicine-card-indication">${escapeHtml(med.indication)}</div>`
             : '<div class="medicine-card-indication medicine-card-indication-muted">暂未填写适应症说明</div>';
 
         return `<div class="medicine-card ${status.cardClass}" data-id="${med.id}">
@@ -3488,7 +3533,7 @@ function renderMedicineList() {
                 ${imgHtml}
                 <div class="medicine-card-body">
                     <div class="medicine-card-top">
-                        <div class="medicine-card-name">${med.name}</div>
+                        <div class="medicine-card-name">${escapeHtml(med.name)} ${typeIcon}</div>
                         <span class="medicine-expiry-badge ${status.className}">${badgeLabel}</span>
                     </div>
                     ${indicationHtml}
@@ -3509,6 +3554,7 @@ function openMedicineEditModal(med) {
     document.getElementById('medicineType').value = med ? med.type || '' : '';
     document.getElementById('medicineProductionDate').value = med ? med.productionDate || '' : '';
     document.getElementById('medicineIndication').value = med ? med.indication || '' : '';
+    document.getElementById('medicineDosage').value = med ? med.dosage || '' : '';
     document.getElementById('medicineContraindication').value = med ? med.contraindication || '' : '';
     document.getElementById('medicineManufacturer').value = med ? med.manufacturer || '' : '';
     document.getElementById('medicineNotes').value = med ? med.notes || '' : '';
@@ -3532,7 +3578,10 @@ function openMedicineDetailModal(med) {
     if (!med) return;
     currentDetailMedicineId = med.id;
 
-    document.getElementById('detailMedicineName').textContent = med.name || '';
+    const detailMedicineName = document.getElementById('detailMedicineName');
+    if (detailMedicineName) {
+        detailMedicineName.innerHTML = `${escapeHtml(med.name || '')} ${renderMedicineTypeIcon(med.type, 'compact')}`;
+    }
     document.getElementById('detailExpirationDate').textContent = med.expirationDate || '';
 
     const days = getMedicineExpiryDays(med);
@@ -3557,29 +3606,29 @@ function openMedicineDetailModal(med) {
 
     setDetailValue('detailProductionDate', med.productionDate);
     setDetailValue('detailIndication', med.indication);
-    setDetailValue('detailContraindication', med.contraindication);
+    const dosageValue = med.dosage || med.notes || '';
+    setDetailValue('detailDosage', dosageValue);
+    setDetailValue('detailContraindication', med.contraindication || '暂无禁忌说明');
     setDetailValue('detailManufacturer', med.manufacturer);
-    setDetailValue('detailNotes', med.notes);
+    setDetailValue('detailNotes', med.notes && med.notes !== dosageValue ? med.notes : '');
 
     const imgEl = document.getElementById('detailMedicineImage');
     const imgSection = document.getElementById('detailImageSection');
+    const imgPlaceholder = document.getElementById('detailMedicineImagePlaceholder');
     if (med.image) {
         imgEl.src = med.image;
-        imgSection.style.display = 'block';
+        imgEl.style.display = 'block';
+        if (imgPlaceholder) imgPlaceholder.style.display = 'none';
+        imgSection.style.display = 'flex';
     } else {
-        imgSection.style.display = 'none';
+        imgEl.removeAttribute('src');
+        imgEl.style.display = 'none';
+        if (imgPlaceholder) {
+            imgPlaceholder.innerHTML = `${renderMedicineTypeIcon(med.type)}<span>暂无药品图片</span>`;
+            imgPlaceholder.style.display = 'flex';
+        }
+        imgSection.style.display = 'flex';
     }
-
-    const formatDate = (isoString) => {
-        if (!isoString) return '';
-        const d = new Date(isoString);
-        return d.toLocaleString('zh-CN', {
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit'
-        });
-    };
-    setDetailValue('detailCreatedAt', formatDate(med.createdAt));
-    setDetailValue('detailUpdatedAt', formatDate(med.updatedAt));
 
     switchPage('medicine-detail');
 }
@@ -3608,6 +3657,7 @@ async function handleMedicineFormSubmit(e) {
                     type: document.getElementById('medicineType').value || '',
                     productionDate: document.getElementById('medicineProductionDate').value || '',
                     indication: document.getElementById('medicineIndication').value.trim(),
+                    dosage: document.getElementById('medicineDosage').value.trim(),
                     contraindication: document.getElementById('medicineContraindication').value.trim(),
                     manufacturer: document.getElementById('medicineManufacturer').value.trim(),
                     notes: document.getElementById('medicineNotes').value.trim(),
@@ -3623,6 +3673,7 @@ async function handleMedicineFormSubmit(e) {
                 type: document.getElementById('medicineType').value || '',
                 productionDate: document.getElementById('medicineProductionDate').value || '',
                 indication: document.getElementById('medicineIndication').value.trim(),
+                dosage: document.getElementById('medicineDosage').value.trim(),
                 contraindication: document.getElementById('medicineContraindication').value.trim(),
                 manufacturer: document.getElementById('medicineManufacturer').value.trim(),
                 notes: document.getElementById('medicineNotes').value.trim(),
