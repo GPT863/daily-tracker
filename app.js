@@ -3436,6 +3436,87 @@ function renderMedicineTypeIcon(type, extraClass = '') {
     return `<span class="${classText}" aria-label="${escapeHtml(getMedicineTypeLabel(type) || '药品类型')}">${innerText}</span>`;
 }
 
+function getMedicineTypeOptions() {
+    return [
+        { value: '', label: '请选择' },
+        { value: 'otc', label: '非处方药' },
+        { value: 'prescription', label: '处方药' },
+        { value: 'psychotropic', label: '精神类药品' },
+        { value: 'supplement', label: '保健品' },
+        { value: 'chinese', label: '中成药' },
+        { value: 'other', label: '其他' }
+    ];
+}
+
+function renderMedicineTypeOptionContent(value, label) {
+    if (!value) {
+        return `<span class="medicine-type-option-text">${escapeHtml(label)}</span>`;
+    }
+    return `${renderMedicineTypeIcon(value)}<span class="medicine-type-option-text">${escapeHtml(label)}</span>`;
+}
+
+function syncMedicineTypeSelectUI(value = '') {
+    const select = document.getElementById('medicineType');
+    const wrapper = document.getElementById('medicineTypeSelect');
+    const valueEl = document.getElementById('medicineTypeValue');
+    if (!select || !wrapper || !valueEl) return;
+
+    const option = getMedicineTypeOptions().find(item => item.value === value) || getMedicineTypeOptions()[0];
+    valueEl.innerHTML = renderMedicineTypeOptionContent(option.value, option.label);
+
+    wrapper.querySelectorAll('.medicine-type-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === value);
+        btn.setAttribute('aria-selected', btn.dataset.value === value ? 'true' : 'false');
+    });
+}
+
+function closeMedicineTypeDropdown() {
+    const wrapper = document.getElementById('medicineTypeSelect');
+    const trigger = document.getElementById('medicineTypeTrigger');
+    const menu = document.getElementById('medicineTypeMenu');
+    if (!wrapper || !trigger || !menu) return;
+    wrapper.classList.remove('open');
+    menu.classList.add('hidden');
+    trigger.setAttribute('aria-expanded', 'false');
+}
+
+function setupMedicineTypeCustomSelect() {
+    const select = document.getElementById('medicineType');
+    const wrapper = document.getElementById('medicineTypeSelect');
+    const trigger = document.getElementById('medicineTypeTrigger');
+    const menu = document.getElementById('medicineTypeMenu');
+    if (!select || !wrapper || !trigger || !menu) return;
+
+    menu.querySelectorAll('.medicine-type-option').forEach(btn => {
+        const option = getMedicineTypeOptions().find(item => item.value === btn.dataset.value);
+        if (option) {
+            btn.innerHTML = renderMedicineTypeOptionContent(option.value, option.label);
+        }
+    });
+
+    syncMedicineTypeSelectUI(select.value || '');
+
+    trigger.addEventListener('click', () => {
+        const isOpen = wrapper.classList.toggle('open');
+        menu.classList.toggle('hidden', !isOpen);
+        trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+
+    menu.querySelectorAll('.medicine-type-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            select.value = btn.dataset.value || '';
+            syncMedicineTypeSelectUI(select.value);
+            closeMedicineTypeDropdown();
+        });
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!wrapper.contains(event.target)) {
+            closeMedicineTypeDropdown();
+        }
+    });
+}
+
 function getFilteredMedicines() {
     const searchInput = document.getElementById('medicineSearchInput');
     const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
@@ -3552,6 +3633,7 @@ function openMedicineEditModal(med) {
     document.getElementById('medicineName').value = med ? med.name : '';
     document.getElementById('medicineExpirationDate').value = med ? med.expirationDate : '';
     document.getElementById('medicineType').value = med ? med.type || '' : '';
+    syncMedicineTypeSelectUI(document.getElementById('medicineType').value);
     document.getElementById('medicineProductionDate').value = med ? med.productionDate || '' : '';
     document.getElementById('medicineIndication').value = med ? med.indication || '' : '';
     document.getElementById('medicineDosage').value = med ? med.dosage || '' : '';
@@ -3744,6 +3826,8 @@ function setupMedicineEventListeners() {
 
     const medicineForm = document.getElementById('medicineForm');
     if (medicineForm) medicineForm.addEventListener('submit', handleMedicineFormSubmit);
+
+    setupMedicineTypeCustomSelect();
 
     // 药品表单取消按钮（右上角）
     const medicineEditCancelBtn = document.getElementById('medicineEditCancelBtn');

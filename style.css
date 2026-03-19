@@ -4572,6 +4572,97 @@ body.elder-mode .ai-result-content {
     color: #5d6470;
 }
 
+.medicine-type-native-select {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.medicine-type-select {
+    position: relative;
+}
+
+.medicine-type-select-trigger {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--text-color);
+    text-align: left;
+    cursor: pointer;
+}
+
+.medicine-type-select.open .medicine-type-select-trigger {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(91, 176, 108, 0.12);
+}
+
+.medicine-type-select-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+.medicine-type-select-arrow {
+    width: 10px;
+    height: 10px;
+    border-right: 2px solid #657082;
+    border-bottom: 2px solid #657082;
+    transform: rotate(45deg) translateY(-2px);
+    transition: transform 0.2s ease;
+    flex: 0 0 auto;
+}
+
+.medicine-type-select.open .medicine-type-select-arrow {
+    transform: rotate(-135deg) translateY(-1px);
+}
+
+.medicine-type-select-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    z-index: 40;
+    background: #fff;
+    border: 1px solid rgba(203, 213, 224, 0.95);
+    border-radius: 14px;
+    box-shadow: 0 14px 36px rgba(31, 41, 55, 0.14);
+    padding: 8px;
+}
+
+.medicine-type-option {
+    width: 100%;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    text-align: left;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+.medicine-type-option:hover,
+.medicine-type-option.active {
+    background: rgba(91, 176, 108, 0.1);
+}
+
+.medicine-type-option-text {
+    font-size: 0.96rem;
+}
+
 .medicine-type-icon-mark {
     display: inline-flex;
     align-items: center;
