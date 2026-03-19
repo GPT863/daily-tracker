@@ -17,6 +17,7 @@ let pendingSymptomImage = null;
 let medicines = [];
 let medicineSortOrder = 'asc';
 let pendingMedicineImage = null;
+let currentDetailMedicineId = null;
 let profile = {};
 let metadata = {};
 let activeReminderAlertId = null;
@@ -620,6 +621,144 @@ function createMockProfile() {
     };
 }
 
+function createMockMedicines() {
+    const today = new Date();
+    const createDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    return [
+        {
+            id: 'med_001',
+            name: '阿莫西林胶囊',
+            type: 'otc',
+            expirationDate: '2026-12-31',
+            productionDate: '2024-01-15',
+            indication: '细菌感染、上呼吸道感染、扁桃体炎',
+            contraindication: '青霉素过敏者禁用',
+            manufacturer: '哈药集团制药总厂',
+            notes: '存放于阴凉干燥处，每日3次，每次2粒',
+            createdAt: createDate,
+            updatedAt: createDate
+        },
+        {
+            id: 'med_002',
+            name: '布洛芬缓释胶囊',
+            type: 'otc',
+            expirationDate: '2025-08-20',
+            productionDate: '2023-08-01',
+            indication: '缓解轻至中度疼痛、发热',
+            contraindication: '孕妇及哺乳期妇女慎用',
+            manufacturer: '中美天津史克制药有限公司',
+            notes: '饭后服用，不可超过推荐剂量',
+            createdAt: createDate,
+            updatedAt: createDate
+        },
+        {
+            id: 'med_003',
+            name: '氯雷他定片',
+            type: 'otc',
+            expirationDate: '2027-03-15',
+            productionDate: '2024-03-01',
+            indication: '过敏性鼻炎、慢性荨麻疹',
+            contraindication: '严重肝肾功能不全者禁用',
+            manufacturer: '西安杨森制药有限公司',
+            notes: '季节性鼻炎发作时使用',
+            createdAt: createDate,
+            updatedAt: createDate
+        },
+        {
+            id: 'med_004',
+            name: '奥美拉唑肠溶胶囊',
+            type: 'prescription',
+            expirationDate: '2026-06-30',
+            productionDate: '2023-12-10',
+            indication: '胃溃疡、十二指肠溃疡、反流性食管炎',
+            contraindication: '严重肾功能不全者禁用',
+            manufacturer: '阿斯利康制药有限公司',
+            notes: '晨起空腹服用，整粒吞服',
+            createdAt: createDate,
+            updatedAt: createDate
+        },
+        {
+            id: 'med_005',
+            name: '维生素C泡腾片',
+            type: 'supplement',
+            expirationDate: '2025-11-25',
+            productionDate: '2023-11-01',
+            indication: '补充维生素C，增强免疫力',
+            contraindication: '肾结石患者慎用',
+            manufacturer: '拜耳医药保健有限公司',
+            notes: '每日1片，用温水冲服',
+            createdAt: createDate,
+            updatedAt: createDate
+        },
+        {
+            id: 'med_006',
+            name: '复方丹参滴丸',
+            type: 'chinese',
+            expirationDate: '2026-09-18',
+            productionDate: '2024-01-20',
+            indication: '胸闷、心绞痛、冠心病',
+            contraindication: '孕妇慎用',
+            manufacturer: '天士力医药集团股份有限公司',
+            notes: '舌下含服或吞服',
+            createdAt: createDate,
+            updatedAt: createDate
+        },
+        {
+            id: 'med_007',
+            name: '地西泮片',
+            type: 'psychotropic',
+            expirationDate: '2025-04-10',
+            productionDate: '2023-04-01',
+            indication: '焦虑、失眠、肌肉痉挛',
+            contraindication: '青光眼、重症肌无力患者禁用',
+            manufacturer: '天津药物研究院药业有限责任公司',
+            notes: '精神类药品，需严格遵医嘱使用，密闭保存',
+            createdAt: createDate,
+            updatedAt: createDate
+        },
+        {
+            id: 'med_008',
+            name: '感冒灵颗粒',
+            type: 'chinese',
+            expirationDate: '2025-02-28',
+            productionDate: '2023-08-15',
+            indication: '感冒、头痛、发热',
+            contraindication: '严重肝肾功能不全者禁用',
+            manufacturer: '华润三九医药股份有限公司',
+            notes: '开水冲服，一次1袋，一日3次',
+            createdAt: createDate,
+            updatedAt: createDate
+        },
+        {
+            id: 'med_009',
+            name: '钙尔奇D600片',
+            type: 'supplement',
+            expirationDate: '2027-07-31',
+            productionDate: '2024-07-01',
+            indication: '补钙、预防骨质疏松',
+            contraindication: '高钙血症患者禁用',
+            manufacturer: '惠氏制药有限公司',
+            notes: '每日1片，随餐服用效果更佳',
+            createdAt: createDate,
+            updatedAt: createDate
+        },
+        {
+            id: 'med_010',
+            name: '头孢克肟分散片',
+            type: 'prescription',
+            expirationDate: '2026-01-15',
+            productionDate: '2023-07-20',
+            indication: '支气管炎、肺炎、膀胱炎',
+            contraindication: '对头孢类抗生素过敏者禁用',
+            manufacturer: '广州白云山制药股份有限公司',
+            notes: '严格遵医嘱，疗程结束后继续服用2-3天',
+            createdAt: createDate,
+            updatedAt: createDate
+        }
+    ];
+}
+
 async function loadDemoData() {
     const shouldReplace = confirm('这会用示例数据覆盖当前本地活动、健康、症状和提醒记录，是否继续？');
     if (!shouldReplace) return;
@@ -629,6 +768,7 @@ async function loadDemoData() {
     allSymptomRecordsData = createMockSymptomRecords();
     allDailyNotesData = createMockDailyNotes();
     reminders = normalizeReminders(createMockReminders());
+    medicines = createMockMedicines();
     profile = createMockProfile();
     metadata.lastImportAt = new Date().toISOString();
     await persistAppState();
@@ -639,6 +779,7 @@ async function loadDemoData() {
     updateDisplay();
     updateRemindersDisplay();
     renderReminderTabs('today');
+    renderMedicineList();
     updateStorageStatus();
     showToast('示例数据已加载');
 }
@@ -667,6 +808,7 @@ async function resetAllData() {
     updateDisplay();
     updateRemindersDisplay();
     renderReminderTabs('today');
+    renderMedicineList();
     updateStorageStatus();
     showToast('本地数据已清空');
 }
@@ -996,6 +1138,8 @@ function setupEventListeners() {
             if (modal && modal.classList.contains('page-mode')) {
                 if (modalId === 'medicineEditModal') {
                     switchPage('medicine-box');
+                } else if (modalId === 'medicineDetailModal') {
+                    switchPage('medicine-box');
                 } else if (modalId === 'medicineBoxModal' || modalId === 'exportModal' ||
                            modalId === 'cloudSyncModal' || modalId === 'profileModal') {
                     switchPage('my');
@@ -1274,6 +1418,7 @@ function updatePageDisplay() {
     const profilePage = document.getElementById('profileModal');
     const medicineBoxPage = document.getElementById('medicineBoxModal');
     const medicineEditPage = document.getElementById('medicineEditModal');
+    const medicineDetailPage = document.getElementById('medicineDetailModal');
     const homeBtn = document.getElementById('homeBtn');
     const recordBtn = document.getElementById('recordBtn');
     const reminderBtn = document.getElementById('reminderBtn');
@@ -1289,6 +1434,7 @@ function updatePageDisplay() {
     const isProfile = currentPage === 'profile';
     const isMedicineBox = currentPage === 'medicine-box';
     const isMedicineEdit = currentPage === 'medicine-edit';
+    const isMedicineDetail = currentPage === 'medicine-detail';
     homePage.classList.toggle('hidden', !isHome);
     recordsPage.classList.toggle('hidden', !isRecords);
     reminderPage.classList.toggle('page-mode', isReminders);
@@ -1309,10 +1455,14 @@ function updatePageDisplay() {
         medicineEditPage.classList.toggle('page-mode', isMedicineEdit);
         medicineEditPage.style.display = isMedicineEdit ? 'block' : 'none';
     }
+    if (medicineDetailPage) {
+        medicineDetailPage.classList.toggle('page-mode', isMedicineDetail);
+        medicineDetailPage.style.display = isMedicineDetail ? 'block' : 'none';
+    }
     homeBtn.classList.toggle('nav-active', isHome);
     recordBtn.classList.toggle('nav-active', isRecords);
     reminderBtn.classList.toggle('nav-active', isReminders);
-    myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile || isMedicineBox || isMedicineEdit);
+    myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile || isMedicineBox || isMedicineEdit || isMedicineDetail);
 }
 
 function openReminderPage(tab = 'today') {
@@ -3221,6 +3371,27 @@ function getMedicineExpiryStatus(days) {
     return { label: `还剩 ${days} 天`, color: '#27ae60', className: 'safe', cardClass: 'expiry-safe' };
 }
 
+function getMedicineCardBadgeLabel(days) {
+    if (days < 0) return '已过期';
+    if (days <= 30) return '1个月后过期';
+    if (days <= 90) return '3个月后过期';
+    if (days <= 180) return '6个月后过期';
+    if (days <= 365) return '1年后过期';
+    return `${Math.ceil(days / 365)}年后过期`;
+}
+
+function getMedicineTypeLabel(type) {
+    const typeMap = {
+        'otc': 'OTC',
+        'prescription': '处方药',
+        'psychotropic': '精神类',
+        'supplement': '保健品',
+        'chinese': '中成药',
+        'other': '其他'
+    };
+    return typeMap[type] || '';
+}
+
 function getFilteredMedicines() {
     const searchInput = document.getElementById('medicineSearchInput');
     const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
@@ -3304,25 +3475,25 @@ function renderMedicineList() {
     listEl.innerHTML = filtered.map(med => {
         const days = getMedicineExpiryDays(med);
         const status = getMedicineExpiryStatus(days);
-        const metaParts = [];
-        if (med.manufacturer) metaParts.push(med.manufacturer);
-        if (med.indication) metaParts.push(med.indication.length > 20 ? med.indication.substring(0, 20) + '...' : med.indication);
-        const metaText = metaParts.join(' · ');
-        const imgHtml = med.image ? `<img src="${med.image}" class="medicine-card-image" alt="${med.name}">` : '';
+        const badgeLabel = getMedicineCardBadgeLabel(days);
+        const imgHtml = med.image
+            ? `<img src="${med.image}" class="medicine-card-thumb" alt="${med.name}">`
+            : `<div class="medicine-card-thumb-placeholder"></div>`;
+        const indicationHtml = med.indication
+            ? `<div class="medicine-card-indication">${med.indication}</div>`
+            : '<div class="medicine-card-indication medicine-card-indication-muted">暂未填写适应症说明</div>';
 
         return `<div class="medicine-card ${status.cardClass}" data-id="${med.id}">
-            <div class="medicine-card-body">
-                <div class="medicine-card-header">
-                    <span class="medicine-card-name">${med.name}</span>
-                    <span class="medicine-expiry-badge ${status.className}">${status.label}</span>
-                </div>
-                ${metaText ? `<div class="medicine-card-meta">${metaText}</div>` : ''}
-                <div class="medicine-card-actions">
-                    <button type="button" class="medicine-edit-btn" data-id="${med.id}">编辑</button>
-                    <button type="button" class="medicine-delete-btn" data-id="${med.id}">删除</button>
+            <div class="medicine-card-row">
+                ${imgHtml}
+                <div class="medicine-card-body">
+                    <div class="medicine-card-top">
+                        <div class="medicine-card-name">${med.name}</div>
+                        <span class="medicine-expiry-badge ${status.className}">${badgeLabel}</span>
+                    </div>
+                    ${indicationHtml}
                 </div>
             </div>
-            ${imgHtml}
         </div>`;
     }).join('');
 }
@@ -3335,6 +3506,7 @@ function openMedicineEditModal(med) {
     document.getElementById('medicineId').value = med ? med.id : '';
     document.getElementById('medicineName').value = med ? med.name : '';
     document.getElementById('medicineExpirationDate').value = med ? med.expirationDate : '';
+    document.getElementById('medicineType').value = med ? med.type || '' : '';
     document.getElementById('medicineProductionDate').value = med ? med.productionDate || '' : '';
     document.getElementById('medicineIndication').value = med ? med.indication || '' : '';
     document.getElementById('medicineContraindication').value = med ? med.contraindication || '' : '';
@@ -3354,6 +3526,62 @@ function openMedicineEditModal(med) {
     }
 
     switchPage('medicine-edit');
+}
+
+function openMedicineDetailModal(med) {
+    if (!med) return;
+    currentDetailMedicineId = med.id;
+
+    document.getElementById('detailMedicineName').textContent = med.name || '';
+    document.getElementById('detailExpirationDate').textContent = med.expirationDate || '';
+
+    const days = getMedicineExpiryDays(med);
+    const status = getMedicineExpiryStatus(days);
+    const expiryBadge = document.getElementById('detailExpiryBadge');
+    expiryBadge.textContent = status.label;
+    expiryBadge.className = `medicine-expiry-badge ${status.className}`;
+
+    const typeBadge = document.getElementById('detailTypeBadge');
+    const typeLabel = getMedicineTypeLabel(med.type);
+    if (typeLabel) {
+        typeBadge.textContent = typeLabel;
+        typeBadge.style.display = 'inline-block';
+    } else {
+        typeBadge.style.display = 'none';
+    }
+
+    const setDetailValue = (elementId, value) => {
+        const el = document.getElementById(elementId);
+        if (el) el.textContent = value || '';
+    };
+
+    setDetailValue('detailProductionDate', med.productionDate);
+    setDetailValue('detailIndication', med.indication);
+    setDetailValue('detailContraindication', med.contraindication);
+    setDetailValue('detailManufacturer', med.manufacturer);
+    setDetailValue('detailNotes', med.notes);
+
+    const imgEl = document.getElementById('detailMedicineImage');
+    const imgSection = document.getElementById('detailImageSection');
+    if (med.image) {
+        imgEl.src = med.image;
+        imgSection.style.display = 'block';
+    } else {
+        imgSection.style.display = 'none';
+    }
+
+    const formatDate = (isoString) => {
+        if (!isoString) return '';
+        const d = new Date(isoString);
+        return d.toLocaleString('zh-CN', {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit'
+        });
+    };
+    setDetailValue('detailCreatedAt', formatDate(med.createdAt));
+    setDetailValue('detailUpdatedAt', formatDate(med.updatedAt));
+
+    switchPage('medicine-detail');
 }
 
 async function handleMedicineFormSubmit(e) {
@@ -3377,6 +3605,7 @@ async function handleMedicineFormSubmit(e) {
                     ...medicines[idx],
                     name,
                     expirationDate,
+                    type: document.getElementById('medicineType').value || '',
                     productionDate: document.getElementById('medicineProductionDate').value || '',
                     indication: document.getElementById('medicineIndication').value.trim(),
                     contraindication: document.getElementById('medicineContraindication').value.trim(),
@@ -3391,6 +3620,7 @@ async function handleMedicineFormSubmit(e) {
                 id: 'med_' + Date.now(),
                 name,
                 expirationDate,
+                type: document.getElementById('medicineType').value || '',
                 productionDate: document.getElementById('medicineProductionDate').value || '',
                 indication: document.getElementById('medicineIndication').value.trim(),
                 contraindication: document.getElementById('medicineContraindication').value.trim(),
@@ -3498,19 +3728,36 @@ function setupMedicineEventListeners() {
     const removeMedicineImage = document.getElementById('removeMedicineImage');
     if (removeMedicineImage) removeMedicineImage.addEventListener('click', clearPendingMedicineImage);
 
-    // 事件委托：编辑/删除按钮
+    // 点击卡片进入详情页
     const medicineList = document.getElementById('medicineList');
     if (medicineList) {
         medicineList.addEventListener('click', (e) => {
-            const editBtn = e.target.closest('.medicine-edit-btn');
-            if (editBtn) {
-                const med = medicines.find(m => m.id === editBtn.dataset.id);
-                if (med) openMedicineEditModal(med);
-                return;
+            const card = e.target.closest('.medicine-card');
+            if (card) {
+                const med = medicines.find(m => m.id === card.dataset.id);
+                if (med) openMedicineDetailModal(med);
             }
-            const deleteBtn = e.target.closest('.medicine-delete-btn');
-            if (deleteBtn) {
-                deleteMedicine(deleteBtn.dataset.id);
+        });
+    }
+
+    // 详情页编辑按钮
+    const detailEditBtn = document.getElementById('medicineDetailEditBtn');
+    if (detailEditBtn) {
+        detailEditBtn.addEventListener('click', () => {
+            if (currentDetailMedicineId) {
+                const med = medicines.find(m => m.id === currentDetailMedicineId);
+                if (med) openMedicineEditModal(med);
+            }
+        });
+    }
+
+    // 详情页删除按钮
+    const detailDeleteBtn = document.getElementById('medicineDetailDeleteBtn');
+    if (detailDeleteBtn) {
+        detailDeleteBtn.addEventListener('click', () => {
+            if (currentDetailMedicineId && confirm('确定要删除这个药品吗？')) {
+                deleteMedicine(currentDetailMedicineId);
+                switchPage('medicine-box');
             }
         });
     }

@@ -1175,6 +1175,18 @@
                         <input type="date" id="medicineExpirationDate" required>
                     </div>
                     <div class="form-group">
+                        <label for="medicineType">药品类型</label>
+                        <select id="medicineType">
+                            <option value="">请选择</option>
+                            <option value="otc">OTC（非处方药）</option>
+                            <option value="prescription">处方药</option>
+                            <option value="psychotropic">精神类药品</option>
+                            <option value="supplement">保健品</option>
+                            <option value="chinese">中成药</option>
+                            <option value="other">其他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="medicineProductionDate">生产日期</label>
                         <input type="date" id="medicineProductionDate">
                     </div>
@@ -1214,6 +1226,65 @@
                 </form>
             </div>
         </div>
+    </div>
+
+    <!-- 药品详情页面 -->
+    <div id="medicineDetailModal" class="modal page-mode">
+        <div class="modal-content large">
+            <div class="modal-header page-nav-header">
+                <button type="button" class="page-back-btn" data-back-modal="medicineDetailModal" aria-label="返回"></button>
+                <h2>药品详情</h2>
+                <button type="button" id="medicineDetailEditBtn" class="header-add-btn">编辑</button>
+            </div>
+            <div class="medicine-detail-content">
+                <div class="medicine-detail-image-section" id="detailImageSection">
+                    <img id="detailMedicineImage" alt="药品图片">
+                </div>
+                <div class="medicine-detail-section">
+                    <h3 class="medicine-detail-name" id="detailMedicineName"></h3>
+                    <div class="medicine-detail-badges">
+                        <span class="medicine-type-badge" id="detailTypeBadge"></span>
+                        <span class="medicine-expiry-badge" id="detailExpiryBadge"></span>
+                    </div>
+                </div>
+                <div class="medicine-detail-section" id="detailExpirationDateSection">
+                    <div class="detail-label">过期日期</div>
+                    <div class="detail-value" id="detailExpirationDate"></div>
+                </div>
+                <div class="medicine-detail-section" id="detailProductionDateSection">
+                    <div class="detail-label">生产日期</div>
+                    <div class="detail-value" id="detailProductionDate"></div>
+                </div>
+                <div class="medicine-detail-section" id="detailIndicationSection">
+                    <div class="detail-label">适应症</div>
+                    <div class="detail-value" id="detailIndication"></div>
+                </div>
+                <div class="medicine-detail-section" id="detailContraindicationSection">
+                    <div class="detail-label">禁忌</div>
+                    <div class="detail-value" id="detailContraindication"></div>
+                </div>
+                <div class="medicine-detail-section" id="detailManufacturerSection">
+                    <div class="detail-label">厂商</div>
+                    <div class="detail-value" id="detailManufacturer"></div>
+                </div>
+                <div class="medicine-detail-section" id="detailNotesSection">
+                    <div class="detail-label">备注</div>
+                    <div class="detail-value" id="detailNotes"></div>
+                </div>
+                <div class="medicine-detail-meta">
+                    <span class="detail-meta-label">创建时间：</span>
+                    <span class="detail-meta-value" id="detailCreatedAt"></span>
+                </div>
+                <div class="medicine-detail-meta">
+                    <span class="detail-meta-label">更新时间：</span>
+                    <span class="detail-meta-value" id="detailUpdatedAt"></span>
+                </div>
+                <div class="medicine-detail-actions">
+                    <button type="button" id="medicineDetailDeleteBtn" class="medicine-detail-delete-btn">删除药品</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     </div>
 

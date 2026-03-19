@@ -11,7 +11,10 @@
       "Bash(curl -s http://170.106.101.55:8081/health --connect-timeout 5)",
       "Bash(curl -s -X POST http://170.106.101.55:8081/api/auth/login -H \"Content-Type: application/json\" -d '{\"\"account\"\":\"\"test\"\",\"\"password\"\":\"\"test123\"\"}' --connect-timeout 5)",
       "Bash(curl -s -w \"\\\\nHTTP_CODE:%{http_code}\\\\n\" http://170.106.101.55:8081/snapshot --connect-timeout 5)",
-      "Bash(echo \"EXIT: $?\")"
+      "Bash(echo \"EXIT: $?\")",
+      "mcp__chrome-devtools__navigate_page",
+      "mcp__chrome-devtools__take_snapshot",
+      "mcp__chrome-devtools__click"
     ]
   }
 }
