@@ -1541,50 +1541,43 @@ function getActivityTypeLabel(type) {
 
 function renderRecordActionButtons(editAction, deleteAction) {
     return `
-        <div class="record-card-actions">
-            <button type="button" class="record-card-action-btn" aria-label="编辑" onclick="${editAction}">✎</button>
-            <button type="button" class="record-card-action-btn danger" aria-label="删除" onclick="${deleteAction}">🗑</button>
+        <div class="reminder-detail-actions">
+            <button class="btn-action btn-edit" onclick="${editAction}">编辑</button>
+            <button class="btn-action btn-delete" onclick="${deleteAction}">删除</button>
         </div>
     `;
 }
 
-function renderRecordMetaChip(label) {
-    return `<span class="record-meta-chip">${escapeHtml(label)}</span>`;
-}
-
 function renderRecordCard({
-    id,
     accentType,
     badgeText,
+    headerMain,
+    headerSide = '',
     title,
-    description = '',
-    note = '',
-    meta = [],
+    notes = '',
     image = '',
     imageAlt = '',
     editAction,
     deleteAction
 }) {
     return `
-        <article class="record-card" data-id="${id}" data-type="${accentType}">
-            <div class="record-card-shell">
-                <div class="record-card-top">
-                    <span class="record-card-badge">${badgeText}</span>
-                    ${renderRecordActionButtons(editAction, deleteAction)}
+        <div class="reminder-detail-item record-detail-item" data-type="${accentType}">
+            <div class="reminder-detail-header">
+                <div>
+                    <span class="reminder-detail-time">${headerMain}</span>
+                    ${headerSide ? `<span class="reminder-detail-date">${headerSide}</span>` : ''}
                 </div>
-                <div class="record-card-title">${escapeHtml(title)}</div>
-                ${description ? `<div class="record-card-description">${escapeHtml(description)}</div>` : ''}
-                ${note ? `<div class="record-card-note">${escapeHtml(note)}</div>` : ''}
-                ${image ? `
-                    <div class="record-card-image-wrap">
-                        <img class="record-card-image" src="${image}" alt="${escapeHtml(imageAlt || title)}">
-                    </div>
-                ` : ''}
-                <div class="record-card-meta">
-                    ${meta.filter(Boolean).map(renderRecordMetaChip).join('')}
-                </div>
+                <div>${badgeText}</div>
             </div>
-        </article>
+            <div class="reminder-detail-title">${escapeHtml(title)}</div>
+            ${image ? `
+                <div class="reminder-detail-image-wrap">
+                    <img class="reminder-detail-image" src="${image}" alt="${escapeHtml(imageAlt || title)}">
+                </div>
+            ` : ''}
+            ${notes ? `<div class="reminder-detail-notes">${escapeHtml(notes)}</div>` : ''}
+            ${renderRecordActionButtons(editAction, deleteAction)}
+        </div>
     `;
 }
 
@@ -1731,15 +1724,12 @@ function updateTimeline() {
 function renderRecordActivityItem(activity) {
     const duration = getActivityDuration(activity);
     return renderRecordCard({
-        id: activity.id,
         accentType: activity.type,
         badgeText: `${typeIcons[activity.type] || '📝'} ${getActivityTypeLabel(activity.type)}`,
+        headerMain: getActivityTimeRangeText(activity),
+        headerSide: duration ? `${duration} 分钟` : '',
         title: activity.content,
-        description: activity.feeling || '暂未填写感受',
-        meta: [
-            `🕒 ${getActivityTimeRangeText(activity)}`,
-            duration ? `⏱ ${duration} 分钟` : '⏱ 未填写时长'
-        ],
+        notes: activity.feeling || '',
         image: activity.image || '',
         imageAlt: activity.content,
         editAction: `editActivity('${activity.id}')`,
@@ -1750,16 +1740,12 @@ function renderRecordActivityItem(activity) {
 function renderRecordHealthItem(record) {
     const valueText = `${record.value}${record.unit ? ` ${record.unit}` : ''}`;
     return renderRecordCard({
-        id: record.id,
         accentType: 'health',
         badgeText: `${healthTypeIcons[record.type] || '🩺'} ${healthTypeLabels[record.type] || '健康数据'}`,
+        headerMain: formatTime(record.time),
+        headerSide: healthTypeLabels[record.type] || '健康数据',
         title: valueText,
-        description: record.notes || '暂未填写测量备注',
-        note: '测量结果已记录到当天健康数据中',
-        meta: [
-            `🕒 ${formatTime(record.time)}`,
-            `📍 ${healthTypeLabels[record.type] || '健康数据'}`
-        ],
+        notes: record.notes || '',
         image: record.image || '',
         imageAlt: healthTypeLabels[record.type] || '健康数据',
         editAction: `editHealthRecord('${record.id}')`,
@@ -1769,16 +1755,12 @@ function renderRecordHealthItem(record) {
 
 function renderRecordSymptomItem(record) {
     return renderRecordCard({
-        id: record.id,
         accentType: 'symptom',
         badgeText: '🩹 症状',
+        headerMain: formatTime(record.time),
+        headerSide: record.image ? '附带图片' : '',
         title: record.description,
-        description: record.measures || '暂未填写处理措施',
-        note: record.measures ? '已记录症状处理措施' : '建议补充处理措施，便于后续回看',
-        meta: [
-            `🕒 ${formatTime(record.time)}`,
-            record.image ? '📷 附带图片' : '📷 无图片'
-        ],
+        notes: record.measures ? `处理措施：${record.measures}` : '',
         image: record.image || '',
         imageAlt: '症状图片',
         editAction: `editSymptomRecord('${record.id}')`,

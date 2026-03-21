@@ -1405,9 +1405,9 @@ body.elder-mode .form-actions button {
 
 .records-page-section {
     background: #fff;
-    border-radius: 22px;
+    border-radius: 18px;
     padding: 0;
-    box-shadow: var(--shadow);
+    box-shadow: none;
     border: 1px solid rgba(40,122,68,0.06);
     overflow: hidden;
 }
@@ -1415,26 +1415,25 @@ body.elder-mode .form-actions button {
 .records-page-topbar {
     display: flex;
     align-items: center;
-    padding: 18px 14px;
+    padding: 14px 18px;
     border-bottom: 1px solid var(--border-color);
     background: #fff;
 }
 
 .records-page-topbar h2 {
     margin: 0;
-    font-size: 1.35rem;
-    line-height: 1.2;
-    color: #173b24;
-    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--text-color);
+    font-weight: 700;
 }
 
 .records-hero {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 16px 14px;
+    padding: 14px;
     border-bottom: 1px solid var(--border-color);
-    background: linear-gradient(180deg, rgba(223, 245, 228, 0.3), rgba(255, 255, 255, 0.92));
+    background: #fafcfa;
 }
 
 .records-hero-image-wrap {
@@ -1460,29 +1459,29 @@ body.elder-mode .form-actions button {
 
 .records-hero-copy h2 {
     margin: 0 0 4px;
-    font-size: 1.05rem;
-    font-weight: 800;
-    color: #173b24;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-color);
 }
 
 .records-hero-copy p {
     margin: 0;
     font-size: 0.9rem;
-    line-height: 1.6;
+    line-height: 1.55;
     color: var(--text-secondary);
 }
 
 .records-primary-btn {
     border: none;
-    border-radius: 999px;
-    background: linear-gradient(135deg, #15693b, #1f7a3d 55%, #359d55);
+    border-radius: 11px;
+    background: #1f7a3d;
     color: white;
-    min-height: 54px;
-    padding: 0 24px;
-    font-size: 0.95rem;
+    min-height: 44px;
+    padding: 0 18px;
+    font-size: 0.92rem;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 14px 28px rgba(31,122,61,0.24);
+    box-shadow: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1491,7 +1490,7 @@ body.elder-mode .form-actions button {
 
 .records-primary-btn::before {
     content: '+';
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 800;
 }
 
@@ -1508,19 +1507,21 @@ body.elder-mode .form-actions button {
     border: none;
     background: transparent;
     color: var(--text-secondary);
-    min-height: 50px;
+    padding: 15px;
+    min-height: 0;
     font-size: 0.95rem;
-    font-weight: 600;
+    font-weight: 400;
     cursor: pointer;
     border-bottom: 3px solid transparent;
     white-space: nowrap;
-    transition: color 0.2s, background 0.2s, border-color 0.2s;
+    transition: all 0.3s;
 }
 
 .records-tab-btn.active {
     background: rgba(40, 122, 68, 0.04);
     color: var(--forest-color);
     border-bottom-color: var(--forest-color);
+    font-weight: 500;
 }
 
 .records-tab-btn:hover {
@@ -1530,7 +1531,7 @@ body.elder-mode .form-actions button {
 .records-stream {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     padding: 14px;
 }
 
@@ -1542,8 +1543,8 @@ body.elder-mode .form-actions button {
     background: var(--bg-color);
     border: 1px solid rgba(31, 122, 61, 0.08);
     border-left: 4px solid var(--forest-color);
-    border-radius: 16px;
-    padding: 14px;
+    border-radius: 10px;
+    padding: 12px;
     box-shadow: none;
 }
 
@@ -1561,7 +1562,7 @@ body.elder-mode .form-actions button {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .record-card-badge {
@@ -1579,21 +1580,21 @@ body.elder-mode .form-actions button {
 .record-card-title {
     font-size: 1rem;
     line-height: 1.5;
-    font-weight: 700;
+    font-weight: 400;
     color: var(--text-color);
+    margin-bottom: 5px;
 }
 
 .record-card-description {
-    margin-top: 6px;
     font-size: 0.92rem;
-    line-height: 1.65;
+    line-height: 1.6;
     color: var(--text-secondary);
 }
 
 .record-card-note {
-    margin-top: 8px;
+    margin-top: 6px;
     font-size: 0.9rem;
-    line-height: 1.6;
+    line-height: 1.55;
     color: var(--text-secondary);
     font-style: italic;
     padding-left: 0;
@@ -1619,7 +1620,7 @@ body.elder-mode .form-actions button {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-top: 12px;
+    margin-top: 10px;
 }
 
 .record-meta-chip {
@@ -1630,8 +1631,8 @@ body.elder-mode .form-actions button {
     border-radius: 0;
     background: transparent;
     color: var(--text-secondary);
-    font-size: 0.84rem;
-    font-weight: 600;
+    font-size: 0.85rem;
+    font-weight: 400;
 }
 
 .record-card-actions {
@@ -1668,7 +1669,7 @@ body.elder-mode .form-actions button {
 .records-primary-wrap {
     display: flex;
     justify-content: center;
-    padding: 8px 14px 18px;
+    padding: 12px 14px 16px;
     border-top: 1px solid rgba(31, 122, 61, 0.08);
 }
 
@@ -3900,11 +3901,11 @@ body.elder-mode .stats-card-value {
     }
 
     .records-page-topbar {
-        padding: 16px 12px;
+        padding: 14px 18px;
     }
 
     .records-page-topbar h2 {
-        font-size: 1.2rem;
+        font-size: 1.15rem;
     }
 
     .records-hero {
@@ -4248,6 +4249,60 @@ body {
     gap: 8px;
     padding: 5px;
 }
+
+/* 记录页与提醒页彻底同构 */
+.records-content {
+    padding: 0;
+}
+
+.records-tab-bar {
+    display: flex;
+    gap: 0;
+    padding: 0;
+    border-bottom: 1px solid var(--border-color);
+    overflow-x: auto;
+    background: #fff;
+}
+
+.records-tab-btn,
+.records-tab-btn.active,
+.records-tab-btn:hover {
+    flex: 1;
+    padding: 15px;
+    border: none;
+    background: none;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
+    white-space: nowrap;
+}
+
+.records-tab-btn.active {
+    color: var(--forest-color);
+    border-bottom-color: var(--forest-color);
+    font-weight: 500;
+}
+
+.records-tab-btn:hover {
+    background: rgba(40, 122, 68, 0.06);
+}
+
+.records-stream {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+}
+
+.record-detail-item[data-type="meal"] { border-left-color: #edb35a; }
+.record-detail-item[data-type="medication"] { border-left-color: #db6f8d; }
+.record-detail-item[data-type="exercise"] { border-left-color: #2f82ea; }
+.record-detail-item[data-type="sleep"] { border-left-color: #b56be7; }
+.record-detail-item[data-type="work"] { border-left-color: #4e9b89; }
+.record-detail-item[data-type="other"] { border-left-color: #90a4ae; }
+.record-detail-item[data-type="health"] { border-left-color: #5ca27c; }
+.record-detail-item[data-type="symptom"] { border-left-color: #3fa79c; }
 
 .my-panel {
     padding: 14px;
