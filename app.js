@@ -429,31 +429,60 @@ function saveTemplates() {
 }
 
 function createMockActivities() {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateKey = (offsetDays = 0) => {
+        const date = new Date();
+        date.setDate(date.getDate() + offsetDays);
+        return getDateKey(date);
+    };
 
     return {
-        [getDateKey(today)]: [
-            createMockActivity('a1', '07:10', 'sleep', '昨晚睡了7.5小时', '早上起床状态不错，精神比较稳定', null, createMockImageDataUri('睡眠', '#b8e6c6', '#5fae75', '月亮和叶片')),
-            createMockActivity('a2', '08:00', 'meal', '早餐：全麦面包、鸡蛋、牛奶', '吃完很踏实，胃里很舒服', 20, createMockImageDataUri('早餐', '#f5d68b', '#88b56a', '燕麦与鸡蛋')),
-            createMockActivity('a3', '09:00', 'medication', '维生素D 1粒', '无明显不适'),
-            createMockActivity('a4', '12:20', 'meal', '午餐：糙米饭、清炒西兰花、鸡胸肉', '清爽不油腻，下午不犯困', 30, createMockImageDataUri('午餐', '#d9f0c7', '#76a95d', '糙米饭和西兰花')),
-            createMockActivity('a5', '15:30', 'work', '整理本周健康记录', '复盘后更清楚自己的作息问题', 45),
-            createMockActivity('a6', '19:10', 'exercise', '快走 + 拉伸', '微微出汗，腿部放松很多', 40, createMockImageDataUri('运动', '#b7ead8', '#3c8f68', '快走与拉伸')),
-            createMockActivity('a7', '20:10', 'meal', '晚餐：南瓜粥和蔬菜沙拉', '晚餐轻一点，身体感觉更轻松', 25)
+        [dateKey(0)]: [
+            createMockActivity('a1', '06:35', 'sleep', '昨晚 23:10 入睡，睡眠约 7 小时 20 分', '起床后清醒度不错，但喉咙略干', null, createMockImageDataUri('睡眠', '#b8e6c6', '#5fae75', '夜间睡眠记录')),
+            createMockActivity('a2', '07:20', 'meal', '早餐：燕麦酸奶杯 + 水煮蛋 + 蓝莓', '胃部舒服，饱腹感稳定', 20, createMockImageDataUri('早餐', '#f5d68b', '#88b56a', '高纤早餐')),
+            createMockActivity('a3', '07:50', 'medication', '维生素D 1 粒 + 鱼油 1 粒', '无不适，饭后服用'),
+            createMockActivity('a4', '09:30', 'work', '整理本周活动与症状关联', '发现熬夜后更容易午后乏力', 35),
+            createMockActivity('a5', '12:15', 'meal', '午餐：糙米饭、清蒸鱼、时蔬', '清淡后下午更轻松', 30, createMockImageDataUri('午餐', '#d9f0c7', '#76a95d', '清淡午餐')),
+            createMockActivity('a6', '14:10', 'other', '午休 18 分钟（番茄钟）', '恢复精力，头脑更清楚', 18),
+            createMockActivity('a7', '18:35', 'exercise', '快走 4.2km + 拉伸 12 分钟', '微微出汗，心肺状态良好', 42, createMockImageDataUri('运动', '#b7ead8', '#3c8f68', '晚间有氧')),
+            createMockActivity('a8', '19:40', 'meal', '晚餐：南瓜粥、鸡胸肉沙拉', '晚饭轻食后胃部负担小', 25),
+            createMockActivity('a9', '21:10', 'medication', '益生菌 1 袋', '晚间肠胃感觉平稳'),
+            createMockActivity('a10', '22:30', 'sleep', '准备睡前放松：热水泡脚 + 关屏', '计划 23:00 前入睡', 20)
         ],
-        [getDateKey(yesterday)]: [
-            createMockActivity('b1', '07:40', 'sleep', '午休补觉30分钟', '下午精神恢复了一些', 30, createMockImageDataUri('午休', '#caefd4', '#6bb07e', '安静的靠枕')),
-            createMockActivity('b2', '08:15', 'meal', '早餐：燕麦粥', '暖胃，早上状态平稳', 15),
-            createMockActivity('b3', '12:05', 'medication', '降压药 1片', '饭后服用，没有明显不适'),
-            createMockActivity('b4', '18:40', 'exercise', '慢跑 5 公里', '心率偏高，但整体状态不错', 35, createMockImageDataUri('慢跑', '#c8f1d1', '#419a63', '公园跑道'))
+        [dateKey(-1)]: [
+            createMockActivity('b1', '06:50', 'sleep', '夜间醒来 1 次，总睡眠约 6 小时 50 分', '晨起略困', null),
+            createMockActivity('b2', '07:35', 'meal', '早餐：全麦吐司、鸡蛋、牛奶', '血糖波动感不明显', 18),
+            createMockActivity('b3', '08:10', 'work', '复盘昨天血压和饮食记录', '发现盐分摄入偏高', 25),
+            createMockActivity('b4', '12:05', 'meal', '午餐：番茄牛腩 + 西兰花 + 小米饭', '饱腹感偏强', 32),
+            createMockActivity('b5', '18:20', 'exercise', '慢跑 5km（配速 6\'40\"）', '后程有点累，但整体可控', 38, createMockImageDataUri('慢跑', '#c8f1d1', '#419a63', '公园跑道')),
+            createMockActivity('b6', '20:05', 'meal', '晚餐：杂粮粥 + 凉拌黄瓜', '清爽，睡前不胀', 20),
+            createMockActivity('b7', '21:30', 'other', '记录当天心情和压力源', '压力来自工作收尾，已拆解任务', 15)
         ],
-        [getDateKey(tomorrow)]: [
-            createMockActivity('c1', '07:30', 'sleep', '计划早起后记录睡眠情况', ''),
-            createMockActivity('c2', '19:00', 'exercise', '计划散步 30 分钟', '提前安排明天的运动节奏', 30)
+        [dateKey(-2)]: [
+            createMockActivity('c1', '07:10', 'sleep', '夜间睡眠 7 小时 45 分', '醒后精神较好'),
+            createMockActivity('c2', '08:00', 'meal', '早餐：豆浆 + 玉米 + 鸡蛋', '早餐后体感稳定', 18),
+            createMockActivity('c3', '12:20', 'meal', '午餐：鸡胸肉意面 + 生菜', '下午未犯困', 28),
+            createMockActivity('c4', '16:30', 'medication', '感冒灵颗粒 1 袋', '咽喉轻微不适时服用'),
+            createMockActivity('c5', '19:00', 'exercise', '室内骑行 30 分钟', '中等强度，心率可控', 30),
+            createMockActivity('c6', '22:10', 'sleep', '提前做睡前拉伸', '入睡更快', 15)
+        ],
+        [dateKey(-3)]: [
+            createMockActivity('d1', '07:30', 'sleep', '睡眠 6 小时 20 分', '起床偏疲劳'),
+            createMockActivity('d2', '08:20', 'meal', '早餐：小米粥 + 鸡蛋', '胃部舒服', 15),
+            createMockActivity('d3', '13:00', 'work', '外出办事步行较多', '下午腿部略酸', 60),
+            createMockActivity('d4', '19:15', 'meal', '晚餐：清蒸鱼 + 紫甘蓝', '较清淡', 25),
+            createMockActivity('d5', '21:40', 'other', '热敷颈肩 20 分钟', '肩颈放松明显', 20)
+        ],
+        [dateKey(-4)]: [
+            createMockActivity('e1', '07:00', 'sleep', '周末睡眠 8 小时', '恢复感明显', null),
+            createMockActivity('e2', '09:00', 'meal', '早餐：牛奶燕麦 + 坚果', '状态不错', 25),
+            createMockActivity('e3', '10:30', 'exercise', '公园快走 50 分钟', '心情放松', 50),
+            createMockActivity('e4', '12:40', 'meal', '午餐：番茄鸡蛋面', '适中', 20),
+            createMockActivity('e5', '20:30', 'other', '本周计划回顾', '目标更清晰', 30)
+        ],
+        [dateKey(1)]: [
+            createMockActivity('f1', '07:10', 'sleep', '计划早起后观察晨起心率', '明日计划'),
+            createMockActivity('f2', '18:50', 'exercise', '计划快走 30 分钟', '保持连续性', 30),
+            createMockActivity('f3', '21:30', 'other', '计划 22:30 前停止使用手机', '优化睡前节律', 10)
         ]
     };
 }
@@ -533,20 +562,39 @@ function createMockReminder(id, title, type, date, time, repeat, notes, image = 
 }
 
 function createMockHealthRecords() {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const dateKey = (offsetDays = 0) => {
+        const date = new Date();
+        date.setDate(date.getDate() + offsetDays);
+        return getDateKey(date);
+    };
 
     return {
-        [getDateKey(today)]: [
-            createMockHealthRecord('h1', '07:35', 'bloodPressure', '118/76', 'mmHg', '起床后静息测量', createMockImageDataUri('血压', '#d6efe0', '#6aa67f', '晨起测量记录')),
-            createMockHealthRecord('h2', '07:36', 'heartRate', '68', 'bpm', '晨起心率稳定'),
-            createMockHealthRecord('h3', '12:55', 'bloodSugar', '6.1', 'mmol/L', '午餐后1小时', createMockImageDataUri('血糖', '#f0d9cc', '#c98f7b', '试纸检测结果')),
-            createMockHealthRecord('h4', '21:20', 'uricAcid', '356', 'umol/L', '晚间复测')
+        [dateKey(0)]: [
+            createMockHealthRecord('h1', '06:45', 'bloodPressure', '116/74', 'mmHg', '起床后静息测量', createMockImageDataUri('血压', '#d6efe0', '#6aa67f', '晨起测量')),
+            createMockHealthRecord('h2', '06:46', 'heartRate', '66', 'bpm', '晨起心率'),
+            createMockHealthRecord('h3', '08:35', 'bloodSugar', '5.4', 'mmol/L', '早餐后 1 小时'),
+            createMockHealthRecord('h4', '13:10', 'bloodSugar', '6.2', 'mmol/L', '午餐后 1 小时', createMockImageDataUri('血糖', '#f0d9cc', '#c98f7b', '试纸结果')),
+            createMockHealthRecord('h5', '18:05', 'heartRate', '88', 'bpm', '运动后 8 分钟'),
+            createMockHealthRecord('h6', '21:15', 'uricAcid', '349', 'umol/L', '晚间检测'),
+            createMockHealthRecord('h7', '21:16', 'bloodLipid', 'TC 4.8 / TG 1.5', 'mmol/L', '家用设备参考值')
         ],
-        [getDateKey(yesterday)]: [
-            createMockHealthRecord('h5', '08:10', 'bloodPressure', '124/82', 'mmHg', '早餐前测量'),
-            createMockHealthRecord('h6', '18:20', 'heartRate', '92', 'bpm', '慢跑后10分钟', createMockImageDataUri('心率', '#f3d2d7', '#cf7e8b', '运动后监测'))
+        [dateKey(-1)]: [
+            createMockHealthRecord('h8', '07:10', 'bloodPressure', '123/80', 'mmHg', '睡眠不足当日'),
+            createMockHealthRecord('h9', '07:12', 'heartRate', '72', 'bpm', '晨起偏高'),
+            createMockHealthRecord('h10', '12:50', 'bloodSugar', '6.5', 'mmol/L', '午餐后 1 小时'),
+            createMockHealthRecord('h11', '18:30', 'heartRate', '94', 'bpm', '慢跑后恢复阶段', createMockImageDataUri('心率', '#f3d2d7', '#cf7e8b', '运动监测'))
+        ],
+        [dateKey(-2)]: [
+            createMockHealthRecord('h12', '07:00', 'bloodPressure', '119/77', 'mmHg', '晨测'),
+            createMockHealthRecord('h13', '20:20', 'bloodSugar', '5.8', 'mmol/L', '晚餐后 2 小时')
+        ],
+        [dateKey(-3)]: [
+            createMockHealthRecord('h14', '07:25', 'bloodPressure', '128/84', 'mmHg', '前一晚睡眠较差'),
+            createMockHealthRecord('h15', '21:00', 'heartRate', '76', 'bpm', '静息')
+        ],
+        [dateKey(-4)]: [
+            createMockHealthRecord('h16', '08:15', 'bloodPressure', '117/75', 'mmHg', '周末放松日'),
+            createMockHealthRecord('h17', '20:45', 'bloodSugar', '5.6', 'mmol/L', '晚餐后 2 小时')
         ]
     };
 }
@@ -565,18 +613,31 @@ function createMockHealthRecord(id, time, type, value, unit, notes = '', image =
 }
 
 function createMockSymptomRecords() {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const dateKey = (offsetDays = 0) => {
+        const date = new Date();
+        date.setDate(date.getDate() + offsetDays);
+        return getDateKey(date);
+    };
 
     return {
-        [getDateKey(today)]: [
-            createMockSymptomRecord('s1', '09:40', '轻微头痛，主要在太阳穴位置', '喝温水后休息 20 分钟，症状缓解', createMockImageDataUri('症状', '#f5ddcf', '#d38665', '头痛记录')),
-            createMockSymptomRecord('s2', '14:15', '午后有点反胃，胃里发胀', '暂停进食，慢走 10 分钟，喝了些温水', createMockImageDataUri('胃部不适', '#f7e6cf', '#d8a373', '胃部不适记录')),
-            createMockSymptomRecord('s3', '20:50', '喉咙发干，轻微刺痛', '减少说话，喝温水并观察是否加重', null)
+        [dateKey(0)]: [
+            createMockSymptomRecord('s1', '10:20', '轻微头痛，太阳穴胀感（2/10）', '补水 + 闭眼休息 15 分钟后缓解', createMockImageDataUri('头痛', '#f5ddcf', '#d38665', '轻度头痛')),
+            createMockSymptomRecord('s2', '14:35', '午后胃部发胀、轻微反酸', '慢走 10 分钟，减少咖啡摄入，30 分钟后改善', createMockImageDataUri('胃部不适', '#f7e6cf', '#d8a373', '饭后不适')),
+            createMockSymptomRecord('s3', '20:40', '咽喉偏干，吞咽时轻微刺痛', '温盐水漱口 + 温水补液，继续观察'),
+            createMockSymptomRecord('s4', '22:05', '肩颈紧绷，久坐后更明显', '热敷 20 分钟 + 拉伸，疼痛从 4/10 降到 2/10')
         ],
-        [getDateKey(yesterday)]: [
-            createMockSymptomRecord('s4', '21:10', '喉咙有点发紧，吞咽轻微不适', '减少说话，多喝温水，睡前观察', null)
+        [dateKey(-1)]: [
+            createMockSymptomRecord('s5', '09:15', '晨起鼻塞，间歇打喷嚏', '生理盐水冲洗鼻腔后缓解'),
+            createMockSymptomRecord('s6', '21:10', '喉咙轻微发紧，吞咽不适', '减少说话，多喝温水，睡前观察')
+        ],
+        [dateKey(-2)]: [
+            createMockSymptomRecord('s7', '16:40', '眼睛干涩，屏幕工作后酸胀', '20-20-20 眼保健法 + 人工泪液，症状减轻')
+        ],
+        [dateKey(-3)]: [
+            createMockSymptomRecord('s8', '13:25', '午饭后短暂犯困伴轻微头晕', '开窗通风 + 步行 8 分钟恢复')
+        ],
+        [dateKey(-4)]: [
+            createMockSymptomRecord('s9', '19:50', '运动后小腿酸胀', '泡沫轴放松 15 分钟，次日明显缓解')
         ]
     };
 }
@@ -593,18 +654,38 @@ function createMockSymptomRecord(id, time, description, measures = '', image = n
 }
 
 function createMockDailyNotes() {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const dateKey = (offsetDays = 0) => {
+        const date = new Date();
+        date.setDate(date.getDate() + offsetDays);
+        return getDateKey(date);
+    };
+
+    const buildUpdatedAt = (offsetDays = 0) => {
+        const date = new Date();
+        date.setDate(date.getDate() + offsetDays);
+        return date.toISOString();
+    };
 
     return {
-        [getDateKey(today)]: {
-            content: '今天总体状态平稳，午后略疲劳。晚饭后散步后感觉轻松，晚上尽量 23:00 前休息。',
-            updatedAt: new Date().toISOString()
+        [dateKey(0)]: {
+            content: '今天整体状态中等偏好。午后胃部轻微不适与进食速度偏快有关；晚间运动后心情改善，建议继续保持晚餐清淡与 23:00 前入睡。',
+            updatedAt: buildUpdatedAt(0)
         },
-        [getDateKey(yesterday)]: {
-            content: '昨天午后有轻微头痛，补水和短暂休息后缓解。后续继续观察睡眠质量。',
-            updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        [dateKey(-1)]: {
+            content: '昨日晨起血压略高，和前夜睡眠不足相关性明显。减少咖啡摄入后，晚间状态恢复。',
+            updatedAt: buildUpdatedAt(-1)
+        },
+        [dateKey(-2)]: {
+            content: '饮食和活动节奏较稳定，血糖波动较小。建议继续维持午后 10-15 分钟轻活动。',
+            updatedAt: buildUpdatedAt(-2)
+        },
+        [dateKey(-3)]: {
+            content: '工作强度偏高导致肩颈紧张，热敷和拉伸有效。后续可增加每小时起身活动提醒。',
+            updatedAt: buildUpdatedAt(-3)
+        },
+        [dateKey(-4)]: {
+            content: '周末整体恢复良好，睡眠补足后精神明显提升。下周重点保持稳定作息与规律运动。',
+            updatedAt: buildUpdatedAt(-4)
         }
     };
 }
