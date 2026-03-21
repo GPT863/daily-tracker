@@ -2327,6 +2327,27 @@ body.elder-mode .form-actions button {
     overflow-x: auto;
 }
 
+.reminder-header-actions {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#reminderHeaderAddBtn {
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--forest-color);
+    font-size: 0.98rem;
+    font-weight: 600;
+}
+
+#reminderHeaderAddBtn:hover {
+    background: transparent;
+    color: #1f7a3d;
+}
+
 .tab-btn {
     flex: 1;
     padding: 15px;
@@ -2447,6 +2468,81 @@ body.elder-mode .form-actions button {
 
 .reminder-form input[type="checkbox"] {
     width: auto;
+}
+
+#reminderFormModal.page-mode .modal-content {
+    background: #f7faf8;
+    border: 1px solid rgba(40, 122, 68, 0.08);
+}
+
+#reminderFormModal .modal-header {
+    background: #ffffff;
+    border-bottom: 1px solid rgba(40, 122, 68, 0.12);
+}
+
+#reminderFormModal .page-nav-header h2 {
+    font-size: 1.08rem;
+    letter-spacing: 0.2px;
+}
+
+#reminderFormModal .reminder-form {
+    padding: 16px 16px 20px;
+}
+
+#reminderFormModal .reminder-form .form-group {
+    margin-bottom: 16px;
+}
+
+#reminderFormModal .reminder-form .form-group label {
+    margin-bottom: 8px;
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #123524;
+}
+
+#reminderFormModal .reminder-form input,
+#reminderFormModal .reminder-form select,
+#reminderFormModal .reminder-form textarea {
+    border: 1.5px solid #c9d9cf;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+#reminderFormModal .reminder-form input,
+#reminderFormModal .reminder-form select {
+    min-height: 48px;
+    padding: 10px 12px;
+}
+
+#reminderFormModal .reminder-form textarea {
+    min-height: 92px;
+    padding: 10px 12px;
+}
+
+#reminderFormModal .reminder-form input:focus,
+#reminderFormModal .reminder-form select:focus,
+#reminderFormModal .reminder-form textarea:focus {
+    border-color: #2f8a55;
+    box-shadow: 0 0 0 3px rgba(47, 138, 85, 0.12);
+}
+
+#reminderFormModal .image-upload-card {
+    border-radius: 14px;
+    padding: 14px;
+}
+
+#reminderFormModal .form-actions {
+    margin-top: 18px;
+    padding-top: 8px;
+}
+
+#reminderFormModal .form-actions .btn-submit {
+    width: 100%;
+    border-radius: 12px;
+    min-height: 46px;
+    font-size: 1.02rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #2f8a55, #3da95f);
 }
 
 .modal.page-mode .reminder-content {

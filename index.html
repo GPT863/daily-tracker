@@ -713,15 +713,17 @@
         <div id="reminderModal" class="modal">
             <div class="modal-content large">
                 <div class="modal-header reminder-page-header">
-                    <h2>🔔 提醒管理</h2>
-                    <span class="close">&times;</span>
+                    <h2 id="reminderPageTitle">🔔 提醒管理</h2>
+                    <div class="reminder-header-actions">
+                        <button type="button" id="reminderHeaderAddBtn" class="header-add-btn" onclick="openReminderPage('add')">+新增</button>
+                        <span class="close">&times;</span>
+                    </div>
                 </div>
                 <div class="reminder-content">
                     <div class="reminder-tabs">
                         <button class="tab-btn active" data-tab="today">今日提醒</button>
                         <button class="tab-btn" data-tab="upcoming">即将到来</button>
                         <button class="tab-btn" data-tab="all">全部提醒</button>
-                        <button class="tab-btn" data-tab="add">添加提醒</button>
                     </div>
 
                     <div id="tab-today" class="tab-content active">
@@ -756,73 +758,80 @@
                         <div id="allReminderList" class="reminder-detail-list"></div>
                     </div>
 
-                    <div id="tab-add" class="tab-content">
-                        <form id="reminderForm" class="reminder-form">
-                            <input type="hidden" id="reminderId">
-                            <div class="form-group">
-                                <label for="reminderTitle">提醒内容</label>
-                                <input type="text" id="reminderTitle" placeholder="例如：该吃药了" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="reminderType">类型</label>
-                                <select id="reminderType">
-                                    <option value="meal">🍽️ 用餐</option>
-                                    <option value="medication">💊 用药</option>
-                                    <option value="exercise">🏃 运动</option>
-                                    <option value="sleep">😴 睡眠</option>
-                                    <option value="other">📌 其他</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="reminderDate">日期</label>
-                                <input type="date" id="reminderDate" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="reminderTime">时间</label>
-                                <input type="time" id="reminderTime" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="reminderRepeat">重复规则</label>
-                                <select id="reminderRepeat">
-                                    <option value="none">不重复</option>
-                                    <option value="daily">每天</option>
-                                    <option value="weekly">每周</option>
-                                    <option value="biweekly">每2周</option>
-                                    <option value="monthly">每月</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="reminderNotes">备注（可选）</label>
-                                <textarea id="reminderNotes" rows="2" placeholder="例如：降压药1片"></textarea>
-                            </div>
-
-                            <div class="form-group">
-                                <label>提醒图片</label>
-                                <div class="image-upload-card">
-                                    <div class="image-upload-actions">
-                                        <label for="reminderImageUpload" class="image-upload-btn">上传图片</label>
-                                    </div>
-                                    <input type="file" id="reminderImageUpload" accept="image/*" hidden>
-                                    <div id="reminderImageHint" class="image-upload-hint">点击上传图片后，可从相机拍照或从相册选择，为提醒附加图片说明。</div>
-                                    <div id="reminderImagePreview" class="activity-image-preview hidden">
-                                        <img id="reminderImagePreviewImg" alt="提醒图片预览">
-                                        <button type="button" id="removeReminderImage" class="remove-image-btn">移除图片</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-actions">
-                                <button type="button" class="btn-cancel">取消</button>
-                                <button type="submit" id="reminderSubmitBtn" class="btn-submit">添加提醒</button>
-                            </div>
-                        </form>
-                    </div>
                 </div>
+            </div>
+        </div>
+
+        <div id="reminderFormModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="reminderFormModal" aria-label="返回"></button>
+                    <h2 id="reminderFormModalTitle">🔔 添加提醒</h2>
+                    <button type="button" class="close page-cancel-btn">取消</button>
+                </div>
+                <form id="reminderForm" class="reminder-form">
+                    <input type="hidden" id="reminderId">
+                    <div class="form-group">
+                        <label for="reminderTitle">提醒内容</label>
+                        <input type="text" id="reminderTitle" placeholder="例如：该吃药了" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reminderType">类型</label>
+                        <select id="reminderType">
+                            <option value="meal">🍽️ 用餐</option>
+                            <option value="medication">💊 用药</option>
+                            <option value="exercise">🏃 运动</option>
+                            <option value="sleep">😴 睡眠</option>
+                            <option value="other">📌 其他</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reminderDate">日期</label>
+                        <input type="date" id="reminderDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reminderTime">时间</label>
+                        <input type="time" id="reminderTime" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reminderRepeat">重复规则</label>
+                        <select id="reminderRepeat">
+                            <option value="none">不重复</option>
+                            <option value="daily">每天</option>
+                            <option value="weekly">每周</option>
+                            <option value="biweekly">每2周</option>
+                            <option value="monthly">每月</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reminderNotes">备注（可选）</label>
+                        <textarea id="reminderNotes" rows="2" placeholder="例如：降压药1片"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>提醒图片</label>
+                        <div class="image-upload-card">
+                            <div class="image-upload-actions">
+                                <label for="reminderImageUpload" class="image-upload-btn">上传图片</label>
+                            </div>
+                            <input type="file" id="reminderImageUpload" accept="image/*" hidden>
+                            <div id="reminderImageHint" class="image-upload-hint">点击上传图片后，可从相机拍照或从相册选择，为提醒附加图片说明。</div>
+                            <div id="reminderImagePreview" class="activity-image-preview hidden">
+                                <img id="reminderImagePreviewImg" alt="提醒图片预览">
+                                <button type="button" id="removeReminderImage" class="remove-image-btn">移除图片</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" id="reminderSubmitBtn" class="btn-submit">添加提醒</button>
+                    </div>
+                </form>
             </div>
         </div>
 

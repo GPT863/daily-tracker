@@ -1246,6 +1246,8 @@ function setupEventListeners() {
                     switchPage('medicine-box');
                 } else if (modalId === 'activityModal' || modalId === 'healthModal' || modalId === 'symptomModal') {
                     switchPage('records');
+                } else if (modalId === 'reminderFormModal') {
+                    switchPage('reminders');
                 } else if (modalId === 'medicineBoxModal' || modalId === 'exportModal' ||
                            modalId === 'cloudSyncModal' || modalId === 'profileModal') {
                     switchPage('my');
@@ -1521,6 +1523,7 @@ function updatePageDisplay() {
     const homePage = document.getElementById('homePage');
     const recordsPage = document.getElementById('recordsPage');
     const reminderPage = document.getElementById('reminderModal');
+    const reminderFormPage = document.getElementById('reminderFormModal');
     const myPage = document.getElementById('myModal');
     const exportPage = document.getElementById('exportModal');
     const cloudSyncPage = document.getElementById('cloudSyncModal');
@@ -1544,6 +1547,7 @@ function updatePageDisplay() {
     const isHome = currentPage === 'home';
     const isRecords = currentPage === 'records';
     const isReminders = currentPage === 'reminders';
+    const isReminderAdd = currentPage === 'reminder-add';
     const isMy = currentPage === 'my';
     const isExport = currentPage === 'export';
     const isCloudSync = currentPage === 'cloud-sync';
@@ -1560,6 +1564,10 @@ function updatePageDisplay() {
     recordsPage.classList.toggle('hidden', !isRecords);
     reminderPage.classList.toggle('page-mode', isReminders);
     reminderPage.style.display = isReminders ? 'block' : 'none';
+    if (reminderFormPage) {
+        reminderFormPage.classList.toggle('page-mode', isReminderAdd);
+        reminderFormPage.style.display = isReminderAdd ? 'block' : 'none';
+    }
     myPage.classList.toggle('page-mode', isMy);
     myPage.style.display = isMy ? 'block' : 'none';
     exportPage.classList.toggle('page-mode', isExport);
@@ -1594,9 +1602,9 @@ function updatePageDisplay() {
     }
     homeBtn.classList.toggle('nav-active', isHome);
     recordBtn.classList.toggle('nav-active', isRecordFlowPage);
-    reminderBtn.classList.toggle('nav-active', isReminders);
+    reminderBtn.classList.toggle('nav-active', isReminders || isReminderAdd);
     myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile || isMedicineBox || isMedicineEdit || isMedicineDetail);
-    bottomActions?.classList.toggle('hidden', isRecordFormPage);
+    bottomActions?.classList.toggle('hidden', isRecordFormPage || isReminderAdd);
     document.body.classList.toggle('page-records', isRecordFlowPage);
     recordsHeaderMenuBtn?.classList.toggle('hidden', !isRecordFlowPage);
     recordsHeaderAvatarBtn?.classList.toggle('hidden', !isRecordFlowPage);
@@ -1606,9 +1614,18 @@ function updatePageDisplay() {
 }
 
 function openReminderPage(tab = 'today') {
+    if (tab === 'add') {
+        openReminderFormPage();
+        return;
+    }
     currentReminderTab = tab;
     switchPage('reminders');
     renderReminderTabs(tab);
+}
+
+function openReminderFormPage(reminder = null) {
+    populateReminderForm(reminder);
+    switchPage('reminder-add');
 }
 
 function openMySubPage(page) {
@@ -4059,6 +4076,7 @@ function setupReminderListeners() {
             renderReminderTabs(tab);
         });
     });
+    document.getElementById('reminderHeaderAddBtn')?.addEventListener('click', () => openReminderFormPage());
 
     // 提醒表单提交
     document.getElementById('reminderForm').addEventListener('submit', handleReminderSubmit);
@@ -4137,9 +4155,6 @@ function renderReminderTabs(tab) {
         case 'all':
             renderAllReminders();
             break;
-        case 'add':
-            populateReminderForm();
-            break;
     }
 }
 
@@ -4155,12 +4170,14 @@ function setDefaultReminderDate() {
 
 function populateReminderForm(reminder = null) {
     const form = document.getElementById('reminderForm');
+    const formTitle = document.getElementById('reminderFormModalTitle');
     form.reset();
     resetReminderImageInputs();
     clearPendingReminderImage();
 
     if (reminder) {
         editingReminderId = reminder.id;
+        if (formTitle) formTitle.textContent = '🔔 编辑提醒';
         document.getElementById('reminderId').value = reminder.id;
         document.getElementById('reminderTitle').value = reminder.title;
         document.getElementById('reminderType').value = reminder.type;
@@ -4172,6 +4189,7 @@ function populateReminderForm(reminder = null) {
         pendingReminderImage = reminder.image || null;
     } else {
         editingReminderId = null;
+        if (formTitle) formTitle.textContent = '🔔 添加提醒';
         document.getElementById('reminderId').value = '';
         document.getElementById('reminderSubmitBtn').textContent = '添加提醒';
         pendingReminderImage = null;
@@ -4477,6 +4495,7 @@ async function handleReminderSubmit(e) {
     requestNotificationPermission();
     showToast(wasEditing ? '提醒已更新！' : '提醒已添加！');
     submitLocks.reminder = false;
+    switchPage('reminders');
     renderReminderTabs('today');
     updateRemindersDisplay();
 }
@@ -4885,6 +4904,11 @@ function closeModal(modal) {
 
     if (modal.id === 'reminderModal' && currentPage === 'reminders') {
         switchPage('home');
+        return;
+    }
+
+    if (modal.id === 'reminderFormModal' && currentPage === 'reminder-add') {
+        switchPage('reminders');
         return;
     }
 
@@ -5491,8 +5515,7 @@ window.editReminder = function(id) {
         return;
     }
 
-    openReminderPage('add');
-    populateReminderForm(reminder);
+    openReminderFormPage(reminder);
 }
 
 function normalizeReminders(source) {
