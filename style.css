@@ -1911,7 +1911,7 @@ body.elder-mode .form-actions button {
 
 .page-nav-header {
     justify-content: flex-start;
-    gap: 12px;
+    gap: 6px;
 }
 
 .page-nav-header h2 {
