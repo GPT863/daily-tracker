@@ -1527,12 +1527,6 @@ function openCurrentRecordModal() {
     openModal();
 }
 
-function getRecordsPageKicker(view) {
-    if (view === 'health') return '当天测量';
-    if (view === 'symptom') return '症状追踪';
-    return '活动安排';
-}
-
 function getActivityTypeLabel(type) {
     const typeMap = {
         meal: '用餐',
@@ -1605,7 +1599,6 @@ function getCurrentRecordConfig() {
             actionLabel: '记录测量',
             emptyTitle: '今天还没有测量记录',
             emptyHint: '点击下方按钮添加第一条测量数据。',
-            kicker: getRecordsPageKicker('health'),
             items
         };
     }
@@ -1620,7 +1613,6 @@ function getCurrentRecordConfig() {
             actionLabel: '记录症状',
             emptyTitle: '今天还没有症状记录',
             emptyHint: '点击下方按钮记录症状变化和处理措施。',
-            kicker: getRecordsPageKicker('symptom'),
             items
         };
     }
@@ -1635,7 +1627,6 @@ function getCurrentRecordConfig() {
         actionLabel: '新增活动',
         emptyTitle: '今天还没有活动记录',
         emptyHint: '点击下方按钮添加第一条活动。',
-        kicker: getRecordsPageKicker('activity'),
         items
     };
 }
@@ -1645,28 +1636,20 @@ function sortTimeValues(a, b) {
 }
 
 function updateRecordsPage() {
-    const title = document.getElementById('recordsPageTitle');
-    const kicker = document.getElementById('recordsPageKicker');
-    const subtitle = document.getElementById('recordsPageSubtitle');
-    const summary = document.getElementById('recordsPageSummary');
     const actionBtn = document.getElementById('recordPrimaryActionBtn');
     const list = document.getElementById('recordsList');
     const emptyState = document.getElementById('recordsEmptyState');
     const emptyTitle = document.getElementById('recordsEmptyTitle');
     const emptyHint = document.getElementById('recordsEmptyHint');
     const appTitle = document.querySelector('.app-header h1');
-    if (!title || !kicker || !subtitle || !summary || !actionBtn || !list || !emptyState || !emptyTitle || !emptyHint) return;
+    if (!actionBtn || !list || !emptyState || !emptyTitle || !emptyHint) return;
 
     document.querySelectorAll('.records-tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.recordView === currentRecordView);
     });
 
     const config = getCurrentRecordConfig();
-    kicker.textContent = config.kicker;
-    title.textContent = config.title;
-    subtitle.textContent = config.subtitle;
     actionBtn.textContent = config.actionLabel;
-    summary.textContent = `共 ${config.items.length} 条`;
     emptyTitle.textContent = config.emptyTitle;
     emptyHint.textContent = config.emptyHint;
     if (appTitle && currentPage === 'records') {
