@@ -1696,12 +1696,7 @@ body.elder-mode .form-actions button {
 }
 
 .page-records .date-selector {
-    justify-content: space-between;
-    gap: 10px;
-    padding: 12px 14px;
-    border-radius: 24px;
-    background: linear-gradient(135deg, #116fd6 0%, #177de7 60%, #1b8df0 100%);
-    box-shadow: 0 18px 34px rgba(23, 125, 231, 0.22);
+    display: none;
 }
 
 .page-records .date-btn {
@@ -3892,11 +3887,6 @@ body.elder-mode .stats-card-value {
 
     .page-records .app-header h1 {
         font-size: 1.18rem;
-    }
-
-    .page-records .date-selector {
-        padding: 10px 12px;
-        border-radius: 22px;
     }
 
     .page-records .current-date-btn {
