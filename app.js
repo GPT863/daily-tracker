@@ -3939,8 +3939,11 @@ function setupMedicineEventListeners() {
 
 // ==================== 设置提醒相关事件监听 ====================
 function setupReminderListeners() {
+    const reminderModal = document.getElementById('reminderModal');
+    if (!reminderModal) return;
+
     // 标签切换
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+    reminderModal.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
         btn.addEventListener('click', () => {
             const tab = btn.dataset.tab;
             renderReminderTabs(tab);
@@ -3991,8 +3994,11 @@ function setupProfileListeners() {
 // 渲染提醒标签
 function renderReminderTabs(tab) {
     currentReminderTab = tab;
+    const reminderModal = document.getElementById('reminderModal');
+    if (!reminderModal) return;
+
     // 更新标签按钮状态
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+    reminderModal.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
         btn.classList.remove('active');
         if (btn.dataset.tab === tab) {
             btn.classList.add('active');
@@ -4000,7 +4006,7 @@ function renderReminderTabs(tab) {
     });
 
     // 隐藏所有标签内容
-    document.querySelectorAll('.tab-content').forEach(content => {
+    reminderModal.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
     });
 
