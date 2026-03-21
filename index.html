@@ -16,7 +16,13 @@
     <div class="app-container">
         <header class="app-header">
             <div class="header-top">
+                <button id="recordsHeaderMenuBtn" class="records-header-icon-btn hidden" type="button" aria-label="打开导航">
+                    <span class="records-header-menu-lines" aria-hidden="true"></span>
+                </button>
                 <h1>📅 今日活动记录</h1>
+                <button id="recordsHeaderAvatarBtn" class="records-header-avatar-btn hidden" type="button" aria-label="打开我的页面">
+                    <span class="records-header-avatar-face" aria-hidden="true">🧑🏻</span>
+                </button>
             </div>
             <div class="date-selector">
                 <button id="prevDay" class="date-btn">◀</button>
@@ -108,27 +114,31 @@
                 </section>
             </div>
 
-            <div id="recordsPage" class="app-page hidden">
-                <section class="records-page-section">
-                    <div class="records-page-header">
-                        <div>
-                            <h2 id="recordsPageTitle">记录</h2>
-                            <p id="recordsPageSubtitle" class="records-page-subtitle">按类型查看当天记录</p>
-                        </div>
-                        <button id="recordPrimaryActionBtn" class="records-primary-btn">新增活动</button>
-                    </div>
-                    <div class="records-tab-bar" role="tablist" aria-label="记录类型切换">
-                        <button id="recordTabActivity" class="records-tab-btn active" type="button" data-record-view="activity">活动</button>
-                        <button id="recordTabHealth" class="records-tab-btn" type="button" data-record-view="health">测量</button>
-                        <button id="recordTabSymptom" class="records-tab-btn" type="button" data-record-view="symptom">症状</button>
-                    </div>
-                    <div id="recordsList" class="timeline"></div>
-                    <div id="recordsEmptyState" class="empty-state">
-                        <p id="recordsEmptyTitle">今天还没有活动记录</p>
-                        <p id="recordsEmptyHint">点击右上角按钮添加第一条内容。</p>
-                    </div>
-                </section>
-            </div>
+	            <div id="recordsPage" class="app-page hidden">
+	                <section class="records-page-section">
+	                    <div class="records-page-header">
+	                        <div class="records-page-copy">
+	                            <span class="records-page-kicker" id="recordsPageKicker">当天记录</span>
+	                            <h2 id="recordsPageTitle">记录</h2>
+	                            <p id="recordsPageSubtitle" class="records-page-subtitle">按类型查看当天记录</p>
+	                        </div>
+	                        <span id="recordsPageSummary" class="records-page-summary">共 0 条</span>
+	                    </div>
+	                    <div class="records-tab-bar" role="tablist" aria-label="记录类型切换">
+	                        <button id="recordTabActivity" class="records-tab-btn active" type="button" data-record-view="activity">活动</button>
+	                        <button id="recordTabHealth" class="records-tab-btn" type="button" data-record-view="health">测量</button>
+	                        <button id="recordTabSymptom" class="records-tab-btn" type="button" data-record-view="symptom">症状</button>
+	                    </div>
+	                    <div id="recordsList" class="records-stream"></div>
+	                    <div id="recordsEmptyState" class="empty-state">
+	                        <p id="recordsEmptyTitle">今天还没有活动记录</p>
+	                        <p id="recordsEmptyHint">点击右上角按钮添加第一条内容。</p>
+	                    </div>
+	                    <div class="records-primary-wrap">
+	                        <button id="recordPrimaryActionBtn" class="records-primary-btn">新增活动</button>
+	                    </div>
+	                </section>
+	            </div>
         </main>
 
         <!-- 底部导航/FAB 按钮 -->
@@ -1131,21 +1141,14 @@
                     <button type="button" id="addMedicineHeaderBtn" class="header-add-btn">+ 添加</button>
                     <span class="close">&times;</span>
                 </div>
-                <div class="medicine-box-content">
-                    <div class="medicine-search-bar">
-                        <input type="text" id="medicineSearchInput" placeholder="搜索药品名称...">
-                    </div>
-                    <div class="medicine-filter-tabs" role="tablist">
-                        <button class="medicine-filter-btn active" data-filter="all">全部</button>
-                        <button class="medicine-filter-btn" data-filter="expired">已过期</button>
-                        <button class="medicine-filter-btn" data-filter="30">≤1月</button>
-                        <button class="medicine-filter-btn" data-filter="90">≤3月</button>
-                        <button class="medicine-filter-btn" data-filter="180">≤6月</button>
-                    </div>
-                    <div class="medicine-sort-bar">
-                        <span id="medicineCountLabel" class="medicine-count-label">共 0 种药品</span>
-                        <button id="medicineSortBtn" class="section-order-btn" type="button">过期日期 ↑</button>
-                    </div>
+	                <div class="medicine-box-content">
+	                    <div class="medicine-search-bar">
+	                        <input type="text" id="medicineSearchInput" placeholder="搜索药品名称...">
+	                    </div>
+	                    <div class="medicine-sort-bar">
+	                        <span id="medicineCountLabel" class="medicine-count-label">共 0 种药品</span>
+	                        <button id="medicineSortBtn" class="section-order-btn" type="button">过期日期 ↑</button>
+	                    </div>
                     <div id="medicineList" class="medicine-list"></div>
                     <div id="medicineEmptyState" class="empty-state small">
                         <p>药箱还是空的</p>

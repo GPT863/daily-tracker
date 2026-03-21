@@ -319,6 +319,7 @@ async function initializeStorageState() {
             symptomRecords: indexedState.symptomRecords || {},
             dailyNotes: indexedState.dailyNotes || {},
             reminders: indexedState.reminders || [],
+            medicines: indexedState.medicines || [],
             profile: indexedState.profile || {},
             metadata: {
                 ...getDefaultMetadata(),
@@ -395,6 +396,11 @@ async function initDB() {
         ...getDefaultMetadata(),
         ...(state.metadata || {})
     };
+
+    if (shouldRefreshLegacyMockMedicines(medicines)) {
+        medicines = createMockMedicines();
+        await persistAppState({ skipAutoCloudSync: true });
+    }
 
     // 加载模板
     loadTemplates();
@@ -624,14 +630,19 @@ function createMockProfile() {
 function createMockMedicines() {
     const today = new Date();
     const createDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const createDateOnly = (offsetDays) => {
+        const date = new Date(today);
+        date.setDate(date.getDate() + offsetDays);
+        return getDateKey(date);
+    };
 
     return [
         {
             id: 'med_001',
             name: '阿莫西林胶囊',
             type: 'otc',
-            expirationDate: '2026-12-31',
-            productionDate: '2024-01-15',
+            expirationDate: createDateOnly(420),
+            productionDate: createDateOnly(-420),
             indication: '细菌感染、上呼吸道感染、扁桃体炎',
             dosage: '每日 3 次，每次 2 粒，饭后服用',
             contraindication: '青霉素过敏者禁用',
@@ -644,8 +655,8 @@ function createMockMedicines() {
             id: 'med_002',
             name: '布洛芬缓释胶囊',
             type: 'otc',
-            expirationDate: '2025-08-20',
-            productionDate: '2023-08-01',
+            expirationDate: createDateOnly(-90),
+            productionDate: createDateOnly(-720),
             indication: '缓解轻至中度疼痛、发热',
             dosage: '口服。疼痛或发热时服用，间隔 4-6 小时一次',
             contraindication: '活动性消化道出血患者禁用',
@@ -658,8 +669,8 @@ function createMockMedicines() {
             id: 'med_003',
             name: '氯雷他定片',
             type: 'otc',
-            expirationDate: '2027-03-15',
-            productionDate: '2024-03-01',
+            expirationDate: createDateOnly(540),
+            productionDate: createDateOnly(-360),
             indication: '过敏性鼻炎、慢性荨麻疹',
             dosage: '每日 1 次，每次 1 片',
             contraindication: '对本品成分过敏者禁用',
@@ -672,8 +683,8 @@ function createMockMedicines() {
             id: 'med_004',
             name: '奥美拉唑肠溶胶囊',
             type: 'prescription',
-            expirationDate: '2026-06-30',
-            productionDate: '2023-12-10',
+            expirationDate: createDateOnly(75),
+            productionDate: createDateOnly(-480),
             indication: '胃溃疡、十二指肠溃疡、反流性食管炎',
             dosage: '晨起空腹服用，每日 1 次，每次 1 粒',
             contraindication: '对苯并咪唑类药物过敏者禁用',
@@ -686,8 +697,8 @@ function createMockMedicines() {
             id: 'med_005',
             name: '维生素C泡腾片',
             type: 'supplement',
-            expirationDate: '2025-11-25',
-            productionDate: '2023-11-01',
+            expirationDate: createDateOnly(18),
+            productionDate: createDateOnly(-540),
             indication: '补充维生素C，增强免疫力',
             dosage: '每日 1 片，用温水冲服',
             contraindication: '高草酸尿症患者慎用',
@@ -700,8 +711,8 @@ function createMockMedicines() {
             id: 'med_006',
             name: '复方丹参滴丸',
             type: 'chinese',
-            expirationDate: '2026-09-18',
-            productionDate: '2024-01-20',
+            expirationDate: createDateOnly(150),
+            productionDate: createDateOnly(-300),
             indication: '胸闷、心绞痛、冠心病',
             dosage: '一次 10 丸，一日 3 次，可舌下含服',
             contraindication: '孕妇禁用',
@@ -714,8 +725,8 @@ function createMockMedicines() {
             id: 'med_007',
             name: '地西泮片',
             type: 'psychotropic',
-            expirationDate: '2025-04-10',
-            productionDate: '2023-04-01',
+            expirationDate: createDateOnly(-30),
+            productionDate: createDateOnly(-840),
             indication: '焦虑、失眠、肌肉痉挛',
             dosage: '严格遵医嘱使用，不可自行加量或停药',
             contraindication: '青光眼、重症肌无力患者禁用',
@@ -728,8 +739,8 @@ function createMockMedicines() {
             id: 'med_008',
             name: '感冒灵颗粒',
             type: 'chinese',
-            expirationDate: '2025-02-28',
-            productionDate: '2023-08-15',
+            expirationDate: createDateOnly(-180),
+            productionDate: createDateOnly(-760),
             indication: '感冒、头痛、发热',
             dosage: '开水冲服，一次 1 袋，一日 3 次',
             contraindication: '严重肝肾功能不全者慎用',
@@ -742,8 +753,8 @@ function createMockMedicines() {
             id: 'med_009',
             name: '钙尔奇D600片',
             type: 'supplement',
-            expirationDate: '2027-07-31',
-            productionDate: '2024-07-01',
+            expirationDate: createDateOnly(720),
+            productionDate: createDateOnly(-260),
             indication: '补钙、预防骨质疏松',
             dosage: '每日 1 片，随餐服用效果更佳',
             contraindication: '高钙血症患者禁用',
@@ -756,8 +767,8 @@ function createMockMedicines() {
             id: 'med_010',
             name: '头孢克肟分散片',
             type: 'prescription',
-            expirationDate: '2026-01-15',
-            productionDate: '2023-07-20',
+            expirationDate: createDateOnly(260),
+            productionDate: createDateOnly(-620),
             indication: '支气管炎、肺炎、膀胱炎',
             dosage: '严格遵医嘱按疗程服用，不可擅自停药',
             contraindication: '对头孢类抗生素过敏者禁用',
@@ -1078,6 +1089,8 @@ function setupEventListeners() {
     document.getElementById('homeBtn').addEventListener('click', () => switchPage('home'));
     document.getElementById('recordBtn').addEventListener('click', () => switchPage('records'));
     document.getElementById('recordPrimaryActionBtn').addEventListener('click', openCurrentRecordModal);
+    document.getElementById('recordsHeaderMenuBtn')?.addEventListener('click', () => switchPage('home'));
+    document.getElementById('recordsHeaderAvatarBtn')?.addEventListener('click', () => switchPage('my'));
     document.querySelectorAll('.records-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => setCurrentRecordView(btn.dataset.recordView));
     });
@@ -1416,6 +1429,9 @@ function updateDisplay() {
 function switchPage(page) {
     currentPage = page;
     updatePageDisplay();
+    if (page === 'records') {
+        updateRecordsPage();
+    }
 }
 
 function updatePageDisplay() {
@@ -1433,6 +1449,9 @@ function updatePageDisplay() {
     const recordBtn = document.getElementById('recordBtn');
     const reminderBtn = document.getElementById('reminderBtn');
     const myBtn = document.getElementById('myBtn');
+    const appTitle = document.querySelector('.app-header h1');
+    const recordsHeaderMenuBtn = document.getElementById('recordsHeaderMenuBtn');
+    const recordsHeaderAvatarBtn = document.getElementById('recordsHeaderAvatarBtn');
     if (!homePage || !recordsPage || !reminderPage || !myPage || !exportPage || !cloudSyncPage || !profilePage || !homeBtn || !recordBtn || !reminderBtn || !myBtn) return;
 
     const isHome = currentPage === 'home';
@@ -1473,6 +1492,12 @@ function updatePageDisplay() {
     recordBtn.classList.toggle('nav-active', isRecords);
     reminderBtn.classList.toggle('nav-active', isReminders);
     myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile || isMedicineBox || isMedicineEdit || isMedicineDetail);
+    document.body.classList.toggle('page-records', isRecords);
+    recordsHeaderMenuBtn?.classList.toggle('hidden', !isRecords);
+    recordsHeaderAvatarBtn?.classList.toggle('hidden', !isRecords);
+    if (appTitle && !isRecords) {
+        appTitle.textContent = '📅 今日活动记录';
+    }
 }
 
 function openReminderPage(tab = 'today') {
@@ -1502,39 +1527,116 @@ function openCurrentRecordModal() {
     openModal();
 }
 
+function getRecordsPageKicker(view) {
+    if (view === 'health') return '当天测量';
+    if (view === 'symptom') return '症状追踪';
+    return '活动安排';
+}
+
+function getActivityTypeLabel(type) {
+    const typeMap = {
+        meal: '用餐',
+        medication: '用药',
+        exercise: '运动',
+        sleep: '睡眠',
+        work: '工作',
+        other: '其他'
+    };
+    return typeMap[type] || '记录';
+}
+
+function renderRecordActionButtons(editAction, deleteAction) {
+    return `
+        <div class="record-card-actions">
+            <button type="button" class="record-card-action-btn" aria-label="编辑" onclick="${editAction}">✎</button>
+            <button type="button" class="record-card-action-btn danger" aria-label="删除" onclick="${deleteAction}">🗑</button>
+        </div>
+    `;
+}
+
+function renderRecordMetaChip(label) {
+    return `<span class="record-meta-chip">${escapeHtml(label)}</span>`;
+}
+
+function renderRecordCard({
+    id,
+    accentType,
+    badgeText,
+    title,
+    description = '',
+    note = '',
+    meta = [],
+    image = '',
+    imageAlt = '',
+    editAction,
+    deleteAction
+}) {
+    return `
+        <article class="record-card" data-id="${id}" data-type="${accentType}">
+            <div class="record-card-shell">
+                <div class="record-card-top">
+                    <span class="record-card-badge">${badgeText}</span>
+                    ${renderRecordActionButtons(editAction, deleteAction)}
+                </div>
+                <div class="record-card-title">${escapeHtml(title)}</div>
+                ${description ? `<div class="record-card-description">${escapeHtml(description)}</div>` : ''}
+                ${note ? `<div class="record-card-note">${escapeHtml(note)}</div>` : ''}
+                ${image ? `
+                    <div class="record-card-image-wrap">
+                        <img class="record-card-image" src="${image}" alt="${escapeHtml(imageAlt || title)}">
+                    </div>
+                ` : ''}
+                <div class="record-card-meta">
+                    ${meta.filter(Boolean).map(renderRecordMetaChip).join('')}
+                </div>
+            </div>
+        </article>
+    `;
+}
+
 function getCurrentRecordConfig() {
     if (currentRecordView === 'health') {
+        const items = [...healthRecords]
+            .sort((a, b) => sortTimeValues(a.time, b.time))
+            .map(renderRecordHealthItem);
         return {
             title: '测量记录',
-            subtitle: '查看当天的健康测量数据',
+            subtitle: '集中查看当天的健康测量数据与备注',
             actionLabel: '记录测量',
             emptyTitle: '今天还没有测量记录',
-            emptyHint: '点击右上角按钮添加第一条测量数据。',
-            items: [...healthRecords].sort((a, b) => sortTimeValues(a.time, b.time)).map(renderHealthTimelineItem)
+            emptyHint: '点击下方按钮添加第一条测量数据。',
+            kicker: getRecordsPageKicker('health'),
+            items
         };
     }
 
     if (currentRecordView === 'symptom') {
+        const items = [...symptomRecords]
+            .sort((a, b) => sortTimeValues(a.time, b.time))
+            .map(renderRecordSymptomItem);
         return {
             title: '症状记录',
-            subtitle: '集中查看当天症状与处理情况',
+            subtitle: '集中查看当天症状变化、处理措施与图片',
             actionLabel: '记录症状',
             emptyTitle: '今天还没有症状记录',
-            emptyHint: '点击右上角按钮记录症状变化和处理措施。',
-            items: [...symptomRecords].sort((a, b) => sortTimeValues(a.time, b.time)).map(renderSymptomTimelineItem)
+            emptyHint: '点击下方按钮记录症状变化和处理措施。',
+            kicker: getRecordsPageKicker('symptom'),
+            items
         };
     }
 
+    const items = [...activities]
+        .map(normalizeActivity)
+        .sort((a, b) => sortTimeValues(getActivitySortTime(a), getActivitySortTime(b)))
+        .map(renderRecordActivityItem);
     return {
         title: '活动记录',
-        subtitle: '查看当天的饮食、运动、睡眠等活动',
+        subtitle: '查看当天的饮食、运动、睡眠等活动安排',
         actionLabel: '新增活动',
         emptyTitle: '今天还没有活动记录',
-        emptyHint: '点击右上角按钮添加第一条活动。',
-        items: [...activities]
-            .map(normalizeActivity)
-            .sort((a, b) => sortTimeValues(getActivitySortTime(a), getActivitySortTime(b)))
-            .map(renderActivityTimelineItem)
+        emptyHint: '点击下方按钮添加第一条活动。',
+        kicker: getRecordsPageKicker('activity'),
+        items
     };
 }
 
@@ -1544,24 +1646,32 @@ function sortTimeValues(a, b) {
 
 function updateRecordsPage() {
     const title = document.getElementById('recordsPageTitle');
+    const kicker = document.getElementById('recordsPageKicker');
     const subtitle = document.getElementById('recordsPageSubtitle');
+    const summary = document.getElementById('recordsPageSummary');
     const actionBtn = document.getElementById('recordPrimaryActionBtn');
     const list = document.getElementById('recordsList');
     const emptyState = document.getElementById('recordsEmptyState');
     const emptyTitle = document.getElementById('recordsEmptyTitle');
     const emptyHint = document.getElementById('recordsEmptyHint');
-    if (!title || !subtitle || !actionBtn || !list || !emptyState || !emptyTitle || !emptyHint) return;
+    const appTitle = document.querySelector('.app-header h1');
+    if (!title || !kicker || !subtitle || !summary || !actionBtn || !list || !emptyState || !emptyTitle || !emptyHint) return;
 
     document.querySelectorAll('.records-tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.recordView === currentRecordView);
     });
 
     const config = getCurrentRecordConfig();
+    kicker.textContent = config.kicker;
     title.textContent = config.title;
     subtitle.textContent = config.subtitle;
     actionBtn.textContent = config.actionLabel;
+    summary.textContent = `共 ${config.items.length} 条`;
     emptyTitle.textContent = config.emptyTitle;
     emptyHint.textContent = config.emptyHint;
+    if (appTitle && currentPage === 'records') {
+        appTitle.textContent = config.title;
+    }
 
     if (config.items.length === 0) {
         list.innerHTML = '';
@@ -1626,6 +1736,64 @@ function updateTimeline() {
             ? renderHealthTimelineItem(entry.data)
             : renderSymptomTimelineItem(entry.data)
     ).join('');
+}
+
+function renderRecordActivityItem(activity) {
+    const duration = getActivityDuration(activity);
+    return renderRecordCard({
+        id: activity.id,
+        accentType: activity.type,
+        badgeText: `${typeIcons[activity.type] || '📝'} ${getActivityTypeLabel(activity.type)}`,
+        title: activity.content,
+        description: activity.feeling || '暂未填写感受',
+        meta: [
+            `🕒 ${getActivityTimeRangeText(activity)}`,
+            duration ? `⏱ ${duration} 分钟` : '⏱ 未填写时长'
+        ],
+        image: activity.image || '',
+        imageAlt: activity.content,
+        editAction: `editActivity('${activity.id}')`,
+        deleteAction: `deleteActivity('${activity.id}')`
+    });
+}
+
+function renderRecordHealthItem(record) {
+    const valueText = `${record.value}${record.unit ? ` ${record.unit}` : ''}`;
+    return renderRecordCard({
+        id: record.id,
+        accentType: 'health',
+        badgeText: `${healthTypeIcons[record.type] || '🩺'} ${healthTypeLabels[record.type] || '健康数据'}`,
+        title: valueText,
+        description: record.notes || '暂未填写测量备注',
+        note: '测量结果已记录到当天健康数据中',
+        meta: [
+            `🕒 ${formatTime(record.time)}`,
+            `📍 ${healthTypeLabels[record.type] || '健康数据'}`
+        ],
+        image: record.image || '',
+        imageAlt: healthTypeLabels[record.type] || '健康数据',
+        editAction: `editHealthRecord('${record.id}')`,
+        deleteAction: `deleteHealthRecord('${record.id}')`
+    });
+}
+
+function renderRecordSymptomItem(record) {
+    return renderRecordCard({
+        id: record.id,
+        accentType: 'symptom',
+        badgeText: '🩹 症状',
+        title: record.description,
+        description: record.measures || '暂未填写处理措施',
+        note: record.measures ? '已记录症状处理措施' : '建议补充处理措施，便于后续回看',
+        meta: [
+            `🕒 ${formatTime(record.time)}`,
+            record.image ? '📷 附带图片' : '📷 无图片'
+        ],
+        image: record.image || '',
+        imageAlt: '症状图片',
+        editAction: `editSymptomRecord('${record.id}')`,
+        deleteAction: `deleteSymptomRecord('${record.id}')`
+    });
 }
 
 function renderActivityTimelineItem(activity) {
@@ -3270,13 +3438,13 @@ async function saveProfile() {
 
 // ==================== 药品管理 ====================
 
-function openMedicineBoxModal() {
+async function openMedicineBoxModal() {
     openMySubPage('medicine-box');
 
     // 如果列表为空，添加 mock 数据
     if (medicines.length === 0) {
         medicines = createMockMedicines();
-        saveState();
+        await persistAppState({ skipAutoCloudSync: true });
     }
 
     renderMedicineList();
@@ -3357,6 +3525,27 @@ function getMedicineTypeOptions() {
     ];
 }
 
+const legacyMockMedicineExpirationDates = {
+    med_001: '2026-12-31',
+    med_002: '2025-08-20',
+    med_003: '2027-03-15',
+    med_004: '2026-06-30',
+    med_005: '2025-11-25',
+    med_006: '2026-09-18',
+    med_007: '2025-04-10',
+    med_008: '2025-02-28',
+    med_009: '2027-07-31',
+    med_010: '2026-01-15'
+};
+
+function shouldRefreshLegacyMockMedicines(list) {
+    if (!Array.isArray(list) || list.length !== Object.keys(legacyMockMedicineExpirationDates).length) {
+        return false;
+    }
+
+    return list.every(med => legacyMockMedicineExpirationDates[med.id] === med.expirationDate);
+}
+
 function renderMedicineTypeOptionContent(value, label) {
     if (!value) {
         return `<span class="medicine-type-option-text">${escapeHtml(label)}</span>`;
@@ -3429,16 +3618,10 @@ function setupMedicineTypeCustomSelect() {
 function getFilteredMedicines() {
     const searchInput = document.getElementById('medicineSearchInput');
     const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
-    const activeFilterBtn = document.querySelector('.medicine-filter-btn.active');
-    const filter = activeFilterBtn ? activeFilterBtn.dataset.filter : 'all';
 
     let filtered = medicines.filter(med => {
         if (query && !med.name.toLowerCase().includes(query)) return false;
-        if (filter === 'all') return true;
-        const days = getMedicineExpiryDays(med);
-        if (filter === 'expired') return days < 0;
-        const maxDays = parseInt(filter);
-        return days >= 0 && days <= maxDays;
+        return true;
     });
 
     filtered.sort((a, b) => {
@@ -3450,18 +3633,6 @@ function getFilteredMedicines() {
     return filtered;
 }
 
-function getMedicineFilterCounts() {
-    const counts = { all: medicines.length, expired: 0, 30: 0, 90: 0, 180: 0 };
-    medicines.forEach(med => {
-        const days = getMedicineExpiryDays(med);
-        if (days < 0) counts.expired++;
-        if (days >= 0 && days <= 30) counts['30']++;
-        if (days >= 0 && days <= 90) counts['90']++;
-        if (days >= 0 && days <= 180) counts['180']++;
-    });
-    return counts;
-}
-
 function renderMedicineList() {
     const listEl = document.getElementById('medicineList');
     const emptyEl = document.getElementById('medicineEmptyState');
@@ -3469,21 +3640,6 @@ function renderMedicineList() {
     const sortBtn = document.getElementById('medicineSortBtn');
     const addBtn = document.getElementById('addMedicineBtn');
     if (!listEl) return;
-
-    // 更新 tab badge
-    const counts = getMedicineFilterCounts();
-    document.querySelectorAll('.medicine-filter-btn').forEach(btn => {
-        const f = btn.dataset.filter;
-        const count = counts[f] ?? 0;
-        const existingBadge = btn.querySelector('.medicine-filter-badge');
-        if (existingBadge) existingBadge.remove();
-        if (count > 0 || f === 'all') {
-            const badge = document.createElement('span');
-            badge.className = 'medicine-filter-badge';
-            badge.textContent = count;
-            btn.appendChild(badge);
-        }
-    });
 
     const filtered = getFilteredMedicines();
 
@@ -3761,14 +3917,6 @@ function setupMedicineEventListeners() {
 
     const medicineSortBtn = document.getElementById('medicineSortBtn');
     if (medicineSortBtn) medicineSortBtn.addEventListener('click', toggleMedicineSortOrder);
-
-    document.querySelectorAll('.medicine-filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.medicine-filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            renderMedicineList();
-        });
-    });
 
     const medicineImageUpload = document.getElementById('medicineImageUpload');
     if (medicineImageUpload) medicineImageUpload.addEventListener('change', handleMedicineImageChange);
