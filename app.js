@@ -1454,6 +1454,7 @@ function updatePageDisplay() {
     const recordBtn = document.getElementById('recordBtn');
     const reminderBtn = document.getElementById('reminderBtn');
     const myBtn = document.getElementById('myBtn');
+    const bottomActions = document.querySelector('.bottom-actions');
     const appTitle = document.querySelector('.app-header h1');
     const recordsHeaderMenuBtn = document.getElementById('recordsHeaderMenuBtn');
     const recordsHeaderAvatarBtn = document.getElementById('recordsHeaderAvatarBtn');
@@ -1472,6 +1473,7 @@ function updatePageDisplay() {
     const isActivityForm = currentPage === 'activity-form';
     const isHealthForm = currentPage === 'health-form';
     const isSymptomForm = currentPage === 'symptom-form';
+    const isRecordFormPage = isActivityForm || isHealthForm || isSymptomForm;
     const isRecordFlowPage = isRecords || isActivityForm || isHealthForm || isSymptomForm;
     homePage.classList.toggle('hidden', !isHome);
     recordsPage.classList.toggle('hidden', !isRecords);
@@ -1513,6 +1515,7 @@ function updatePageDisplay() {
     recordBtn.classList.toggle('nav-active', isRecordFlowPage);
     reminderBtn.classList.toggle('nav-active', isReminders);
     myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile || isMedicineBox || isMedicineEdit || isMedicineDetail);
+    bottomActions?.classList.toggle('hidden', isRecordFormPage);
     document.body.classList.toggle('page-records', isRecordFlowPage);
     recordsHeaderMenuBtn?.classList.toggle('hidden', !isRecordFlowPage);
     recordsHeaderAvatarBtn?.classList.toggle('hidden', !isRecordFlowPage);
