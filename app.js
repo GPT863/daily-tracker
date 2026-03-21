@@ -1596,6 +1596,7 @@ function getCurrentRecordConfig() {
         return {
             title: '测量记录',
             subtitle: '集中查看当天的健康测量数据与备注',
+            heroText: '记录当天的血压、心率、血糖等数据，便于持续观察身体变化。',
             actionLabel: '记录测量',
             emptyTitle: '今天还没有测量记录',
             emptyHint: '点击下方按钮添加第一条测量数据。',
@@ -1610,6 +1611,7 @@ function getCurrentRecordConfig() {
         return {
             title: '症状记录',
             subtitle: '集中查看当天症状变化、处理措施与图片',
+            heroText: '记录症状出现的时间、描述和处理措施，方便后续回顾与判断。',
             actionLabel: '记录症状',
             emptyTitle: '今天还没有症状记录',
             emptyHint: '点击下方按钮记录症状变化和处理措施。',
@@ -1624,6 +1626,7 @@ function getCurrentRecordConfig() {
     return {
         title: '活动记录',
         subtitle: '查看当天的饮食、运动、睡眠等活动安排',
+        heroText: '记录当天的饮食、运动、睡眠与用药安排，形成清晰的生活轨迹。',
         actionLabel: '新增活动',
         emptyTitle: '今天还没有活动记录',
         emptyHint: '点击下方按钮添加第一条活动。',
@@ -1636,19 +1639,23 @@ function sortTimeValues(a, b) {
 }
 
 function updateRecordsPage() {
+    const heroTitle = document.getElementById('recordsHeroTitle');
+    const heroText = document.getElementById('recordsHeroText');
     const actionBtn = document.getElementById('recordPrimaryActionBtn');
     const list = document.getElementById('recordsList');
     const emptyState = document.getElementById('recordsEmptyState');
     const emptyTitle = document.getElementById('recordsEmptyTitle');
     const emptyHint = document.getElementById('recordsEmptyHint');
     const appTitle = document.querySelector('.app-header h1');
-    if (!actionBtn || !list || !emptyState || !emptyTitle || !emptyHint) return;
+    if (!heroTitle || !heroText || !actionBtn || !list || !emptyState || !emptyTitle || !emptyHint) return;
 
     document.querySelectorAll('.records-tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.recordView === currentRecordView);
     });
 
     const config = getCurrentRecordConfig();
+    heroTitle.textContent = config.title;
+    heroText.textContent = config.heroText;
     actionBtn.textContent = config.actionLabel;
     emptyTitle.textContent = config.emptyTitle;
     emptyHint.textContent = config.emptyHint;

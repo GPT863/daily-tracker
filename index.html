@@ -116,10 +116,22 @@
 
 	            <div id="recordsPage" class="app-page hidden">
 	                <section class="records-page-section">
+	                    <div class="records-page-topbar">
+	                        <h2 id="recordsPageTopTitle">📝 记录管理</h2>
+	                    </div>
 	                    <div class="records-tab-bar" role="tablist" aria-label="记录类型切换">
 	                        <button id="recordTabActivity" class="records-tab-btn active" type="button" data-record-view="activity">活动</button>
 	                        <button id="recordTabHealth" class="records-tab-btn" type="button" data-record-view="health">测量</button>
 	                        <button id="recordTabSymptom" class="records-tab-btn" type="button" data-record-view="symptom">症状</button>
+	                    </div>
+	                    <div class="records-hero">
+	                        <div class="records-hero-image-wrap">
+	                            <img class="records-hero-image" src="./icons/app-icon.svg" alt="记录页面插图">
+	                        </div>
+	                        <div class="records-hero-copy">
+	                            <h2 id="recordsHeroTitle">活动记录</h2>
+	                            <p id="recordsHeroText">记录当天的活动、测量与症状变化，方便后续回看。</p>
+	                        </div>
 	                    </div>
 	                    <div id="recordsList" class="records-stream"></div>
 	                    <div id="recordsEmptyState" class="empty-state">
