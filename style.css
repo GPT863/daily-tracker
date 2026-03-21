@@ -1473,11 +1473,11 @@ body.elder-mode .form-actions button {
 
 .records-primary-btn {
     border: none;
-    border-radius: 11px;
-    background: #1f7a3d;
-    color: white;
-    min-height: 44px;
-    padding: 0 18px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--forest-color);
+    min-height: 36px;
+    padding: 0 8px;
     font-size: 0.92rem;
     font-weight: 700;
     cursor: pointer;
@@ -1485,13 +1485,11 @@ body.elder-mode .form-actions button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 0;
 }
 
-.records-primary-btn::before {
-    content: '+';
-    font-size: 1rem;
-    font-weight: 800;
+.records-primary-btn:hover {
+    background: rgba(31, 122, 61, 0.08);
 }
 
 .records-tab-bar {
@@ -4249,7 +4247,7 @@ body {
     border-radius: 0;
 }
 
-.records-primary-btn {
+.records-primary-wrap .records-primary-btn {
     width: 100%;
 }
 
