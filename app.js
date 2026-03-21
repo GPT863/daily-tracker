@@ -1631,7 +1631,14 @@ function sortTimeValues(a, b) {
     return timelineOrder === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
 }
 
+function getRecordsTopTitle(view) {
+    if (view === 'health') return '🩺 测量管理';
+    if (view === 'symptom') return '🩹 症状管理';
+    return '🏃 活动管理';
+}
+
 function updateRecordsPage() {
+    const topTitle = document.getElementById('recordsPageTopTitle');
     const heroTitle = document.getElementById('recordsHeroTitle');
     const heroText = document.getElementById('recordsHeroText');
     const actionBtn = document.getElementById('recordPrimaryActionBtn');
@@ -1640,7 +1647,7 @@ function updateRecordsPage() {
     const emptyTitle = document.getElementById('recordsEmptyTitle');
     const emptyHint = document.getElementById('recordsEmptyHint');
     const appTitle = document.querySelector('.app-header h1');
-    if (!heroTitle || !heroText || !actionBtn || !list || !emptyState || !emptyTitle || !emptyHint) return;
+    if (!topTitle || !heroTitle || !heroText || !actionBtn || !list || !emptyState || !emptyTitle || !emptyHint) return;
 
     document.querySelectorAll('.records-tab-btn').forEach(btn => {
         const isActive = btn.dataset.recordView === currentRecordView;
@@ -1653,6 +1660,7 @@ function updateRecordsPage() {
     });
 
     const config = getCurrentRecordConfig();
+    topTitle.textContent = getRecordsTopTitle(currentRecordView);
     heroTitle.textContent = config.title;
     heroText.textContent = config.heroText;
     actionBtn.textContent = config.actionLabel;
