@@ -4177,7 +4177,7 @@ function populateReminderForm(reminder = null) {
 
     if (reminder) {
         editingReminderId = reminder.id;
-        if (formTitle) formTitle.textContent = '🔔 编辑提醒';
+        if (formTitle) formTitle.textContent = '编辑提醒';
         document.getElementById('reminderId').value = reminder.id;
         document.getElementById('reminderTitle').value = reminder.title;
         document.getElementById('reminderType').value = reminder.type;
@@ -4189,7 +4189,7 @@ function populateReminderForm(reminder = null) {
         pendingReminderImage = reminder.image || null;
     } else {
         editingReminderId = null;
-        if (formTitle) formTitle.textContent = '🔔 添加提醒';
+        if (formTitle) formTitle.textContent = '添加提醒';
         document.getElementById('reminderId').value = '';
         document.getElementById('reminderSubmitBtn').textContent = '添加提醒';
         pendingReminderImage = null;
