@@ -1643,7 +1643,13 @@ function updateRecordsPage() {
     if (!heroTitle || !heroText || !actionBtn || !list || !emptyState || !emptyTitle || !emptyHint) return;
 
     document.querySelectorAll('.records-tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.recordView === currentRecordView);
+        const isActive = btn.dataset.recordView === currentRecordView;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        btn.style.color = isActive ? 'var(--forest-color)' : 'var(--text-secondary)';
+        btn.style.borderBottom = isActive ? '3px solid var(--forest-color)' : '3px solid transparent';
+        btn.style.fontWeight = isActive ? '500' : '400';
+        btn.style.background = isActive ? 'rgba(40, 122, 68, 0.04)' : 'transparent';
     });
 
     const config = getCurrentRecordConfig();

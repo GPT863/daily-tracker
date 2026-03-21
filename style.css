@@ -1528,6 +1528,14 @@ body.elder-mode .form-actions button {
     background: rgba(40, 122, 68, 0.06);
 }
 
+.records-tab-bar .records-tab-btn.active,
+.records-tab-bar .records-tab-btn[aria-selected="true"] {
+    color: var(--forest-color) !important;
+    border-bottom: 3px solid var(--forest-color) !important;
+    font-weight: 500 !important;
+    background: rgba(40, 122, 68, 0.04) !important;
+}
+
 .records-stream {
     display: flex;
     flex-direction: column;
