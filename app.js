@@ -1163,6 +1163,8 @@ function setupEventListeners() {
                     switchPage('medicine-box');
                 } else if (modalId === 'medicineDetailModal') {
                     switchPage('medicine-box');
+                } else if (modalId === 'activityModal' || modalId === 'healthModal' || modalId === 'symptomModal') {
+                    switchPage('records');
                 } else if (modalId === 'medicineBoxModal' || modalId === 'exportModal' ||
                            modalId === 'cloudSyncModal' || modalId === 'profileModal') {
                     switchPage('my');
@@ -1429,7 +1431,7 @@ function updateDisplay() {
 function switchPage(page) {
     currentPage = page;
     updatePageDisplay();
-    if (page === 'records') {
+    if (page === 'records' || page === 'activity-form' || page === 'health-form' || page === 'symptom-form') {
         updateRecordsPage();
     }
 }
@@ -1445,6 +1447,9 @@ function updatePageDisplay() {
     const medicineBoxPage = document.getElementById('medicineBoxModal');
     const medicineEditPage = document.getElementById('medicineEditModal');
     const medicineDetailPage = document.getElementById('medicineDetailModal');
+    const activityFormPage = document.getElementById('activityModal');
+    const healthFormPage = document.getElementById('healthModal');
+    const symptomFormPage = document.getElementById('symptomModal');
     const homeBtn = document.getElementById('homeBtn');
     const recordBtn = document.getElementById('recordBtn');
     const reminderBtn = document.getElementById('reminderBtn');
@@ -1464,6 +1469,10 @@ function updatePageDisplay() {
     const isMedicineBox = currentPage === 'medicine-box';
     const isMedicineEdit = currentPage === 'medicine-edit';
     const isMedicineDetail = currentPage === 'medicine-detail';
+    const isActivityForm = currentPage === 'activity-form';
+    const isHealthForm = currentPage === 'health-form';
+    const isSymptomForm = currentPage === 'symptom-form';
+    const isRecordFlowPage = isRecords || isActivityForm || isHealthForm || isSymptomForm;
     homePage.classList.toggle('hidden', !isHome);
     recordsPage.classList.toggle('hidden', !isRecords);
     reminderPage.classList.toggle('page-mode', isReminders);
@@ -1488,14 +1497,26 @@ function updatePageDisplay() {
         medicineDetailPage.classList.toggle('page-mode', isMedicineDetail);
         medicineDetailPage.style.display = isMedicineDetail ? 'block' : 'none';
     }
+    if (activityFormPage) {
+        activityFormPage.classList.toggle('page-mode', isActivityForm);
+        activityFormPage.style.display = isActivityForm ? 'block' : 'none';
+    }
+    if (healthFormPage) {
+        healthFormPage.classList.toggle('page-mode', isHealthForm);
+        healthFormPage.style.display = isHealthForm ? 'block' : 'none';
+    }
+    if (symptomFormPage) {
+        symptomFormPage.classList.toggle('page-mode', isSymptomForm);
+        symptomFormPage.style.display = isSymptomForm ? 'block' : 'none';
+    }
     homeBtn.classList.toggle('nav-active', isHome);
-    recordBtn.classList.toggle('nav-active', isRecords);
+    recordBtn.classList.toggle('nav-active', isRecordFlowPage);
     reminderBtn.classList.toggle('nav-active', isReminders);
     myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile || isMedicineBox || isMedicineEdit || isMedicineDetail);
-    document.body.classList.toggle('page-records', isRecords);
-    recordsHeaderMenuBtn?.classList.toggle('hidden', !isRecords);
-    recordsHeaderAvatarBtn?.classList.toggle('hidden', !isRecords);
-    if (appTitle && !isRecords) {
+    document.body.classList.toggle('page-records', isRecordFlowPage);
+    recordsHeaderMenuBtn?.classList.toggle('hidden', !isRecordFlowPage);
+    recordsHeaderAvatarBtn?.classList.toggle('hidden', !isRecordFlowPage);
+    if (appTitle && !isRecordFlowPage) {
         appTitle.textContent = '📅 今日活动记录';
     }
 }
@@ -1978,7 +1999,6 @@ function formatMinutesLabel(totalMinutes) {
 
 // 打开模态框
 function openModal(activity = null) {
-    const modal = document.getElementById('activityModal');
     const form = document.getElementById('activityForm');
     const title = document.getElementById('modalTitle');
 
@@ -2011,11 +2031,10 @@ function openModal(activity = null) {
     updateActivityDurationField();
     updateActivityImagePreview();
     renderActivityTemplates();
-    modal.style.display = 'block';
+    switchPage('activity-form');
 }
 
 function openHealthModal(record = null) {
-    const modal = document.getElementById('healthModal');
     const form = document.getElementById('healthForm');
     const title = document.getElementById('healthModalTitle');
 
@@ -2042,11 +2061,10 @@ function openHealthModal(record = null) {
     }
 
     updateHealthImagePreview();
-    modal.style.display = 'block';
+    switchPage('health-form');
 }
 
 function openSymptomModal(record = null) {
-    const modal = document.getElementById('symptomModal');
     const form = document.getElementById('symptomForm');
     const title = document.getElementById('symptomModalTitle');
 
@@ -2069,7 +2087,7 @@ function openSymptomModal(record = null) {
     }
 
     updateSymptomImagePreview();
-    modal.style.display = 'block';
+    switchPage('symptom-form');
 }
 
 function syncHealthUnitField() {
@@ -2297,7 +2315,7 @@ async function handleFormSubmit(e) {
         }
 
         updateDisplay();
-        document.getElementById('activityModal').style.display = 'none';
+        switchPage('records');
         pendingActivityImage = null;
         resetImageInputs();
         showToast(editingId ? '活动已更新！' : '活动已添加！');
@@ -2388,7 +2406,7 @@ async function handleHealthFormSubmit(e) {
         }
 
         updateDisplay();
-        document.getElementById('healthModal').style.display = 'none';
+        switchPage('records');
         pendingHealthImage = null;
         resetHealthImageInputs();
         showToast(editingHealthId ? '健康数据已更新！' : '健康数据已记录！');
@@ -2465,7 +2483,7 @@ async function handleSymptomFormSubmit(e) {
         }
 
         updateDisplay();
-        document.getElementById('symptomModal').style.display = 'none';
+        switchPage('records');
         pendingSymptomImage = null;
         resetSymptomImageInputs();
         showToast(editingSymptomId ? '症状记录已更新！' : '症状记录已保存！');
@@ -4796,6 +4814,13 @@ function closeModal(modal) {
         || (modal.id === 'profileModal' && currentPage === 'profile')
         || (modal.id === 'medicineBoxModal' && currentPage === 'medicine-box')) {
         switchPage('my');
+        return;
+    }
+
+    if ((modal.id === 'activityModal' && currentPage === 'activity-form')
+        || (modal.id === 'healthModal' && currentPage === 'health-form')
+        || (modal.id === 'symptomModal' && currentPage === 'symptom-form')) {
+        switchPage('records');
         return;
     }
 
