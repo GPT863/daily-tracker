@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>健康日记</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-top">
+                <button id="recordsHeaderMenuBtn" class="records-header-icon-btn hidden" type="button" aria-label="打开导航">
+                    <span class="records-header-menu-lines" aria-hidden="true"></span>
+                </button>
+                <h1>📅 今日活动记录</h1>
+                <button id="recordsHeaderAvatarBtn" class="records-header-avatar-btn hidden" type="button" aria-label="打开我的页面">
+                    <span class="records-header-avatar-face" aria-hidden="true">🧑🏻</span>
+                </button>
+            </div>
+            <div class="date-selector">
+                <button id="prevDay" class="date-btn">◀</button>
+                <div class="current-date-wrap">
+                    <button id="currentDate" class="current-date-btn" type="button"></button>
+                    <div id="currentDatePanel" class="current-date-panel hidden">
+                        <div class="date-calendar-header">
+                            <button id="calendarPrevMonth" type="button" class="date-calendar-nav">◀</button>
+                            <div id="calendarMonthLabel" class="date-calendar-month"></div>
+                            <button id="calendarNextMonth" type="button" class="date-calendar-nav">▶</button>
+                        </div>
+                        <div class="date-calendar-weekdays">
+                            <span>一</span>
+                            <span>二</span>
+                            <span>三</span>
+                            <span>四</span>
+                            <span>五</span>
+                            <span>六</span>
+                            <span>日</span>
+                        </div>
+                        <div id="calendarDayGrid" class="date-calendar-grid"></div>
+                        <div class="date-calendar-actions">
+                            <button id="calendarClearBtn" type="button" class="date-calendar-action">清除</button>
+                            <button id="calendarTodayBtn" type="button" class="date-calendar-action primary">今天</button>
+                        </div>
+                    </div>
+                </div>
+                <button id="nextDay" class="date-btn">▶</button>
+            </div>
+        </header>
+
+        <main class="app-main">
+            <div id="homePage" class="app-page">
+                <section class="health-section">
+                    <div class="section-heading">
+                        <h2>📋 健康数据</h2>
+                        <div class="section-tools">
+                            <button id="toggleHealthSectionBtn" class="section-order-btn">查看健康数据</button>
+                            <button id="addHealthBtnInline" class="section-order-btn">记录健康数据</button>
+                        </div>
+                    </div>
+                    <div id="healthSectionBody" class="health-section-body hidden">
+                        <div id="healthSummary" class="health-summary-grid"></div>
+                        <div id="healthEmptyState" class="empty-state small">
+                            <p>当天还没有健康数据</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="reminder-section">
+                    <div class="reminder-header">
+                        <h2>🔔 今日提醒</h2>
+                        <button id="viewAllReminders" class="text-btn">查看全部</button>
+                    </div>
+                    <div id="todayReminders" class="reminder-list"></div>
+                    <div id="noReminders" class="empty-state small">
+                        <p>今天没有提醒</p>
+                    </div>
+                </section>
+
+                <section class="daily-summary-section">
+                    <div class="section-heading">
+                        <h2>🧾 今日状态记录</h2>
+                    </div>
+                    <div id="dailySummaryCard" class="daily-summary-card">
+                        <textarea id="dailyNoteInput" class="daily-note-input" placeholder="记录今天的感受、状态变化、需要关注的事项..."></textarea>
+                        <div class="daily-note-actions">
+                            <span id="dailyNoteMeta" class="daily-note-meta">尚未保存</span>
+                            <div class="daily-note-action-buttons">
+                                <button id="saveDailyNoteBtn" class="section-order-btn">保存状态记录</button>
+                                <button id="quickAiDiagnosisBtn" class="section-order-btn">一键AI诊断</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="timeline-section">
+                    <div class="section-heading">
+                        <h2>📝 时间线</h2>
+                        <div class="section-tools">
+                            <button id="timelineOrderBtn" class="section-order-btn">倒序显示</button>
+                        </div>
+                    </div>
+                    <div id="timeline" class="timeline"></div>
+                    <div id="emptyState" class="empty-state">
+                        <p>今天还没有记录哦</p>
+                        <p>点击下方导航进入记录页添加内容吧！</p>
+                    </div>
+                </section>
+            </div>
+
+	            <div id="recordsPage" class="app-page hidden">
+	                <section class="records-page-section">
+	                    <div class="modal-header reminder-page-header records-page-topbar">
+	                        <h2 id="recordsPageTopTitle">🏃 活动管理</h2>
+	                        <button id="recordPrimaryActionBtn" class="records-primary-btn">+新增</button>
+	                    </div>
+	                    <div class="reminder-content records-content">
+	                        <div class="reminder-tabs records-tab-bar" role="tablist" aria-label="记录类型切换">
+	                            <button id="recordTabActivity" class="tab-btn records-tab-btn active" type="button" data-record-view="activity">活动</button>
+	                            <button id="recordTabHealth" class="tab-btn records-tab-btn" type="button" data-record-view="health">测量</button>
+	                            <button id="recordTabSymptom" class="tab-btn records-tab-btn" type="button" data-record-view="symptom">症状</button>
+	                        </div>
+	                        <div class="records-hero">
+	                            <div class="records-hero-image-wrap">
+	                                <img class="records-hero-image" src="./icons/app-icon.svg" alt="记录页面插图">
+	                            </div>
+	                            <div class="records-hero-copy">
+	                                <h2 id="recordsHeroTitle">活动记录</h2>
+	                                <p id="recordsHeroText">记录当天的活动、测量与症状变化，方便后续回看。</p>
+	                            </div>
+	                        </div>
+	                        <div id="recordsList" class="reminder-detail-list records-stream"></div>
+	                        <div id="recordsEmptyState" class="empty-state">
+	                            <p id="recordsEmptyTitle">今天还没有活动记录</p>
+	                            <p id="recordsEmptyHint">点击右上角按钮添加第一条内容。</p>
+	                        </div>
+	                    </div>
+	                </section>
+	            </div>
+        </main>
+
+        <!-- 底部导航/FAB 按钮 -->
+        <div class="bottom-actions">
+            <button id="homeBtn" class="fab-home nav-active">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">首页</span>
+            </button>
+            <button id="recordBtn" class="fab-record">
+                <span class="nav-icon">📝</span>
+                <span class="nav-label">记录</span>
+            </button>
+            <button id="reminderBtn" class="fab-reminder">
+                <span class="nav-icon">🔔</span>
+                <span class="nav-label">提醒</span>
+            </button>
+            <button id="myBtn" class="fab-my">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">我的</span>
+            </button>
+        </div>
+
+        <div id="myModal" class="modal">
+            <div class="modal-content my-modal-content">
+                <div class="modal-header my-page-header">
+                    <h2>👤 我的</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="my-panel">
+                    <button id="exportBtn" class="my-panel-action">
+                        <span class="my-panel-icon">📤</span>
+                        <span class="my-panel-text">
+                            <strong>导出数据</strong>
+                            <small>导出当前记录与统计数据</small>
+                        </span>
+                        <span class="my-panel-arrow" aria-hidden="true"></span>
+                    </button>
+                    <button id="cloudSyncBtn" class="my-panel-action">
+                        <span class="my-panel-icon">☁</span>
+                        <span class="my-panel-text">
+                            <strong>云同步</strong>
+                            <small>登录云端并同步本地数据</small>
+                        </span>
+                        <span class="my-panel-arrow" aria-hidden="true"></span>
+                    </button>
+                    <button id="profileBtn" class="my-panel-action">
+                        <span class="my-panel-icon">🪪</span>
+                        <span class="my-panel-text">
+                            <strong>个人信息</strong>
+                            <small>维护基础档案和长期健康信息</small>
+                        </span>
+                        <span class="my-panel-arrow" aria-hidden="true"></span>
+                    </button>
+                    <button id="medicineBoxBtn" class="my-panel-action">
+                        <span class="my-panel-icon">💊</span>
+                        <span class="my-panel-text">
+                            <strong>药品管理</strong>
+                            <small>管理家庭药品，追踪有效期</small>
+                        </span>
+                        <span class="my-panel-arrow" aria-hidden="true"></span>
+                    </button>
+                    <button id="seedDemoBtn" class="my-panel-action">
+                        <span class="my-panel-icon">📂</span>
+                        <span class="my-panel-text">
+                            <strong>示例数据</strong>
+                            <small>快速填充一份演示内容</small>
+                        </span>
+                    </button>
+                    <button id="resetDataBtn" class="my-panel-action danger">
+                        <span class="my-panel-icon">🗑</span>
+                        <span class="my-panel-text">
+                            <strong>清空数据</strong>
+                            <small>删除当前浏览器中的所有本地记录</small>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加/编辑活动表单模态框 -->
+        <div id="activityModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="activityModal" aria-label="返回"></button>
+                    <h2 id="modalTitle">添加活动</h2>
+                    <button type="button" class="close page-cancel-btn">取消</button>
+                </div>
+                <form id="activityForm" class="activity-form">
+                    <input type="hidden" id="activityId">
+
+                    <!-- 快速模板选择 -->
+                    <div class="template-section">
+                        <div class="template-header">
+                            <span class="template-label">📋 快速模板</span>
+                            <button type="button" id="saveAsTemplateBtn" class="save-template-btn">💾 存为模板</button>
+                        </div>
+                        <div id="templateList" class="template-list">
+                            <!-- 模板会动态生成 -->
+                        </div>
+                        <button type="button" id="addTemplateBtn" class="add-template-btn">+ 添加新模板</button>
+                    </div>
+
+                    <div class="form-group">
+                        <label>活动时间</label>
+                        <div class="time-range-grid">
+                            <div>
+                                <label for="activityStartTime" class="field-label-secondary">开始时间</label>
+                                <input type="time" id="activityStartTime" required step="60">
+                            </div>
+                            <div>
+                                <label for="activityEndTime" class="field-label-secondary">结束时间</label>
+                                <input type="time" id="activityEndTime" required step="60">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="activityType">类型</label>
+                        <select id="activityType" required>
+                            <option value="meal">🍽️ 用餐</option>
+                            <option value="medication">💊 用药</option>
+                            <option value="exercise">🏃 运动</option>
+                            <option value="sleep">😴 睡眠</option>
+                            <option value="work">💼 工作</option>
+                            <option value="other">📌 其他</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="activityContent">内容</label>
+                        <input type="text" id="activityContent" placeholder="例如：吃了红烧肉" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="activityFeeling">感受</label>
+                        <textarea id="activityFeeling" rows="3" placeholder="感觉如何？满足、疲惫、开心..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="activityDuration">时长（分钟）</label>
+                        <input type="number" id="activityDuration" min="0" placeholder="根据起止时间自动计算" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label>图片记录</label>
+                            <div class="image-upload-card">
+                                <div class="image-upload-actions">
+                                    <label for="activityImageUpload" class="image-upload-btn">上传图片</label>
+                                </div>
+                                <input type="file" id="activityImageUpload" accept="image/*" hidden>
+                            <div id="activityImageHint" class="image-upload-hint">点击上传图片后，可从相机拍照或从相册选择，图片会保存在本地浏览器中。</div>
+                            <div id="activityImagePreview" class="activity-image-preview hidden">
+                                <img id="activityImagePreviewImg" alt="活动图片预览">
+                                <button type="button" id="removeActivityImage" class="remove-image-btn">移除图片</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 统计模态框 -->
+        <div id="statsModal" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h2>📊 数据统计</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="stats-container">
+                    <!-- 统计周期选择 -->
+                    <div class="stats-period-tabs">
+                        <button class="stats-tab-btn active" data-period="week">本周统计</button>
+                        <button class="stats-tab-btn" data-period="month">本月统计</button>
+                    </div>
+
+                    <!-- 统计内容区域 -->
+                    <div id="statsContent" class="stats-content">
+                        <div class="stats-section">
+                            <h3 class="stats-section-title">运动与睡眠趋势</h3>
+
+                            <div class="chart-container">
+                                <h4 class="chart-title">运动次数趋势</h4>
+                                <div class="chart-wrapper">
+                                    <canvas id="activityTrendChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="chart-container">
+                                <h4 class="chart-title">单次运动时长趋势（分钟/次）</h4>
+                                <div class="chart-wrapper">
+                                    <canvas id="exerciseTrendChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="chart-container">
+                                <h4 class="chart-title">单日睡眠时长趋势（小时）</h4>
+                                <div class="chart-wrapper">
+                                    <canvas id="sleepTrendChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 空状态 -->
+                        <div id="statsEmptyState" class="stats-empty-state hidden">
+                            <div class="stats-empty-icon">📊</div>
+                            <div class="stats-empty-text">该时间段暂无数据</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模板管理模态框 -->
+        <div id="templateModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>📋 模板管理</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="template-manager-content">
+                    <div id="templateManagerList" class="template-manager-list">
+                        <!-- 模板列表会动态生成 -->
+                    </div>
+                    <div id="templateEmptyState" class="template-empty-state">
+                        <p>还没有保存任何模板</p>
+                        <p>点击下方按钮创建第一个模板吧！</p>
+                    </div>
+                    <button id="createTemplateBtn" class="create-template-btn">+ 创建新模板</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加/编辑模板模态框 -->
+        <div id="templateEditModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="templateEditTitle">创建模板</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <form id="templateForm" class="activity-form">
+                    <input type="hidden" id="templateId">
+
+                    <div class="form-group">
+                        <label for="templateName">模板名称 *</label>
+                        <input type="text" id="templateName" placeholder="例如：降压药、晨跑" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="templateType">活动类型 *</label>
+                        <select id="templateType" required>
+                            <option value="meal">🍽️ 用餐</option>
+                            <option value="medication">💊 用药</option>
+                            <option value="exercise">🏃 运动</option>
+                            <option value="sleep">😴 睡眠</option>
+                            <option value="work">💼 工作</option>
+                            <option value="other">📌 其他</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="templateContent">内容 *</label>
+                        <input type="text" id="templateContent" placeholder="例如：降压药 1片" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="templateFeeling">感受（可选）</label>
+                        <input type="text" id="templateFeeling" placeholder="例如：无不适">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="templateDuration">时长（分钟，可选）</label>
+                        <input type="number" id="templateDuration" min="0" placeholder="例如：30">
+                    </div>
+
+                    <div class="form-group">
+                        <label>模板图标</label>
+                        <div class="template-icon-selector">
+                            <button type="button" class="template-icon-option" data-icon="💊" data-selected="false">💊</button>
+                            <button type="button" class="template-icon-option" data-icon="🏃" data-selected="false">🏃</button>
+                            <button type="button" class="template-icon-option" data-icon="🍽️" data-selected="false">🍽️</button>
+                            <button type="button" class="template-icon-option" data-icon="😴" data-selected="false">😴</button>
+                            <button type="button" class="template-icon-option" data-icon="💼" data-selected="false">💼</button>
+                            <button type="button" class="template-icon-option" data-icon="📌" data-selected="false">📌</button>
+                            <button type="button" class="template-icon-option" data-icon="⭐" data-selected="false">⭐</button>
+                            <button type="button" class="template-icon-option" data-icon="❤️" data-selected="false">❤️</button>
+                        </div>
+                        <input type="hidden" id="templateIcon" value="💊">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel">取消</button>
+                        <button type="submit" class="btn-submit">保存模板</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 导出模态框 -->
+        <div id="exportModal" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="exportModal" aria-label="返回"></button>
+                    <h2>数据管理</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="export-options">
+                    <div class="storage-panel">
+                        <div class="storage-panel-header">
+                            <strong>存储状态</strong>
+                            <span id="storageEngineBadge" class="storage-badge">检测中</span>
+                        </div>
+                        <div id="storageUsageText" class="storage-usage-text">正在读取存储信息...</div>
+                        <div class="storage-progress">
+                            <div id="storageUsageBar" class="storage-progress-bar"></div>
+                        </div>
+                        <div id="backupReminderText" class="storage-helper-text"></div>
+                    </div>
+
+                    <!-- 导出选项 -->
+                    <div class="export-section">
+                        <h3 class="export-section-title">导出选项</h3>
+                        <div class="export-range-options">
+                            <label class="export-range-option">
+                                <input type="radio" name="exportRange" value="current" checked>
+                                <span>当前日期</span>
+                            </label>
+                            <label class="export-range-option">
+                                <input type="radio" name="exportRange" value="range">
+                                <span>日期范围</span>
+                            </label>
+                            <label class="export-range-option">
+                                <input type="radio" name="exportRange" value="all">
+                                <span>全部数据</span>
+                            </label>
+                        </div>
+
+                        <div id="dateRangeInputs" class="date-range-inputs hidden">
+                            <div class="date-range-row">
+                                <label>开始日期</label>
+                                <input type="date" id="exportStartDate">
+                            </div>
+                            <div class="date-range-row">
+                                <label>结束日期</label>
+                                <input type="date" id="exportEndDate">
+                            </div>
+                        </div>
+
+                        <!-- 导出预览 -->
+                        <div id="exportPreview" class="export-preview">
+                            <h4>导出预览</h4>
+                            <div id="exportPreviewStats" class="export-preview-stats">
+                                <div class="preview-stat">
+                                    <span class="preview-label">活动记录</span>
+                                    <span class="preview-value" id="previewActivityCount">0</span>
+                                </div>
+                                <div class="preview-stat">
+                                    <span class="preview-label">健康数据</span>
+                                    <span class="preview-value" id="previewHealthCount">0</span>
+                                </div>
+                                <div class="preview-stat">
+                                    <span class="preview-label">提醒数据</span>
+                                    <span class="preview-value" id="previewReminderCount">0</span>
+                                </div>
+                            </div>
+                            <div id="exportDateRangeText" class="export-date-range-text"></div>
+                        </div>
+                    </div>
+
+                    <!-- 导入导出按钮 -->
+                    <div class="export-buttons">
+                        <button id="importJsonBtn" class="export-btn secondary">📥 导入JSON备份</button>
+                        <button id="exportJson" class="export-btn">📄 导出JSON</button>
+                        <button id="exportCsv" class="export-btn">📊 导出CSV</button>
+                    </div>
+
+                    <input type="file" id="importJsonInput" accept="application/json,.json" hidden>
+                    <div id="importPreview" class="import-preview hidden">
+                        <div id="importPreviewText" class="storage-helper-text"></div>
+                        <div class="import-actions">
+                            <button id="confirmImportMerge" type="button" class="btn-submit">合并导入</button>
+                            <button id="confirmImportReplace" type="button" class="section-order-btn">替换导入</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI诊断模态框 -->
+        <div id="aiDiagnosisModal" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h2>🤖 AI健康诊断</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="ai-diagnosis-content">
+                    <!-- API配置 -->
+                    <div class="ai-config-section">
+                        <div class="ai-config-header">
+                            <div>
+                                <h3 class="ai-section-title">API配置</h3>
+                                <p id="aiConfigSummary" class="ai-config-summary hidden"></p>
+                            </div>
+                            <button type="button" id="editAiConfigBtn" class="ai-config-edit-btn hidden">修改配置</button>
+                        </div>
+                        <div id="aiConfigFormWrap" class="ai-config-form">
+                            <div class="form-group">
+                                <label for="aiProvider">AI服务提供商</label>
+                                <select id="aiProvider">
+                                    <option value="openai">OpenAI (GPT-4/GPT-3.5)</option>
+                                    <option value="anthropic">Anthropic (Claude)</option>
+                                    <option value="deepseek">DeepSeek</option>
+                                    <option value="tongyi">通义千问</option>
+                                    <option value="custom">自定义API</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="aiApiKey">API密钥</label>
+                                <div class="ai-password-field">
+                                    <input type="password" id="aiApiKey" placeholder="请输入您的API密钥">
+                                    <button type="button" id="toggleAiApiKeyBtn" class="ai-password-toggle" aria-label="显示API密钥" title="显示API密钥">👁</button>
+                                </div>
+                                <small class="form-hint">密钥仅存储在本地浏览器中，不会上传到服务器</small>
+                            </div>
+                            <div class="form-group hidden" id="customApiEndpointGroup">
+                                <label for="customApiEndpoint">自定义API端点</label>
+                                <input type="text" id="customApiEndpoint" placeholder="https://api.example.com/v1/chat">
+                            </div>
+                            <div class="form-group">
+                                <label for="aiModel">模型（可选）</label>
+                                <input type="text" id="aiModel" placeholder="留空使用默认模型">
+                                <small class="form-hint">例如: gpt-4, claude-3-opus-20240229</small>
+                            </div>
+                            <div class="ai-config-actions">
+                                <button type="button" id="testAiConfigBtn" class="btn-secondary">测试连接</button>
+                                <button type="button" id="saveAiConfigBtn" class="btn-submit">保存配置</button>
+                            </div>
+                            <p id="aiConfigTestStatus" class="ai-config-test-status hidden"></p>
+                        </div>
+                    </div>
+
+                    <!-- 数据范围选择 -->
+                    <div class="ai-data-section">
+                        <h3 class="ai-section-title">选择分析数据范围</h3>
+                        <div class="ai-range-options">
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiRange" value="today" checked>
+                                <span>今天</span>
+                            </label>
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiRange" value="3days">
+                                <span>最近3天</span>
+                            </label>
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiRange" value="week">
+                                <span>最近7天</span>
+                            </label>
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiRange" value="month">
+                                <span>最近30天</span>
+                            </label>
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiRange" value="quarter">
+                                <span>最近90天</span>
+                            </label>
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiRange" value="custom">
+                                <span>自定义范围</span>
+                            </label>
+                        </div>
+                        <div id="aiDateRangeInputs" class="ai-date-range-inputs hidden">
+                            <div class="date-range-row">
+                                <label>开始日期</label>
+                                <input type="date" id="aiStartDate">
+                            </div>
+                            <div class="date-range-row">
+                                <label>结束日期</label>
+                                <input type="date" id="aiEndDate">
+                            </div>
+                        </div>
+                        <div id="aiDataPreview" class="ai-data-preview">
+                            <h4>数据预览</h4>
+                            <div id="aiDataStats" class="ai-data-stats">
+                                <div class="ai-stat-item">
+                                    <span class="ai-stat-label">活动记录</span>
+                                    <span class="ai-stat-value" id="aiActivityCount">0</span>
+                                </div>
+                                <div class="ai-stat-item">
+                                    <span class="ai-stat-label">健康数据</span>
+                                    <span class="ai-stat-value" id="aiHealthCount">0</span>
+                                </div>
+                                <div class="ai-stat-item">
+                                    <span class="ai-stat-label">分析天数</span>
+                                    <span class="ai-stat-value" id="aiDayCount">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 诊断选项 -->
+                    <div class="ai-options-section">
+                        <h3 class="ai-section-title">诊断选项</h3>
+                        <div class="ai-option-checks">
+                            <label class="ai-option-check">
+                                <input type="checkbox" id="aiIncludeActivities" checked>
+                                <span>分析活动记录（饮食、运动、睡眠等）</span>
+                            </label>
+                            <label class="ai-option-check">
+                                <input type="checkbox" id="aiIncludeHealth" checked>
+                                <span>分析健康数据（血压、心率、血糖等）</span>
+                            </label>
+                            <label class="ai-option-check">
+                                <input type="checkbox" id="aiIncludeProfile" checked>
+                                <span>结合个人信息（年龄、病史、用药等）</span>
+                            </label>
+                            <label class="ai-option-check">
+                                <input type="checkbox" id="aiIncludeMedication" checked>
+                                <span>分析用药情况</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="aiCustomPrompt">额外关注的问题（可选）</label>
+                            <textarea id="aiCustomPrompt" rows="2" placeholder="例如：最近血压偏高，想了解原因和建议"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 开始诊断按钮 -->
+                    <div class="ai-action-section">
+                        <button type="button" id="startAiDiagnosisBtn" class="btn-submit btn-large">
+                            <span class="btn-text">开始AI诊断</span>
+                            <span class="btn-loading hidden">分析中...</span>
+                        </button>
+                    </div>
+
+                    <!-- 分析过程文本框 -->
+                    <div id="aiTraceSection" class="ai-process-section hidden">
+                        <h3 class="ai-section-title">诊断过程与分析依据</h3>
+                        <textarea id="aiTraceOutput" class="ai-trace-output" readonly placeholder="开始诊断后，这里会显示诊断过程和分析依据摘要。"></textarea>
+                    </div>
+
+                    <!-- 诊断结果 -->
+                    <div id="aiResultSection" class="ai-result-section hidden">
+                        <h3 class="ai-section-title">
+                            诊断结果
+                            <button type="button" id="copyAiResultBtn" class="copy-btn">📋 复制</button>
+                        </h3>
+                        <div id="aiResultContent" class="ai-result-content"></div>
+                    </div>
+
+                    <div id="aiChatSection" class="ai-chat-section hidden">
+                        <h3 class="ai-section-title">继续追问</h3>
+                        <div id="aiChatMessages" class="ai-chat-messages"></div>
+                        <div class="ai-chat-composer">
+                            <textarea id="aiFollowupInput" rows="3" placeholder="例如：血压偏高最可能和哪些生活习惯有关？"></textarea>
+                            <div class="ai-chat-actions">
+                                <button type="button" id="sendAiFollowupBtn" class="btn-submit">发送追问</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提醒管理模态框 -->
+        <div id="reminderModal" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header reminder-page-header">
+                    <h2 id="reminderPageTitle">🔔 提醒管理</h2>
+                    <div class="reminder-header-actions">
+                        <button type="button" id="reminderHeaderAddBtn" class="header-add-btn" onclick="openReminderPage('add')">+新增</button>
+                        <span class="close">&times;</span>
+                    </div>
+                </div>
+                <div class="reminder-content">
+                    <div class="reminder-tabs">
+                        <button class="tab-btn active" data-tab="today">今日提醒</button>
+                        <button class="tab-btn" data-tab="upcoming">即将到来</button>
+                        <button class="tab-btn" data-tab="all">全部提醒</button>
+                    </div>
+
+                    <div id="tab-today" class="tab-content active">
+                        <div id="todayReminderList" class="reminder-detail-list"></div>
+                    </div>
+
+                    <div id="tab-upcoming" class="tab-content">
+                        <div id="upcomingReminderList" class="reminder-detail-list"></div>
+                    </div>
+
+                    <div id="tab-all" class="tab-content">
+                        <div class="reminder-history-header">
+                            <div class="reminder-search-box">
+                                <input type="text" id="reminderSearchInput" placeholder="搜索提醒内容或备注...">
+                            </div>
+                            <div class="reminder-filter-box">
+                                <select id="reminderTypeFilter">
+                                    <option value="all">所有类型</option>
+                                    <option value="meal">🍽️ 用餐</option>
+                                    <option value="medication">💊 用药</option>
+                                    <option value="exercise">🏃 运动</option>
+                                    <option value="sleep">😴 睡眠</option>
+                                    <option value="other">📌 其他</option>
+                                </select>
+                                <select id="reminderStatusFilter">
+                                    <option value="all">所有状态</option>
+                                    <option value="completed">已完成</option>
+                                    <option value="pending">未完成</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="allReminderList" class="reminder-detail-list"></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div id="reminderFormModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="reminderFormModal" aria-label="返回"></button>
+                    <h2 id="reminderFormModalTitle">添加提醒</h2>
+                    <button type="button" class="close page-cancel-btn">取消</button>
+                </div>
+                <form id="reminderForm" class="reminder-form">
+                    <input type="hidden" id="reminderId">
+                    <div class="form-group">
+                        <label for="reminderTitle">提醒内容</label>
+                        <input type="text" id="reminderTitle" placeholder="例如：该吃药了" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reminderType">类型</label>
+                        <select id="reminderType">
+                            <option value="meal">🍽️ 用餐</option>
+                            <option value="medication">💊 用药</option>
+                            <option value="exercise">🏃 运动</option>
+                            <option value="sleep">😴 睡眠</option>
+                            <option value="other">📌 其他</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reminderDate">日期</label>
+                        <input type="date" id="reminderDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reminderTime">时间</label>
+                        <input type="time" id="reminderTime" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reminderRepeat">重复规则</label>
+                        <select id="reminderRepeat">
+                            <option value="none">不重复</option>
+                            <option value="daily">每天</option>
+                            <option value="weekly">每周</option>
+                            <option value="biweekly">每2周</option>
+                            <option value="monthly">每月</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reminderNotes">备注（可选）</label>
+                        <textarea id="reminderNotes" rows="2" placeholder="例如：降压药1片"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>提醒图片</label>
+                        <div class="image-upload-card">
+                            <div class="image-upload-actions">
+                                <label for="reminderImageUpload" class="image-upload-btn">上传图片</label>
+                            </div>
+                            <input type="file" id="reminderImageUpload" accept="image/*" hidden>
+                            <div id="reminderImageHint" class="image-upload-hint">点击上传图片后，可从相机拍照或从相册选择，为提醒附加图片说明。</div>
+                            <div id="reminderImagePreview" class="activity-image-preview hidden">
+                                <img id="reminderImagePreviewImg" alt="提醒图片预览">
+                                <button type="button" id="removeReminderImage" class="remove-image-btn">移除图片</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" id="reminderSubmitBtn" class="btn-submit">添加提醒</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 健康数据模态框 -->
+        <div id="healthModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="healthModal" aria-label="返回"></button>
+                    <h2 id="healthModalTitle">记录健康数据</h2>
+                    <button type="button" class="close page-cancel-btn">取消</button>
+                </div>
+                <form id="healthForm" class="activity-form">
+                    <input type="hidden" id="healthRecordId">
+
+                    <div class="form-group">
+                        <label for="healthTime">时间</label>
+                        <input type="time" id="healthTime" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="healthType">指标类型</label>
+                        <select id="healthType" required>
+                            <option value="bloodPressure">血压</option>
+                            <option value="heartRate">心率</option>
+                            <option value="bloodSugar">血糖</option>
+                            <option value="bloodLipid">血脂</option>
+                            <option value="uricAcid">尿酸</option>
+                            <option value="other">其他指标</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="healthValue">数值</label>
+                        <input type="text" id="healthValue" placeholder="例如：120/80 或 5.6" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="healthUnit">单位</label>
+                        <input type="text" id="healthUnit" placeholder="例如：mmHg / bpm / mmol/L">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="healthNotes">备注（可选）</label>
+                        <textarea id="healthNotes" rows="3" placeholder="例如：饭后测量、运动后10分钟测量"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>健康数据图片</label>
+                        <div class="image-upload-card">
+                            <div class="image-upload-actions">
+                                <label for="healthImageUpload" class="image-upload-btn">上传图片</label>
+                            </div>
+                            <input type="file" id="healthImageUpload" accept="image/*" hidden>
+                            <div id="healthImageHint" class="image-upload-hint">点击上传图片后，可从相机拍照或从相册选择检测报告、仪器屏幕、试纸结果等图片。</div>
+                            <div id="healthImagePreview" class="activity-image-preview hidden">
+                                <img id="healthImagePreviewImg" alt="健康数据图片预览">
+                                <button type="button" id="removeHealthImage" class="remove-image-btn">移除图片</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="symptomModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="symptomModal" aria-label="返回"></button>
+                    <h2 id="symptomModalTitle">记录症状</h2>
+                    <button type="button" class="close page-cancel-btn">取消</button>
+                </div>
+                <form id="symptomForm" class="activity-form">
+                    <input type="hidden" id="symptomRecordId">
+
+                    <div class="form-group">
+                        <label for="symptomTime">症状发生时间</label>
+                        <input type="time" id="symptomTime" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="symptomDescription">症状描述</label>
+                        <textarea id="symptomDescription" rows="3" placeholder="例如：下午开始头痛，太阳穴位置有胀痛感" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="symptomMeasures">处理措施</label>
+                        <textarea id="symptomMeasures" rows="3" placeholder="例如：休息 30 分钟，喝温水，贴退热贴"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>症状图片</label>
+                        <div class="image-upload-card">
+                            <div class="image-upload-actions">
+                                <label for="symptomImageUpload" class="image-upload-btn">上传图片</label>
+                            </div>
+                            <input type="file" id="symptomImageUpload" accept="image/*" hidden>
+                            <div id="symptomImageHint" class="image-upload-hint">可上传症状照片、用药照片或处理过程记录图片。</div>
+                            <div id="symptomImagePreview" class="activity-image-preview hidden">
+                                <img id="symptomImagePreviewImg" alt="症状图片预览">
+                                <button type="button" id="removeSymptomImage" class="remove-image-btn">移除图片</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 个人信息模态框 -->
+        <div id="profileModal" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="profileModal" aria-label="返回"></button>
+                    <h2>👤 个人信息</h2>
+                    <button type="button" class="close page-cancel-btn" aria-label="取消">取消</button>
+                </div>
+                <form id="profileForm" class="activity-form">
+                    <div class="profile-intro">
+                        <p>记录个人身体基础情况和健康基本情况，为后续健康诊断和个性化建议提供基础数据。</p>
+                    </div>
+
+                    <div class="profile-grid">
+                        <div class="form-group">
+                            <label for="profileName">姓名</label>
+                            <input type="text" id="profileName" placeholder="例如：张三">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileGender">性别</label>
+                            <select id="profileGender">
+                                <option value="">请选择</option>
+                                <option value="male">男</option>
+                                <option value="female">女</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileAge">年龄</label>
+                            <input type="number" id="profileAge" min="0" placeholder="例如：35">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileHeight">身高（cm）</label>
+                            <input type="number" id="profileHeight" min="0" placeholder="例如：168">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileWeight">体重（kg）</label>
+                            <input type="number" id="profileWeight" min="0" step="0.1" placeholder="例如：62.5">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileBloodType">血型</label>
+                            <select id="profileBloodType">
+                                <option value="">请选择</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="AB">AB</option>
+                                <option value="O">O</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileBloodPressure">常见血压</label>
+                            <input type="text" id="profileBloodPressure" placeholder="例如：120/80">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="profileBloodSugar">常见血糖</label>
+                            <input type="text" id="profileBloodSugar" placeholder="例如：5.6 mmol/L">
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profileChronicConditions">慢性病 / 既往病史</label>
+                            <textarea id="profileChronicConditions" rows="3" placeholder="例如：高血压、脂肪肝、胃炎"></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profileAllergies">过敏史</label>
+                            <textarea id="profileAllergies" rows="3" placeholder="例如：海鲜过敏、青霉素过敏"></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profileMedications">长期用药</label>
+                            <textarea id="profileMedications" rows="3" placeholder="例如：降压药每日 1 次，维生素 D 每日 1 粒"></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profileHealthGoals">当前健康目标</label>
+                            <textarea id="profileHealthGoals" rows="3" placeholder="例如：控制血压、规律睡眠、减重 5kg"></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="profileNotes">补充说明</label>
+                            <textarea id="profileNotes" rows="3" placeholder="其他需要长期记录的身体基础情况"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit">保存信息</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="cloudSyncModal" class="modal">
+            <div class="modal-content cloud-sync-dialog">
+                <div class="modal-header cloud-sync-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="cloudSyncModal" aria-label="返回"></button>
+                    <h2>数据云同步</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="storage-panel cloud-sync-panel">
+                    <div class="cloud-sync-section cloud-sync-form-section">
+                        <div class="cloud-sync-field-label">
+                            <span class="cloud-sync-field-icon">🖥</span>
+                            <label for="cloudEnvId">同步服务地址</label>
+                        </div>
+                        <div class="form-group">
+                            <input id="cloudEnvId" type="text" placeholder="默认：http://170.106.101.55:8081">
+                        </div>
+                        <div class="cloud-auth-tip">
+                            <span class="cloud-auth-tip-icon">!</span>
+                            <span id="cloudAuthStatus" class="storage-helper-text">未登录，无法进行数据同步</span>
+                        </div>
+                        <div class="form-group">
+                            <div class="cloud-sync-field-label">
+                                <span class="cloud-sync-field-icon">👤</span>
+                                <label for="cloudAccount">账号</label>
+                            </div>
+                            <input id="cloudAccount" type="text">
+                        </div>
+                        <div class="form-group">
+                            <div class="cloud-sync-field-label">
+                                <span class="cloud-sync-field-icon">🔒</span>
+                                <label for="cloudPassword">登录密码</label>
+                            </div>
+                            <div class="cloud-password-wrap">
+                                <input id="cloudPassword" type="password">
+                                <button id="toggleCloudPasswordBtn" type="button" class="cloud-password-toggle" aria-label="显示或隐藏密码">👁</button>
+                            </div>
+                        </div>
+                        <div class="cloud-auth-actions">
+                            <button id="cloudAuthSubmitBtn" type="button" class="section-order-btn cloud-auth-submit-btn">登录（未注册将自动创建账号）</button>
+                            <button id="cloudAuthLogoutBtn" type="button" class="cloud-auth-text-btn hidden">退出登录</button>
+                        </div>
+                    </div>
+                    <div id="cloudSyncOptionsSection" class="cloud-sync-section cloud-sync-actions-section hidden">
+                        <div id="cloudSyncOptionsContent">
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input id="cloudAutoSync" type="checkbox">
+                                    开启自动同步（本地保存后自动上传）
+                                </label>
+                            </div>
+                            <div id="cloudSyncStatus" class="storage-helper-text">请先填写同步服务地址并登录后端账号。</div>
+                            <div class="sync-actions">
+                                <button id="saveCloudConfigBtn" type="button" class="section-order-btn">保存配置</button>
+                                <button id="cloudPushBtn" type="button" class="section-export-btn">上传到云端</button>
+                                <button id="cloudPullBtn" type="button" class="section-export-btn">从云端恢复</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cloud-sync-footer">© 2023 数据云同步服务 | 版本 v1.0.0</div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- 到点提醒弹窗 -->
+        <div id="reminderAlertModal" class="modal">
+            <div class="modal-content reminder-alert-panel">
+                <div class="modal-header">
+                    <h2>⏰ 到点提醒</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="reminder-alert-body">
+                    <div id="alertReminderBadge" class="alert-reminder-badge"></div>
+                    <div id="alertReminderTitle" class="alert-reminder-title"></div>
+                    <div id="alertReminderMeta" class="alert-reminder-meta"></div>
+                    <div id="alertReminderImageWrap" class="alert-reminder-image-wrap hidden">
+                        <img id="alertReminderImage" alt="提醒图片">
+                    </div>
+                    <div id="alertReminderNotes" class="alert-reminder-notes"></div>
+
+                    <div class="form-group">
+                        <label for="snoozeMinutes">延后提醒</label>
+                        <select id="snoozeMinutes">
+                            <option value="10" selected>10 分钟</option>
+                            <option value="15">15 分钟</option>
+                            <option value="30">30 分钟</option>
+                            <option value="custom">自定义</option>
+                        </select>
+                        <input type="number" id="customSnoozeMinutes" class="hidden" min="1" max="240" placeholder="输入 1-240 分钟">
+                        <div id="snoozeMetaText" class="storage-helper-text"></div>
+                    </div>
+
+                    <div class="alert-actions">
+                        <button type="button" id="dismissAlertBtn" class="btn-cancel">稍后处理</button>
+                        <button type="button" id="snoozeReminderBtn" class="section-order-btn">延后提醒</button>
+                        <button type="button" id="completeReminderBtn" class="btn-submit">标记完成</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 药箱列表模态框 -->
+        <div id="medicineBoxModal" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="medicineBoxModal" aria-label="返回"></button>
+                    <h2>💊 药品管理</h2>
+                    <button type="button" id="addMedicineHeaderBtn" class="header-add-btn">+ 添加</button>
+                    <span class="close">&times;</span>
+                </div>
+	                <div class="medicine-box-content">
+	                    <div class="medicine-search-bar">
+	                        <input type="text" id="medicineSearchInput" placeholder="搜索药品名称...">
+	                    </div>
+	                    <div class="medicine-sort-bar">
+	                        <span id="medicineCountLabel" class="medicine-count-label">共 0 种药品</span>
+	                        <button id="medicineSortBtn" class="section-order-btn" type="button">过期日期 ↑</button>
+	                    </div>
+                    <div id="medicineList" class="medicine-list"></div>
+                    <div id="medicineEmptyState" class="empty-state small">
+                        <p>药箱还是空的</p>
+                        <p>点击下方按钮添加第一个药品吧</p>
+                    </div>
+                    <button id="addMedicineBtn" class="create-template-btn">+ 添加药品</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 药品编辑页面 -->
+        <div id="medicineEditModal" class="modal page-mode">
+            <div class="modal-content large">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="medicineEditModal" aria-label="返回"></button>
+                    <h2 id="medicineEditTitle">添加药品</h2>
+                    <button type="button" id="medicineEditCancelBtn" class="header-text-btn">取消</button>
+                </div>
+	                <form id="medicineForm" class="activity-form">
+	                    <input type="hidden" id="medicineId">
+	                    <div class="form-group">
+	                        <label>药品图片</label>
+	                        <div class="image-upload-card">
+	                            <div class="image-upload-actions">
+	                                <label for="medicineImageUpload" class="image-upload-btn">上传图片</label>
+	                            </div>
+	                            <input type="file" id="medicineImageUpload" accept="image/*" hidden>
+	                            <div id="medicineImageHint" class="image-upload-hint">可拍照或上传药品包装、说明书图片。</div>
+	                            <div id="medicineImagePreview" class="activity-image-preview hidden">
+	                                <img id="medicineImagePreviewImg" alt="药品图片预览">
+	                                <button type="button" id="removeMedicineImage" class="remove-image-btn">移除图片</button>
+	                            </div>
+	                        </div>
+	                    </div>
+	                    <div class="form-group">
+	                        <label for="medicineName">药品名称 *</label>
+	                        <input type="text" id="medicineName" placeholder="例如：阿莫西林胶囊" required>
+	                    </div>
+                    <div class="form-group">
+                        <label for="medicineType">药品类型</label>
+                        <select id="medicineType" class="medicine-type-native-select" aria-hidden="true" tabindex="-1">
+                            <option value="">请选择</option>
+                            <option value="otc">非处方药</option>
+                            <option value="prescription">处方药</option>
+                            <option value="psychotropic">精神类药品</option>
+                            <option value="supplement">保健品</option>
+                            <option value="chinese">中成药</option>
+                            <option value="other">其他</option>
+                        </select>
+                        <div class="medicine-type-select" id="medicineTypeSelect">
+                            <button type="button" class="medicine-type-select-trigger" id="medicineTypeTrigger" aria-haspopup="listbox" aria-expanded="false">
+                                <span class="medicine-type-select-value" id="medicineTypeValue">请选择</span>
+                                <span class="medicine-type-select-arrow" aria-hidden="true"></span>
+                            </button>
+                            <div class="medicine-type-select-menu hidden" id="medicineTypeMenu" role="listbox">
+                                <button type="button" class="medicine-type-option" data-value="" role="option">
+                                    <span class="medicine-type-option-text">请选择</span>
+                                </button>
+                                <button type="button" class="medicine-type-option" data-value="otc" role="option"></button>
+                                <button type="button" class="medicine-type-option" data-value="prescription" role="option"></button>
+                                <button type="button" class="medicine-type-option" data-value="psychotropic" role="option"></button>
+                                <button type="button" class="medicine-type-option" data-value="supplement" role="option"></button>
+                                <button type="button" class="medicine-type-option" data-value="chinese" role="option"></button>
+                                <button type="button" class="medicine-type-option" data-value="other" role="option"></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineIndication">适应症</label>
+                        <textarea id="medicineIndication" rows="2" placeholder="例如：细菌感染、上呼吸道感染"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineDosage">用法用量</label>
+                        <textarea id="medicineDosage" rows="2" placeholder="例如：每日3次，每次2粒，饭后服用"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineContraindication">禁忌</label>
+                        <textarea id="medicineContraindication" rows="2" placeholder="例如：青霉素过敏者禁用"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineProductionDate">生产日期</label>
+                        <input type="date" id="medicineProductionDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineExpirationDate">过期日期 *</label>
+                        <input type="date" id="medicineExpirationDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineManufacturer">厂商</label>
+                        <input type="text" id="medicineManufacturer" placeholder="例如：阿莫西林制药厂">
+                    </div>
+                    <div class="form-group">
+                        <label for="medicineNotes">备注</label>
+                        <textarea id="medicineNotes" rows="2" placeholder="例如：存放位置、注意事项"></textarea>
+                    </div>
+	                    <div class="form-actions single">
+	                        <button type="submit" class="btn-submit full-width">保存</button>
+	                    </div>
+	                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 药品详情页面 -->
+    <div id="medicineDetailModal" class="modal page-mode">
+        <div class="modal-content large">
+            <div class="modal-header page-nav-header">
+                <button type="button" class="page-back-btn" data-back-modal="medicineDetailModal" aria-label="返回"></button>
+                <h2>药品详情</h2>
+                <button type="button" id="medicineDetailEditBtn" class="header-add-btn">编辑</button>
+            </div>
+	            <div class="medicine-detail-content">
+	                <div class="medicine-detail-image-section" id="detailImageSection">
+	                    <img id="detailMedicineImage" alt="药品图片">
+	                    <div id="detailMedicineImagePlaceholder" class="medicine-detail-image-placeholder">暂无药品图片</div>
+	                </div>
+	                <div class="medicine-detail-section medicine-detail-header-section">
+	                    <h3 class="medicine-detail-name" id="detailMedicineName"></h3>
+	                    <div class="medicine-detail-badges">
+	                        <span class="medicine-type-badge" id="detailTypeBadge"></span>
+	                        <span class="medicine-expiry-badge" id="detailExpiryBadge"></span>
+	                    </div>
+	                </div>
+	                <div class="medicine-detail-section" id="detailIndicationSection">
+	                    <div class="detail-label">适应症</div>
+	                    <div class="detail-value" id="detailIndication"></div>
+	                </div>
+	                <div class="medicine-detail-section" id="detailDosageSection">
+	                    <div class="detail-label">用法用量</div>
+	                    <div class="detail-value" id="detailDosage"></div>
+	                </div>
+	                <div class="medicine-detail-section" id="detailContraindicationSection">
+	                    <div class="detail-label">禁忌</div>
+	                    <div class="detail-value" id="detailContraindication"></div>
+	                </div>
+	                <div class="medicine-detail-section" id="detailProductionDateSection">
+	                    <div class="detail-label">生产日期</div>
+	                    <div class="detail-value" id="detailProductionDate"></div>
+	                </div>
+	                <div class="medicine-detail-section" id="detailExpirationDateSection">
+	                    <div class="detail-label">过期日期</div>
+	                    <div class="detail-value" id="detailExpirationDate"></div>
+	                </div>
+	                <div class="medicine-detail-section" id="detailManufacturerSection">
+	                    <div class="detail-label">厂商</div>
+	                    <div class="detail-value" id="detailManufacturer"></div>
+	                </div>
+	                <div class="medicine-detail-section" id="detailNotesSection">
+	                    <div class="detail-label">备注</div>
+	                    <div class="detail-value" id="detailNotes"></div>
+	                </div>
+	                <div class="medicine-detail-actions">
+	                    <button type="button" id="medicineDetailDeleteBtn" class="medicine-detail-delete-btn">删除药品</button>
+	                </div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
