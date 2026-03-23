@@ -1664,7 +1664,7 @@ function renderRecordActionButtons(editAction, deleteAction) {
 
 function renderRecordCard({
     accentType,
-    badgeText,
+    badgeText = '',
     headerMain,
     headerSide = '',
     title,
@@ -1681,7 +1681,7 @@ function renderRecordCard({
                     <span class="reminder-detail-time">${headerMain}</span>
                     ${headerSide ? `<span class="reminder-detail-date">${headerSide}</span>` : ''}
                 </div>
-                <div>${badgeText}</div>
+                ${badgeText ? `<div>${badgeText}</div>` : ''}
             </div>
             <div class="reminder-detail-title">${escapeHtml(title)}</div>
             ${image ? `
@@ -1868,7 +1868,6 @@ function renderRecordHealthItem(record) {
 function renderRecordSymptomItem(record) {
     return renderRecordCard({
         accentType: 'symptom',
-        badgeText: '🩹 症状',
         headerMain: formatTime(record.time),
         headerSide: record.image ? '附带图片' : '',
         title: record.description,
