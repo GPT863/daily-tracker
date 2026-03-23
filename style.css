@@ -1850,11 +1850,11 @@ body.elder-mode .form-actions button {
 
 .modal.page-mode {
     display: block;
-    z-index: 900;
+    z-index: 1100;
     top: 0;
     bottom: 0;
     height: 100vh;
-    background: transparent;
+    background: var(--bg-color);
     padding: 12px 0 80px;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -1879,17 +1879,7 @@ body.elder-mode .form-actions button {
     box-shadow: 0 20px 60px rgba(0,0,0,0.2);
 }
 
-.modal.page-mode .modal-content {
-    position: relative;
-    width: min(800px, calc(100% - 32px));
-    max-width: 800px !important;
-    margin: 0 auto !important;
-    max-height: none;
-    border-radius: var(--radius-lg) !important;
-    animation: none;
-    box-shadow: var(--shadow);
-    overflow: visible;
-}
+
 
 .modal.page-mode .close {
     display: none;
@@ -5606,3 +5596,16 @@ body.elder-mode .ai-result-content {
 }
 
 .ai-cursor { display: inline-block; width: 6px; height: 1em; background-color: var(--primary-color); vertical-align: middle; animation: blink 1s step-end infinite; margin-left: 2px; } @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+
+.modal.page-mode .modal-content {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    height: 100vh;
+    max-height: none;
+    border-radius: 0;
+    background-color: var(--bg-color);
+    position: relative;
+    z-index: 1200;
+}
