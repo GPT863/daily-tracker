@@ -743,7 +743,7 @@ body.elder-mode .form-actions button {
     position: absolute;
     left: 15px;
     top: 6px;
-    bottom: 6px;
+    bottom: 68px;
     width: 2px;
     background: linear-gradient(to bottom, var(--primary-color), rgba(139,195,74,0.3));
     border-radius: 2px;
