@@ -735,13 +735,13 @@ body.elder-mode .form-actions button {
 
 .timeline {
     position: relative;
-    padding-left: 28px;
+    padding-left: 32px;
 }
 
 .timeline::before {
     content: '';
     position: absolute;
-    left: 8px;
+    left: 15px;
     top: 6px;
     bottom: 6px;
     width: 2px;
@@ -772,17 +772,14 @@ body.elder-mode .form-actions button {
 .timeline-item::before {
     content: '';
     position: absolute;
-    left: -23px;
+    left: -25px;
     top: 18px;
     width: 12px;
     height: 12px;
     background: var(--primary-color);
-    border: 2.5px solid white;
+    border: 2px solid white;
     border-radius: 50%;
     box-shadow: 0 1px 4px rgba(31,122,61,0.3);
-}
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .timeline-header {
@@ -1641,20 +1638,20 @@ body.elder-mode .form-actions button {
 .record-card-shell {
     background: var(--bg-color);
     border: 1px solid rgba(31, 122, 61, 0.08);
-    border-left: 4px solid var(--forest-color);
+    
     border-radius: 10px;
     padding: 12px;
     box-shadow: none;
 }
 
-.record-card[data-type="meal"] .record-card-shell { border-left-color: #edb35a; }
-.record-card[data-type="medication"] .record-card-shell { border-left-color: #db6f8d; }
-.record-card[data-type="exercise"] .record-card-shell { border-left-color: #2f82ea; }
-.record-card[data-type="sleep"] .record-card-shell { border-left-color: #b56be7; }
-.record-card[data-type="work"] .record-card-shell { border-left-color: #4e9b89; }
-.record-card[data-type="other"] .record-card-shell { border-left-color: #90a4ae; }
-.record-card[data-type="health"] .record-card-shell { border-left-color: #5ca27c; }
-.record-card[data-type="symptom"] .record-card-shell { border-left-color: #3fa79c; }
+
+
+
+
+
+
+
+
 
 .record-card-top {
     display: flex;
@@ -2434,7 +2431,7 @@ body.elder-mode .form-actions button {
     background: var(--bg-color);
     padding: 12px;
     border-radius: 10px;
-    border-left: 4px solid var(--forest-color);
+    
 }
 
 .reminder-detail-item.completed {
@@ -4076,18 +4073,17 @@ body.elder-mode .stats-card-value {
 .timeline-item[data-type="health"]::before      { background: #1a9bbb; }
 .timeline-item[data-type="symptom"]::before     { background: #e85d5d; }
 
-.timeline-item[data-type="meal"]       { border-left: 3px solid #f59e42; }
-.timeline-item[data-type="medication"] { border-left: 3px solid #e74c7c; }
-.timeline-item[data-type="exercise"]   { border-left: 3px solid #27ae60; }
-.timeline-item[data-type="sleep"]      { border-left: 3px solid #6c63d4; }
-.timeline-item[data-type="work"]       { border-left: 3px solid #2980b9; }
-.timeline-item[data-type="other"]      { border-left: 3px solid #bdc3c7; }
-.timeline-item[data-type="health"]     { border-left: 3px solid #1a9bbb; }
-.timeline-item[data-type="symptom"]    { border-left: 3px solid #e85d5d; }
+
+
+
+
+
+
+
+
 
 /* 健康/症状时间线 item - 仅作为回退（已由 data-type 覆盖） */
 .health-timeline-item {
-    border-left: 3px solid #1a9bbb;
 }
 
 /* 表单输入框优化 */
