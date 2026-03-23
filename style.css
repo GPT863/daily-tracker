@@ -5419,4 +5419,118 @@ body.elder-mode .ai-result-content {
     color: #fff;
 }
 
+/* ==================== 响应式适配 ==================== */
 
+/* 桌面端：竖排侧边导航 */
+@media screen and (min-width: 769px) {
+    .bottom-actions {
+        top: 50%;
+        bottom: auto;
+        transform: translateY(-50%);
+        right: calc(50% - 460px); /* 接近于限制容器外界 */
+        flex-direction: column;
+        flex-wrap: nowrap;
+        gap: 16px;
+    }
+}
+
+/* 介于居中和屏幕右侧之间，当屏幕宽度不够大时，靠右吸附 */
+@media screen and (min-width: 769px) and (max-width: 980px) {
+    .bottom-actions {
+        right: 20px;
+    }
+}
+
+/* 移动端：底部贴边导航条 */
+@media screen and (max-width: 768px) {
+    .app-container {
+        padding-bottom: calc(64px + env(safe-area-inset-bottom));
+        padding-top: 0;
+    }
+    
+    .bottom-actions {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: none;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        padding: 5px 0 env(safe-area-inset-bottom) 0;
+        margin: 0;
+        gap: 0;
+        z-index: 1000;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .fab-home, .fab-record, .fab-reminder, .fab-my {
+        width: 100%;
+        height: auto;
+        border-radius: 0;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: var(--text-secondary);
+        flex: 1;
+        padding: 4px 0;
+        transform: none !important;
+        gap: 4px;
+    }
+    
+    .nav-icon {
+        font-size: 1.5rem;
+        margin-bottom: 2px;
+        opacity: 0.8;
+    }
+    
+    .nav-label {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 500;
+    }
+    
+    /* 激活态 */
+    .nav-active {
+        box-shadow: none !important;
+        color: var(--forest-color) !important;
+    }
+    .nav-active .nav-icon {
+        opacity: 1;
+    }
+    
+    /* 内容区域内边距和间距调整 */
+    .app-main {
+        padding: 12px;
+        gap: 14px;
+    }
+    .health-section, .daily-summary-section, .timeline-section {
+        padding: 14px 12px;
+    }
+    
+    .app-header {
+        padding: 14px 16px;
+    }
+    
+    .stat-card {
+        padding: 14px;
+        gap: 10px;
+    }
+    
+    .health-summary-grid {
+        gap: 12px;
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .timeline-item {
+        padding: 12px;
+    }
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+    }
+}
