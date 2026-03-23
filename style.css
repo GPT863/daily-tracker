@@ -1609,12 +1609,17 @@ body.elder-mode .form-actions button {
 }
 
 .record-card-shell {
-    background: var(--bg-color);
-    border: 1px solid rgba(31, 122, 61, 0.08);
-    
-    border-radius: 10px;
-    padding: 12px;
-    box-shadow: none;
+    background: #fafcfa;
+    border: 1px solid rgba(40, 122, 68, 0.08);
+    border-radius: var(--radius-md);
+    padding: 13px 14px;
+    box-shadow: 0 1px 6px rgba(31, 122, 61, 0.06);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.record-card-shell:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 
@@ -2391,10 +2396,18 @@ body.elder-mode .form-actions button {
 }
 
 .reminder-detail-item {
-    background: var(--bg-color);
-    padding: 12px;
-    border-radius: 10px;
-    
+    background: #fafcfa;
+    padding: 13px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(40, 122, 68, 0.08);
+    border-left: 4px solid rgba(40, 122, 68, 0.18);
+    box-shadow: 0 1px 6px rgba(31, 122, 61, 0.06);
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.reminder-detail-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .reminder-detail-item.completed {
