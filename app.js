@@ -1170,8 +1170,6 @@ function setupEventListeners() {
     document.getElementById('homeBtn').addEventListener('click', () => switchPage('home'));
     document.getElementById('recordBtn').addEventListener('click', () => switchPage('records'));
     document.getElementById('recordPrimaryActionBtn').addEventListener('click', openCurrentRecordModal);
-    document.getElementById('recordsHeaderMenuBtn')?.addEventListener('click', () => switchPage('home'));
-    document.getElementById('recordsHeaderAvatarBtn')?.addEventListener('click', () => switchPage('my'));
     document.querySelectorAll('.records-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => setCurrentRecordView(btn.dataset.recordView));
     });
@@ -1521,7 +1519,7 @@ function switchPage(page) {
 
 function updatePageDisplay() {
     const homePage = document.getElementById('homePage');
-    const recordsPage = document.getElementById('recordsPage');
+    const recordsPage = document.getElementById('recordsModal');
     const reminderPage = document.getElementById('reminderModal');
     const reminderFormPage = document.getElementById('reminderFormModal');
     const myPage = document.getElementById('myModal');
@@ -1539,13 +1537,10 @@ function updatePageDisplay() {
     const reminderBtn = document.getElementById('reminderBtn');
     const myBtn = document.getElementById('myBtn');
     const bottomActions = document.querySelector('.bottom-actions');
-    const appTitle = document.querySelector('.app-header h1');
-    const recordsHeaderMenuBtn = document.getElementById('recordsHeaderMenuBtn');
-    const recordsHeaderAvatarBtn = document.getElementById('recordsHeaderAvatarBtn');
     if (!homePage || !recordsPage || !reminderPage || !myPage || !exportPage || !cloudSyncPage || !profilePage || !homeBtn || !recordBtn || !reminderBtn || !myBtn) return;
-
     const isHome = currentPage === 'home';
     const isRecords = currentPage === 'records';
+
     const isReminders = currentPage === 'reminders';
     const isReminderAdd = currentPage === 'reminder-add';
     const isMy = currentPage === 'my';
@@ -1561,7 +1556,8 @@ function updatePageDisplay() {
     const isRecordFormPage = isActivityForm || isHealthForm || isSymptomForm;
     const isRecordFlowPage = isRecords || isActivityForm || isHealthForm || isSymptomForm;
     homePage.classList.toggle('hidden', !isHome);
-    recordsPage.classList.toggle('hidden', !isRecords);
+    recordsPage.classList.toggle('page-mode', isRecords);
+    recordsPage.style.display = isRecords ? 'block' : 'none';
     reminderPage.classList.toggle('page-mode', isReminders);
     reminderPage.style.display = isReminders ? 'block' : 'none';
     if (reminderFormPage) {
@@ -1605,12 +1601,6 @@ function updatePageDisplay() {
     reminderBtn.classList.toggle('nav-active', isReminders || isReminderAdd);
     myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile || isMedicineBox || isMedicineEdit || isMedicineDetail);
     bottomActions?.classList.toggle('hidden', isRecordFormPage || isReminderAdd);
-    document.body.classList.toggle('page-records', isRecordFlowPage);
-    recordsHeaderMenuBtn?.classList.toggle('hidden', !isRecordFlowPage);
-    recordsHeaderAvatarBtn?.classList.toggle('hidden', !isRecordFlowPage);
-    if (appTitle && !isRecordFlowPage) {
-        appTitle.textContent = '📅 今日活动记录';
-    }
 }
 
 function openReminderPage(tab = 'today') {
@@ -1761,15 +1751,13 @@ function getRecordsTopTitle(view) {
 
 function updateRecordsPage() {
     const topTitle = document.getElementById('recordsPageTopTitle');
-    const heroTitle = document.getElementById('recordsHeroTitle');
-    const heroText = document.getElementById('recordsHeroText');
     const actionBtn = document.getElementById('recordPrimaryActionBtn');
     const list = document.getElementById('recordsList');
     const emptyState = document.getElementById('recordsEmptyState');
     const emptyTitle = document.getElementById('recordsEmptyTitle');
     const emptyHint = document.getElementById('recordsEmptyHint');
     const appTitle = document.querySelector('.app-header h1');
-    if (!topTitle || !heroTitle || !heroText || !actionBtn || !list || !emptyState || !emptyTitle || !emptyHint) return;
+    if (!topTitle || !actionBtn || !list || !emptyState || !emptyTitle || !emptyHint) return;
 
     document.querySelectorAll('.records-tab-btn').forEach(btn => {
         const isActive = btn.dataset.recordView === currentRecordView;
@@ -1783,8 +1771,6 @@ function updateRecordsPage() {
 
     const config = getCurrentRecordConfig();
     topTitle.textContent = getRecordsTopTitle(currentRecordView);
-    heroTitle.textContent = config.title;
-    heroText.textContent = config.heroText;
     actionBtn.textContent = config.actionLabel;
     emptyTitle.textContent = config.emptyTitle;
     emptyHint.textContent = config.emptyHint;
@@ -4899,6 +4885,11 @@ function closeModal(modal) {
 
     if (modal.id === 'reminderAlertModal') {
         closeReminderAlertModal();
+        return;
+    }
+
+    if (modal.id === 'recordsModal' && currentPage === 'records') {
+        switchPage('home');
         return;
     }
 

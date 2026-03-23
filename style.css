@@ -1679,55 +1679,6 @@ body.elder-mode .form-actions button {
     border-top: 1px solid rgba(31, 122, 61, 0.08);
 }
 
-.page-records .app-header {
-    background: transparent;
-    color: #173b24;
-    box-shadow: none;
-    border-bottom: none;
-    padding: 0;
-}
-
-.page-records .header-top {
-    display: none;
-}
-
-.page-records .app-header h1 {
-    color: #173b24;
-    font-size: 1.28rem;
-    font-weight: 800;
-    flex: 1;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.page-records .date-selector {
-    display: none;
-}
-
-.page-records .date-btn {
-    width: 42px;
-    height: 42px;
-    background: rgba(255,255,255,0.14);
-    font-size: 1rem;
-}
-
-.page-records .current-date-wrap {
-    flex: 1;
-    min-width: 0;
-}
-
-.page-records .current-date-btn {
-    width: 100%;
-    min-height: 68px;
-    border: none;
-    background: transparent;
-    text-align: center;
-    font-size: 1.2rem;
-    font-weight: 800;
-    line-height: 1.5;
-}
 
 .my-modal-content {
     max-width: 520px;
@@ -3984,43 +3935,6 @@ body.elder-mode .stats-card-value {
 }
 
 @media (max-width: 600px) {
-    .page-records .app-header {
-        padding: 0;
-    }
-
-    .page-records .app-header h1 {
-        font-size: 1.18rem;
-    }
-
-    .page-records .current-date-btn {
-        min-height: 60px;
-        font-size: 1.05rem;
-        padding: 0;
-    }
-
-    .records-page-section {
-        border-radius: 20px;
-    }
-
-    .records-page-topbar {
-        padding: 14px 18px;
-    }
-
-    .records-page-topbar h2 {
-        font-size: 1.15rem;
-    }
-
-    .records-hero {
-        align-items: flex-start;
-        padding: 14px 12px;
-    }
-
-    .records-hero-image-wrap {
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
-    }
-
     .records-stream {
         padding: 12px;
     }
@@ -4029,6 +3943,7 @@ body.elder-mode .stats-card-value {
         border-radius: 14px;
         padding: 12px;
     }
+
 
     .records-primary-wrap .records-primary-btn {
         width: 100%;
@@ -5458,6 +5373,22 @@ body.elder-mode .ai-result-content {
     color: #e74c3c;
     border-radius: var(--radius-md);
     font-size: 0.95rem;
+
+/* 详情页删除按钮 */
+.medicine-detail-actions {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.medicine-detail-delete-btn {
+    width: 100%;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1.5px solid #e74c3c;
+    color: #e74c3c;
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
@@ -5467,3 +5398,5 @@ body.elder-mode .ai-result-content {
     background: #e74c3c;
     color: #fff;
 }
+
+
