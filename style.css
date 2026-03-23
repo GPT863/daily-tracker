@@ -1337,15 +1337,24 @@ body.elder-mode .form-actions button {
 .records-stream:not(:empty)::after,
 .medicine-list:not(:empty)::after,
 .template-manager-list:not(:empty)::after {
-    content: "------没有了------";
-    display: block;
-    text-align: center;
+    content: "已经到底啦";
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 100%;
-    padding: 24px 0 16px;
-    color: #a0aab5;
-    font-size: 0.85rem;
-    letter-spacing: 1px;
+    padding: 24px 0;
+    color: #aeb8c3;
+    font-size: 0.82rem;
+    letter-spacing: 2px;
+    font-weight: 400;
     clear: both;
+    background-image: 
+        linear-gradient(to right, transparent, rgba(174, 184, 195, 0.15) 15%, rgba(174, 184, 195, 0.45)),
+        linear-gradient(to left, transparent, rgba(174, 184, 195, 0.15) 15%, rgba(174, 184, 195, 0.45));
+    background-size: calc(50% - 54px) 1px, calc(50% - 54px) 1px;
+    background-position: left center, right center;
+    background-repeat: no-repeat;
+    opacity: 0.9;
 }
 
 /* 时间线特殊补偿，修正原有左侧间距 */
