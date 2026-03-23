@@ -735,13 +735,13 @@ body.elder-mode .form-actions button {
 
 .timeline {
     position: relative;
-    padding-left: 32px;
+    padding-left: 18px;
 }
 
 .timeline::before {
     content: '';
     position: absolute;
-    left: 15px;
+    left: 1px;
     top: 6px;
     bottom: 68px;
     width: 2px;
