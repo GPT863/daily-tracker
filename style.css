@@ -1330,6 +1330,30 @@ body.elder-mode .form-actions button {
     padding: 4px 0 0;
 }
 
+/* ==================== 列表底部提示 ==================== */
+.timeline:not(:empty)::after,
+.reminder-list:not(:empty)::after,
+.reminder-detail-list:not(:empty)::after,
+.records-stream:not(:empty)::after,
+.medicine-list:not(:empty)::after,
+.template-manager-list:not(:empty)::after {
+    content: "------没有了------";
+    display: block;
+    text-align: center;
+    width: 100%;
+    padding: 24px 0 16px;
+    color: #a0aab5;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    clear: both;
+}
+
+/* 时间线特殊补偿，修正原有左侧间距 */
+.timeline:not(:empty)::after {
+    margin-left: -28px;
+    margin-top: 10px;
+}
+
 /* 底部操作按钮 */
 /* nav-icon / nav-label：label 默认隐藏，移动端显示 */
 .nav-icon {
