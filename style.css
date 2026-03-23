@@ -1336,7 +1336,6 @@ body.elder-mode .form-actions button {
 
 /* ==================== 列表底部提示 ==================== */
 .timeline:not(:empty)::after,
-.reminder-list:not(:empty)::after,
 .reminder-detail-list:not(:empty)::after,
 .records-stream:not(:empty)::after,
 .medicine-list:not(:empty)::after,
@@ -1447,31 +1446,13 @@ body.elder-mode .form-actions button {
 }
 
 .fab-record {
-    position: relative;
-    top: -14px;
-    overflow: visible;
 }
 
-.fab-record .nav-icon {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--forest-color), var(--primary-color));
-    color: white;
-    font-size: 1.6rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 16px rgba(40, 122, 68, 0.35);
+
+    margin-top: -24px;
 }
 
-.fab-record .nav-label {
-    position: absolute;
-    bottom: -18px;
-    color: #94a3b8;
-    width: 100%;
-    text-align: center;
-}
+.fab-record .nav-label {}
 
 .nav-active {
     color: var(--forest-color) !important;
