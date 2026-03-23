@@ -3833,8 +3833,28 @@ body.elder-mode .stats-card-value {
         min-width: 80px;
     }
 
+    .reminder-alert-panel {
+        width: calc(100% - 32px) !important;
+        margin: 16px auto !important;
+    }
+
+    .reminder-alert-body {
+        padding: 16px;
+    }
+
+    .alert-reminder-title {
+        font-size: 1.4rem;
+    }
+
+    .alert-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+
     .alert-actions button {
         width: 100%;
+        min-height: 48px;
+        margin: 0;
     }
 
     .profile-grid {
