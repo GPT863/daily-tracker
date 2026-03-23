@@ -1177,7 +1177,7 @@ function setupEventListeners() {
     // 提醒按钮
     document.getElementById('reminderBtn').addEventListener('click', () => openReminderPage('today'));
     document.getElementById('myBtn').addEventListener('click', () => switchPage('my'));
-    document.getElementById('viewAllHealthDataBtn').addEventListener('click', () => {
+    document.getElementById('viewAllHealthDataBtn')?.addEventListener('click', () => {
         setCurrentRecordView('health');
         switchPage('records');
     });
