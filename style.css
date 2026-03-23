@@ -545,6 +545,7 @@ body.elder-mode .form-actions button {
 /* 主内容区 */
 .app-main {
     padding: var(--space-md);
+    padding-bottom: calc(var(--space-md) + 85px + env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -1054,24 +1055,30 @@ body.elder-mode .form-actions button {
 }
 
 .daily-note-actions {
-    margin-top: 10px;
+    margin-top: 12px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
 }
 
 .daily-note-action-buttons {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    width: 100%;
+}
+
+.daily-note-action-buttons .section-order-btn {
+    width: 100%;
+    margin: 0;
+    justify-content: center;
+    padding: 8px 14px;
 }
 
 .daily-note-meta {
     color: var(--text-secondary);
-    font-size: 0.85rem;
+    font-size: 0.82rem;
 }
 
 .checkbox-label {
@@ -1379,62 +1386,115 @@ body.elder-mode .form-actions button {
 }
 
 /* 桌面 FAB 样式 */
+/* 底部选项卡导航 (Bottom Navigation Bar) */
 .bottom-actions {
     position: fixed;
-    bottom: 30px;
-    right: 30px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    max-width: 300px;
-    gap: 14px;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -1px 0 rgba(0,0,0,0.05), 0 -4px 24px rgba(0,0,0,0.04);
     z-index: 1000;
+    padding-bottom: env(safe-area-inset-bottom);
+    max-width: none;
+    gap: 0;
 }
 
 .fab-home, .fab-record, .fab-reminder, .fab-my {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    color: white;
-    font-size: 1.8rem;
+    flex: 1;
+    height: 100%;
+    border-radius: 0;
+    background: transparent;
+    color: #94a3b8;
     border: none;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    box-shadow: none;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: color 0.2s, transform 0.2s;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 4px;
+    font-size: 1.4rem;
+    padding: 0;
+    width: auto;
 }
 
-.fab-home {
-    background: linear-gradient(135deg, #376d95, #5aa3d6);
-    font-size: 1.35rem;
+.fab-home:hover, .fab-reminder:hover, .fab-my:hover {
+    transform: none;
+    box-shadow: none;
+    color: var(--forest-color);
+}
+
+.nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: transform 0.2s;
+    font-size: inherit;
+}
+
+.nav-label {
+    display: block !important;
+    font-size: 0.65rem;
+    font-weight: 500;
+    line-height: 1;
 }
 
 .fab-record {
+    position: relative;
+    top: -14px;
+    overflow: visible;
+}
+
+.fab-record .nav-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
     background: linear-gradient(135deg, var(--forest-color), var(--primary-color));
+    color: white;
+    font-size: 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(40, 122, 68, 0.35);
 }
 
-.fab-reminder {
-    background: linear-gradient(135deg, #1a6e3c, #4caf71);
-    font-size: 1.5rem;
-}
-
-.fab-my {
-    background: linear-gradient(135deg, #4f5d75, #7f8da6);
-    font-size: 1.35rem;
-}
-
-.fab-home:hover, .fab-record:hover, .fab-reminder:hover, .fab-my:hover {
-    transform: scale(1.1) translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+.fab-record .nav-label {
+    position: absolute;
+    bottom: -18px;
+    color: #94a3b8;
+    width: 100%;
+    text-align: center;
 }
 
 .nav-active {
-    box-shadow: 0 0 0 4px rgba(255,255,255,0.22), 0 8px 20px rgba(0,0,0,0.32);
+    color: var(--forest-color) !important;
+    box-shadow: none !important;
 }
+
+.nav-active .nav-icon {
+    transform: scale(1.1) !important;
+}
+
+.nav-active.fab-record .nav-icon {
+    box-shadow: 0 6px 20px rgba(40, 122, 68, 0.45) !important;
+}
+
+.nav-active.fab-record .nav-label {
+    color: var(--forest-color) !important;
+    font-weight: 600 !important;
+}
+
+
 
 .records-page-section {
     background: #fff;
