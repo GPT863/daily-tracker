@@ -602,11 +602,16 @@ body.elder-mode .form-actions button {
 }
 
 .health-section {
-    /* margin handled by app-main gap */
+    padding-top: 12px;
+    padding-bottom: 14px;
+}
+
+.health-section .reminder-header {
+    margin-bottom: 8px;
 }
 
 .health-section-body {
-    margin-top: 4px;
+    margin-top: 0;
 }
 
 .health-summary-grid {
@@ -1444,15 +1449,6 @@ body.elder-mode .form-actions button {
     font-weight: 500;
     line-height: 1;
 }
-
-.fab-record {
-}
-
-
-    margin-top: -24px;
-}
-
-.fab-record .nav-label {}
 
 .nav-active {
     color: var(--forest-color) !important;
@@ -3556,12 +3552,6 @@ body.elder-mode .stats-card-value {
         font-size: 16px;
     }
 
-    .bottom-actions {
-        right: 16px;
-        bottom: 16px;
-        max-width: 180px;
-        gap: 12px;
-    }
 }
 
 @media (max-width: 600px) {
@@ -5276,7 +5266,6 @@ body.elder-mode .ai-result-content {
     color: #fff;
     font-size: 0.78rem;
 }
-}
 
 .medicine-card-indication {
     font-size: 0.95rem;
@@ -5453,22 +5442,6 @@ body.elder-mode .ai-result-content {
     color: #e74c3c;
     border-radius: var(--radius-md);
     font-size: 0.95rem;
-
-/* 详情页删除按钮 */
-.medicine-detail-actions {
-    margin-top: 24px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border-color);
-}
-
-.medicine-detail-delete-btn {
-    width: 100%;
-    padding: 12px 16px;
-    background: #fff;
-    border: 1.5px solid #e74c3c;
-    color: #e74c3c;
-    border-radius: var(--radius-md);
-    font-size: 0.95rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
@@ -5480,26 +5453,6 @@ body.elder-mode .ai-result-content {
 }
 
 /* ==================== 响应式适配 ==================== */
-
-/* 桌面端：竖排侧边导航 */
-@media screen and (min-width: 769px) {
-    .bottom-actions {
-        top: 50%;
-        bottom: auto;
-        transform: translateY(-50%);
-        right: calc(50% - 460px); /* 接近于限制容器外界 */
-        flex-direction: column;
-        flex-wrap: nowrap;
-        gap: 16px;
-    }
-}
-
-/* 介于居中和屏幕右侧之间，当屏幕宽度不够大时，靠右吸附 */
-@media screen and (min-width: 769px) and (max-width: 980px) {
-    .bottom-actions {
-        right: 20px;
-    }
-}
 
 /* 移动端：底部贴边导航条 */
 @media screen and (max-width: 768px) {
@@ -5608,4 +5561,168 @@ body.elder-mode .ai-result-content {
     background-color: var(--bg-color);
     position: relative;
     z-index: 1200;
+}
+
+/* ==================== 首页健康数据快速预览 ==================== */
+.health-quick-preview {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 2px 0 6px;
+}
+
+.health-quick-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 110px;
+    padding: 14px 14px 13px;
+    background:
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.95), transparent 34%),
+        linear-gradient(145deg, rgba(247, 252, 248, 0.98), rgba(229, 244, 233, 0.96));
+    border: 1px solid rgba(76, 175, 80, 0.16);
+    border-radius: 18px;
+    box-shadow: 0 12px 28px rgba(31, 122, 61, 0.08);
+    overflow: hidden;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.health-quick-card::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    background: linear-gradient(180deg, rgba(76, 175, 80, 0.88), rgba(139, 195, 74, 0.6));
+}
+
+.health-quick-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 30px rgba(31, 122, 61, 0.12);
+}
+
+.health-quick-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.health-quick-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+.health-quick-icon {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.76);
+    box-shadow: inset 0 0 0 1px rgba(76, 175, 80, 0.1);
+    flex-shrink: 0;
+}
+
+.health-quick-label {
+    color: var(--text-secondary, #6b7b6e);
+    font-size: 0.9rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.health-quick-time {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    font-weight: 600;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(40, 122, 68, 0.08);
+    border-radius: 999px;
+    padding: 4px 8px;
+}
+
+.health-quick-reading {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding-left: 36px;
+}
+
+.health-quick-value {
+    color: var(--forest-color, #1f7a3d);
+    font-size: 1.3rem;
+    font-weight: 800;
+    line-height: 1.1;
+    word-break: break-word;
+}
+
+.health-quick-unit {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.4;
+    padding-bottom: 2px;
+}
+
+.health-quick-card[data-type="bloodPressure"]::after {
+    background: linear-gradient(180deg, #4f6ef7, #8cb4ff);
+}
+
+.health-quick-card[data-type="heartRate"]::after {
+    background: linear-gradient(180deg, #ff4d7a, #ff8ca5);
+}
+
+.health-quick-card[data-type="bloodSugar"]::after {
+    background: linear-gradient(180deg, #e04b7d, #f08cab);
+}
+
+.health-quick-card[data-type="uricAcid"]::after {
+    background: linear-gradient(180deg, #5f97ff, #8fd0ff);
+}
+
+.health-quick-card[data-type="bloodLipid"]::after {
+    background: linear-gradient(180deg, #8fbf37, #d4e37e);
+}
+
+/* 长辈模式适配 */
+body.elder-mode .health-quick-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 1.15rem;
+}
+
+body.elder-mode .health-quick-card {
+    padding: 16px;
+}
+
+body.elder-mode .health-quick-label {
+    font-size: 1rem;
+}
+
+body.elder-mode .health-quick-time {
+    font-size: 0.88rem;
+}
+
+body.elder-mode .health-quick-value {
+    font-size: 1.55rem;
+}
+
+body.elder-mode .health-quick-unit {
+    font-size: 0.92rem;
+}
+
+@media (max-width: 420px) {
+    .health-quick-preview {
+        grid-template-columns: 1fr;
+    }
 }

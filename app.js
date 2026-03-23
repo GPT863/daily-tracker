@@ -1177,8 +1177,10 @@ function setupEventListeners() {
     // 提醒按钮
     document.getElementById('reminderBtn').addEventListener('click', () => openReminderPage('today'));
     document.getElementById('myBtn').addEventListener('click', () => switchPage('my'));
-    document.getElementById('addHealthBtnInline').addEventListener('click', () => openHealthModal());
-    document.getElementById('toggleHealthSectionBtn').addEventListener('click', toggleHealthSection);
+    document.getElementById('viewAllHealthDataBtn').addEventListener('click', () => {
+        setCurrentRecordView('health');
+        switchPage('records');
+    });
 
     // 我的模块入口
     ['exportBtn'].forEach(id => {
@@ -1788,20 +1790,8 @@ function updateRecordsPage() {
     list.innerHTML = config.items.join('');
 }
 
-function toggleHealthSection() {
-    const body = document.getElementById('healthSectionBody');
-    if (!body) return;
-
-    body.classList.toggle('hidden');
-    updateHealthSectionButton();
-}
-
 function updateHealthSectionButton() {
-    const body = document.getElementById('healthSectionBody');
-    const button = document.getElementById('toggleHealthSectionBtn');
-    if (!body || !button) return;
-
-    button.textContent = body.classList.contains('hidden') ? '查看健康数据' : '关闭健康数据';
+    // no-op: kept for updateDisplay() compatibility
 }
 
 // 更新日期显示
@@ -2583,16 +2573,17 @@ async function handleSymptomFormSubmit(e) {
 }
 
 function updateHealthDisplay() {
-    const container = document.getElementById('healthSummary');
+    const container = document.getElementById('healthQuickPreview');
     const emptyState = document.getElementById('healthEmptyState');
+    const healthTypeOrder = ['bloodPressure', 'heartRate', 'bloodSugar', 'uricAcid', 'bloodLipid', 'other'];
 
     if (healthRecords.length === 0) {
-        container.innerHTML = '';
-        emptyState.style.display = 'block';
+        if (container) container.innerHTML = '';
+        if (emptyState) emptyState.style.display = 'block';
         return;
     }
 
-    emptyState.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'none';
 
     const latestByType = Object.values(healthRecords.reduce((acc, record) => {
         const existing = acc[record.type];
@@ -2600,23 +2591,31 @@ function updateHealthDisplay() {
             acc[record.type] = record;
         }
         return acc;
-    }, {}));
+    }, {})).sort((a, b) => {
+        const aIndex = healthTypeOrder.indexOf(a.type);
+        const bIndex = healthTypeOrder.indexOf(b.type);
+        const safeAIndex = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex;
+        const safeBIndex = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex;
+        return safeAIndex - safeBIndex;
+    });
 
-    container.innerHTML = latestByType.map(record => `
-        <div class="health-summary-card">
-            <div class="health-summary-header">
-                <span class="health-summary-icon">${healthTypeIcons[record.type]}</span>
-                <span class="health-summary-label">${healthTypeLabels[record.type]}</span>
-            </div>
-            ${record.image ? `
-                <div class="health-summary-image-wrap">
-                    <img class="health-summary-image" src="${record.image}" alt="${escapeHtml(healthTypeLabels[record.type])}">
+    if (container) {
+        container.innerHTML = latestByType.map(record => `
+            <div class="health-quick-card" data-type="${escapeHtml(record.type || 'other')}">
+                <div class="health-quick-card-top">
+                    <div class="health-quick-card-title">
+                        <span class="health-quick-icon">${healthTypeIcons[record.type] || '🩺'}</span>
+                        <span class="health-quick-label">${healthTypeLabels[record.type] || record.type}</span>
+                    </div>
+                    <span class="health-quick-time">${escapeHtml(record.time || '--:--')}</span>
                 </div>
-            ` : ''}
-            <div class="health-summary-value">${escapeHtml(record.value)}${record.unit ? ` ${escapeHtml(record.unit)}` : ''}</div>
-            <div class="health-summary-meta">${record.time}${record.notes ? ` · ${escapeHtml(record.notes)}` : ''}</div>
-        </div>
-    `).join('');
+                <div class="health-quick-reading">
+                    <span class="health-quick-value">${escapeHtml(record.value)}</span>
+                    ${record.unit ? `<span class="health-quick-unit">${escapeHtml(record.unit)}</span>` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
 }
 
 async function handleHealthImageChange(e) {
