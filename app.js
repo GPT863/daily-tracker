@@ -1865,7 +1865,7 @@ function getCurrentRecordConfig() {
             heroText: '记录当天的血压、心率、血糖等数据，便于持续观察身体变化。',
             actionLabel: '+新增',
             emptyTitle: '今天还没有测量记录',
-            emptyHint: '点击下方按钮添加第一条测量数据。',
+            emptyHint: '',
             items
         };
     }
@@ -1880,7 +1880,7 @@ function getCurrentRecordConfig() {
             heroText: '记录症状出现的时间、描述和处理措施，方便后续回顾与判断。',
             actionLabel: '+新增',
             emptyTitle: '今天还没有症状记录',
-            emptyHint: '点击下方按钮记录症状变化和处理措施。',
+            emptyHint: '',
             items
         };
     }
@@ -1895,7 +1895,7 @@ function getCurrentRecordConfig() {
         heroText: '记录当天的饮食、运动、睡眠与用药安排，形成清晰的生活轨迹。',
         actionLabel: '+新增',
         emptyTitle: '今天还没有活动记录',
-        emptyHint: '点击下方按钮添加第一条活动。',
+        emptyHint: '',
         items
     };
 }
@@ -2746,11 +2746,16 @@ async function handleSymptomFormSubmit(e) {
 function updateHealthDisplay() {
     const container = document.getElementById('healthQuickPreview');
     const emptyState = document.getElementById('healthEmptyState');
+    const emptyActionBtn = document.getElementById('healthEmptyActionBtn');
     const healthTypeOrder = ['bloodPressure', 'heartRate', 'bloodSugar', 'uricAcid', 'bloodLipid', 'other'];
 
     if (healthRecords.length === 0) {
         if (container) container.innerHTML = '';
         if (emptyState) emptyState.style.display = 'block';
+        // 绑定"去测量"按钮点击事件
+        if (emptyActionBtn) {
+            emptyActionBtn.onclick = () => openHealthModal();
+        }
         return;
     }
 

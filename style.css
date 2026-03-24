@@ -4224,6 +4224,31 @@ body.elder-mode .stats-card-value {
     padding: 16px;
 }
 
+/* 空状态操作按钮 */
+.btn-empty-action {
+    margin-top: 16px;
+    padding: 10px 24px;
+    border: 1.5px solid var(--forest-color);
+    border-radius: 22px;
+    background: transparent;
+    color: var(--forest-color);
+    font-size: 0.94rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-empty-action:hover {
+    background: var(--forest-color);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(31, 122, 61, 0.22);
+}
+
+.btn-empty-action:active {
+    transform: translateY(0);
+}
+
 /* 提醒区域空状态：深色背景上用白色文字 */
 .reminder-section .empty-state,
 .reminder-section .empty-state p {
