@@ -1370,9 +1370,45 @@ function setupEventListeners() {
     document.getElementById('aiPageNewDiagnosisBtn').addEventListener('click', resetAiPageDiagnosis);
     document.getElementById('sendAiPageFollowupBtn').addEventListener('click', sendAiPageFollowup);
 
-    // AI页面追问输入框支持Ctrl+Enter发送
+    // 预览卡片折叠/展开
+    const previewCardHeader = document.getElementById('aiPreviewCardHeader');
+    const previewCardBody = document.getElementById('aiPreviewCardBody');
+    const previewChevron = previewCardHeader?.querySelector('.ai-chevron-icon');
+    if (previewCardHeader && previewCardBody && previewChevron) {
+        let isExpanded = true;
+        previewCardHeader.addEventListener('click', () => {
+            isExpanded = !isExpanded;
+            previewCardBody.classList.toggle('collapsed', !isExpanded);
+            previewChevron.classList.toggle('rotated', !isExpanded);
+        });
+    }
+
+    // 高级选项折叠/展开
+    const advancedToggle = document.getElementById('aiAdvancedToggle');
+    const advancedContent = document.getElementById('aiAdvancedContent');
+    const advancedChevron = advancedToggle?.querySelector('.ai-chevron-icon');
+    if (advancedToggle && advancedContent && advancedChevron) {
+        advancedToggle.addEventListener('click', () => {
+            const isHidden = advancedContent.classList.contains('hidden');
+            advancedContent.classList.toggle('hidden', !isHidden);
+            advancedChevron.classList.toggle('rotated', isHidden);
+        });
+    }
+
+    // 设置按钮 - 跳转到配置页面
+    document.getElementById('aiPageSettingsBtn')?.addEventListener('click', () => switchPage('ai-config'));
+
+    // AI页面追问输入框支持Ctrl+Enter发送 + 自动高度
     const followupInput = document.getElementById('aiPageFollowupInput');
     if (followupInput) {
+        // 自动调整高度
+        const autoResize = () => {
+            followupInput.style.height = 'auto';
+            followupInput.style.height = Math.min(followupInput.scrollHeight, 120) + 'px';
+        };
+        followupInput.addEventListener('input', autoResize);
+
+        // Ctrl+Enter发送
         followupInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
@@ -1738,90 +1774,73 @@ function updateAiPageDataPreview() {
 // 开始AI页面诊断
 async function startAiPageDiagnosis() {
     const btn = document.getElementById('startAiPageDiagnosisBtn');
+    const btnText = btn.querySelector('.ai-start-btn-text');
+    const originalText = btnText.textContent;
+
     btn.disabled = true;
-    btn.textContent = '分析中...';
+    btnText.textContent = '分析中...';
 
-    const traceSection = document.getElementById('aiPageTraceSection');
-    const traceOutput = document.getElementById('aiPageTraceOutput');
+    const chatCard = document.getElementById('aiChatCard');
+    const chatMessages = document.getElementById('aiPageChatMessages');
+    const chatStatus = document.getElementById('aiChatStatus');
+    const pageFooter = document.getElementById('aiPageFooter');
 
-    traceSection.classList.remove('hidden');
-    traceOutput.innerHTML = '';
+    // 显示对话卡片和底部输入框
+    chatCard.classList.remove('hidden');
+    pageFooter.classList.remove('hidden');
 
-    const appendMessage = (type, text) => {
-        const div = document.createElement('div');
-        div.className = `ai-trace-message ${type}`;
-        div.textContent = text;
-        traceOutput.appendChild(div);
-        traceOutput.scrollTop = traceOutput.scrollHeight;
-    };
+    // 清空并显示占位符
+    chatMessages.innerHTML = `
+        <div class="ai-chat-placeholder" id="aiChatPlaceholder">
+            <span class="ai-placeholder-icon">💭</span>
+            <p>AI正在分析您的健康数据...</p>
+        </div>
+    `;
+
+    // 更新状态指示
+    chatStatus.innerHTML = '<span class="ai-status-indicator thinking"></span>';
 
     try {
-        appendMessage('running', '开始诊断，正在检查配置...');
-
         // 验证API配置
         const aiConfig = getAiConfig();
         if (!aiConfig.apiKey) {
-            appendMessage('error', '未检测到 API 密钥，请先保存 AI 配置。');
+            chatMessages.innerHTML = `
+                <div class="ai-chat-bubble ai-assistant">
+                    <div class="ai-bubble-content">
+                        请先在「我的」→「大模型配置」中设置API密钥。
+                    </div>
+                </div>
+            `;
+            chatStatus.innerHTML = '';
             showToast('请先配置API密钥！');
             return;
         }
 
-        appendMessage('success', 'AI 配置检查通过。');
-
         // 收集数据
         const range = document.querySelector('input[name="aiPageRange"]:checked')?.value || 'today';
         const { startDate, endDate } = getAiDateRange(range);
-        appendMessage('running', `正在汇总 ${startDate} 至 ${endDate} 的活动、健康和档案数据。`);
-
         const analysisData = collectAnalysisData(startDate, endDate);
-        appendMessage('success', `数据汇总完成：${analysisData.activities.length} 条活动，${analysisData.healthRecords.length} 条健康数据，${analysisData.symptomRecords.length} 条症状记录。`);
-
-        // 构建提示词
         const prompt = buildAnalysisPrompt(analysisData);
 
-        // 创建结果容器（流式输出前创建）
-        const resultContainer = document.createElement('div');
-        resultContainer.className = 'ai-result-container';
+        // 创建AI消息气泡（流式输出）
+        chatMessages.innerHTML = '';
+        const aiBubble = createAiBubble('');
+        chatMessages.appendChild(aiBubble);
 
-        const resultContent = document.createElement('div');
-        resultContent.className = 'ai-result-content';
-        resultContainer.appendChild(resultContent);
-        traceOutput.appendChild(resultContainer);
+        const contentDiv = aiBubble.querySelector('.ai-bubble-content');
+        contentDiv.classList.add('streaming');
 
         // 调用AI API（流式）
-        appendMessage('running', '正在请求 AI 服务，流式返回分析结果...');
-        resultContent.classList.add('streaming');  // 添加流式状态
         let rawText = '';
-        const response = await callAiApiStream(prompt, {}, (chunk, fullText) => {
+        await callAiApiStream(prompt, {}, (chunk, fullText) => {
             rawText = fullText;
-            resultContent.innerHTML = formatAiResponse(fullText);
-            traceOutput.scrollTop = traceOutput.scrollHeight;
+            contentDiv.innerHTML = formatAiResponse(fullText);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         });
 
-        resultContent.classList.remove('streaming');  // 移除流式状态
-        markAiConfigVerified();
-        appendMessage('success', 'AI 服务已返回完整结果。');
+        contentDiv.classList.remove('streaming');
 
-        // 添加复制按钮
-        const copyBtn = document.createElement('button');
-        copyBtn.className = 'ai-copy-btn';
-        copyBtn.innerHTML = '📋 复制';
-        copyBtn.onclick = () => {
-            const text = resultContent.innerText || resultContent.textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                showToast('已复制到剪贴板');
-                copyBtn.innerHTML = '✅ 已复制';
-                setTimeout(() => {
-                    copyBtn.innerHTML = '📋 复制';
-                }, 2000);
-            }).catch(() => {
-                showToast('复制失败');
-            });
-        };
-
-        resultContainer.appendChild(copyBtn);
-
-        // 保存诊断上下文用于对话
+        // 保存诊断上下文
         aiConversationContext = {
             startDate,
             endDate,
@@ -1831,71 +1850,119 @@ async function startAiPageDiagnosis() {
             { role: 'assistant', content: rawText }
         ];
 
-        // 显示对话区域
-        const chatSection = document.getElementById('aiPageChatSection');
-        const chatMessages = document.getElementById('aiPageChatMessages');
-        if (chatSection) {
-            chatSection.classList.remove('hidden');
+        markAiConfigVerified();
+        chatStatus.innerHTML = '';
 
-            // 将初始诊断结果添加到对话区域
-            const initialMsgDiv = document.createElement('div');
-            initialMsgDiv.className = 'ai-chat-message ai-chat-assistant';
-            initialMsgDiv.innerHTML = `
-                <div class="ai-chat-header">
-                    <span class="ai-chat-role">AI助手</span>
-                    <button class="ai-chat-copy-btn" title="复制">📋</button>
-                </div>
-                <div class="ai-chat-content">${formatAiResponse(rawText)}</div>
-            `;
-            const copyBtn = initialMsgDiv.querySelector('.ai-chat-copy-btn');
-            copyBtn.onclick = () => {
-                const text = initialMsgDiv.querySelector('.ai-chat-content').innerText || initialMsgDiv.querySelector('.ai-chat-content').textContent;
-                navigator.clipboard.writeText(text).then(() => {
-                    copyBtn.innerHTML = '✅';
-                    setTimeout(() => {
-                        copyBtn.innerHTML = '📋';
-                    }, 2000);
-                }).catch(() => {
-                    showToast('复制失败');
-                });
-            };
-            chatMessages.appendChild(initialMsgDiv);
-        }
+        // 添加建议问题按钮
+        addSuggestedQuestions(chatMessages);
 
-        showToast('AI诊断完成！');
+        showToast('AI分析完成！');
     } catch (error) {
         console.error('AI诊断失败:', error);
-        appendMessage('error', `诊断失败：${error.message}`);
+        chatMessages.innerHTML = `
+            <div class="ai-chat-bubble ai-assistant">
+                <div class="ai-bubble-content">
+                    诊断失败：${escapeHtml(error.message)}
+                </div>
+            </div>
+        `;
+        chatStatus.innerHTML = '';
         showToast('诊断失败，请重试');
     } finally {
         btn.disabled = false;
-        btn.textContent = '开始AI诊断';
+        btnText.textContent = originalText;
     }
+}
+
+// 创建AI消息气泡
+function createAiBubble(content) {
+    const bubble = document.createElement('div');
+    bubble.className = 'ai-chat-bubble ai-assistant';
+    bubble.innerHTML = `
+        <div class="ai-bubble-header">
+            <span>AI健康助手</span>
+            <button class="ai-bubble-copy-btn" title="复制">📋</button>
+        </div>
+        <div class="ai-bubble-content">${content}</div>
+    `;
+
+    const copyBtn = bubble.querySelector('.ai-bubble-copy-btn');
+    const contentDiv = bubble.querySelector('.ai-bubble-content');
+
+    copyBtn.onclick = () => {
+        const text = contentDiv.innerText || contentDiv.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            copyBtn.textContent = '✅';
+            setTimeout(() => {
+                copyBtn.textContent = '📋';
+            }, 2000);
+        }).catch(() => {
+            showToast('复制失败');
+        });
+    };
+
+    return bubble;
+}
+
+// 创建用户消息气泡
+function createUserBubble(content) {
+    const bubble = document.createElement('div');
+    bubble.className = 'ai-chat-bubble ai-user';
+    bubble.innerHTML = `
+        <div class="ai-bubble-content">${escapeHtml(content)}</div>
+    `;
+    return bubble;
+}
+
+// 添加建议问题
+function addSuggestedQuestions(container) {
+    const questions = [
+        '有什么改善建议？',
+        '需要关注哪些指标？',
+        '如何保持健康状态？'
+    ];
+
+    const suggestionsDiv = document.createElement('div');
+    suggestionsDiv.className = 'ai-suggested-questions';
+    suggestionsDiv.innerHTML = '<span style="font-size:0.85rem;color:var(--text-secondary);width:100%;">您可能想问：</span>';
+
+    questions.forEach(q => {
+        const btn = document.createElement('button');
+        btn.className = 'ai-suggested-btn';
+        btn.textContent = q;
+        btn.onclick = () => {
+            document.getElementById('aiPageFollowupInput').value = q;
+            sendAiPageFollowup();
+        };
+        suggestionsDiv.appendChild(btn);
+    });
+
+    container.appendChild(suggestionsDiv);
 }
 
 // 重置AI页面诊断
 function resetAiPageDiagnosis() {
-    const traceSection = document.getElementById('aiPageTraceSection');
-    const traceOutput = document.getElementById('aiPageTraceOutput');
-    const chatSection = document.getElementById('aiPageChatSection');
+    const chatCard = document.getElementById('aiChatCard');
     const chatMessages = document.getElementById('aiPageChatMessages');
+    const pageFooter = document.getElementById('aiPageFooter');
+    const chatStatus = document.getElementById('aiChatStatus');
 
-    if (traceSection) {
-        traceSection.classList.add('hidden');
+    // 隐藏对话卡片和底部输入框
+    if (chatCard) {
+        chatCard.classList.add('hidden');
     }
-    if (traceOutput) {
-        traceOutput.innerHTML = '';
-    }
-    if (chatSection) {
-        chatSection.classList.add('hidden');
-    }
-    if (chatMessages) {
-        chatMessages.innerHTML = '';
+    if (pageFooter) {
+        pageFooter.classList.add('hidden');
     }
 
     // 重置对话上下文
     aiConversationContext = null;
     aiConversationHistory = [];
+
+    // 清空状态
+    if (chatStatus) {
+        chatStatus.innerHTML = '';
+    }
 }
 
 // 发送AI页面追问
@@ -1914,50 +1981,28 @@ async function sendAiPageFollowup() {
 
     const chatMessages = document.getElementById('aiPageChatMessages');
     const sendBtn = document.getElementById('sendAiPageFollowupBtn');
+    const chatStatus = document.getElementById('aiChatStatus');
 
-    // 添加用户消息
-    const userMsgDiv = document.createElement('div');
-    userMsgDiv.className = 'ai-chat-message ai-chat-user';
-    userMsgDiv.innerHTML = `
-        <span class="ai-chat-role">您</span>
-        <div class="ai-chat-content">${escapeHtml(question)}</div>
-    `;
-    chatMessages.appendChild(userMsgDiv);
+    // 添加用户消息气泡
+    chatMessages.appendChild(createUserBubble(question));
 
-    // 清空输入框
+    // 清空输入框并重置高度
     input.value = '';
+    input.style.height = 'auto';
 
-    // 添加AI回复占位
-    const aiMsgDiv = document.createElement('div');
-    aiMsgDiv.className = 'ai-chat-message ai-chat-assistant';
-    aiMsgDiv.innerHTML = `
-        <div class="ai-chat-header">
-            <span class="ai-chat-role">AI助手</span>
-            <button class="ai-chat-copy-btn" title="复制">📋</button>
-        </div>
-        <div class="ai-chat-content streaming"></div>
-    `;
-    chatMessages.appendChild(aiMsgDiv);
+    // 创建AI消息气泡
+    const aiBubble = createAiBubble('');
+    chatMessages.appendChild(aiBubble);
 
-    const aiContentDiv = aiMsgDiv.querySelector('.ai-chat-content');
-    const copyBtn = aiMsgDiv.querySelector('.ai-chat-copy-btn');
-
-    copyBtn.onclick = () => {
-        const text = aiContentDiv.innerText || aiContentDiv.textContent;
-        navigator.clipboard.writeText(text).then(() => {
-            copyBtn.innerHTML = '✅';
-            setTimeout(() => {
-                copyBtn.innerHTML = '📋';
-            }, 2000);
-        }).catch(() => {
-            showToast('复制失败');
-        });
-    };
+    const contentDiv = aiBubble.querySelector('.ai-bubble-content');
+    contentDiv.classList.add('streaming');
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     aiConversationBusy = true;
     sendBtn.disabled = true;
-    sendBtn.textContent = '思考中...';
+
+    // 更新状态指示
+    chatStatus.innerHTML = '<span class="ai-status-indicator thinking"></span>';
 
     try {
         // 构建消息历史
@@ -1973,7 +2018,7 @@ async function sendAiPageFollowup() {
         let fullResponse = '';
         await callAiApiStream(messages, {}, (chunk, fullText) => {
             fullResponse = fullText;
-            aiContentDiv.innerHTML = formatAiResponse(fullText);
+            contentDiv.innerHTML = formatAiResponse(fullText);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         });
 
@@ -1981,15 +2026,15 @@ async function sendAiPageFollowup() {
         aiConversationHistory.push({ role: 'user', content: question });
         aiConversationHistory.push({ role: 'assistant', content: fullResponse });
 
-        aiContentDiv.classList.remove('streaming');
-        showToast('回复已生成');
+        contentDiv.classList.remove('streaming');
+        chatStatus.innerHTML = '';
     } catch (error) {
         console.error('追问失败:', error);
-        aiContentDiv.innerHTML = `<span style="color: #d32f2f;">追问失败：${escapeHtml(error.message)}</span>`;
+        contentDiv.innerHTML = `<span style="color: #d32f2f;">追问失败：${escapeHtml(error.message)}</span>`;
+        chatStatus.innerHTML = '';
     } finally {
         aiConversationBusy = false;
         sendBtn.disabled = false;
-        sendBtn.textContent = '发送追问';
     }
 }
 
@@ -3781,13 +3826,6 @@ function showToast(message) {
         toast.style.animation = 'fadeOut 0.3s';
         setTimeout(() => toast.remove(), 300);
     }, 2000);
-}
-
-// HTML转义
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 // 注册Service Worker（PWA支持）
