@@ -5549,9 +5549,26 @@ body.elder-mode .ai-result-content {
         grid-template-columns: repeat(2, 1fr);
     }
     
-    .timeline-item {
-        padding: 12px;
-    }
+.timeline-item {
+    padding: 12px;
+}
+
+.timeline-section .section-heading {
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
+.timeline-section .section-heading h2 {
+    min-width: 0;
+    flex: 1;
+}
+
+.timeline-section .section-tools {
+    width: auto;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
     .modal-content {
         margin: 10% auto;
         width: 95%;
