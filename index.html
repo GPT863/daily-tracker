@@ -562,187 +562,101 @@
             </div>
         </div>
 
-        <!-- AI分析页面（全屏页面模式） -->
+        <!-- AI分析页面（全屏Chat-First） -->
         <div id="aiAnalysisModal" class="modal page-mode ai-page">
+            <!-- 紧凑 Header -->
             <div class="ai-page-header">
                 <button type="button" class="ai-page-back-btn" data-back-dest="home" aria-label="返回">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 12H5M12 19l-7-7 7-7"/>
-                    </svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                 </button>
                 <h1 class="ai-page-title">AI健康分析</h1>
-                <button type="button" class="ai-page-settings-btn" id="aiPageSettingsBtn" aria-label="设置">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"/>
-                        <path d="M12 1v6m0 6v6m9-9h-6m-6 0H3m15.364 6.364l-4.243 4.243M9.879 9.879L5.636 5.636m12.728 12.728l-4.243 4.243M9.879 14.121L5.636 18.364"/>
-                    </svg>
-                </button>
-            </div>
-
-            <div class="ai-page-content">
-                <!-- 配置卡片：数据范围 -->
-                <div class="ai-config-card ai-range-card">
-                    <div class="ai-card-header">
-                        <span class="ai-card-icon">📅</span>
-                        <span class="ai-card-title">分析范围</span>
-                    </div>
-                    <div class="ai-range-pills">
-                        <label class="ai-range-pill">
-                            <input type="radio" name="aiPageRange" value="today" checked>
-                            <span>今天</span>
-                        </label>
-                        <label class="ai-range-pill">
-                            <input type="radio" name="aiPageRange" value="3days">
-                            <span>3天</span>
-                        </label>
-                        <label class="ai-range-pill">
-                            <input type="radio" name="aiPageRange" value="week">
-                            <span>7天</span>
-                        </label>
-                        <label class="ai-range-pill">
-                            <input type="radio" name="aiPageRange" value="month">
-                            <span>30天</span>
-                        </label>
-                        <label class="ai-range-pill">
-                            <input type="radio" name="aiPageRange" value="quarter">
-                            <span>90天</span>
-                        </label>
-                        <label class="ai-range-pill">
-                            <input type="radio" name="aiPageRange" value="custom">
-                            <span>自定义</span>
-                        </label>
-                    </div>
-                    <div id="aiPageDateRangeInputs" class="ai-date-range-inputs hidden">
-                        <div class="ai-date-row">
-                            <input type="date" id="aiPageStartDate" class="ai-date-input">
-                            <span class="ai-date-separator">至</span>
-                            <input type="date" id="aiPageEndDate" class="ai-date-input">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 配置卡片：数据预览 + 高级选项（可折叠） -->
-                <div class="ai-config-card ai-preview-card">
-                    <div class="ai-card-header clickable" id="aiPreviewCardHeader">
-                        <div class="ai-card-header-left">
-                            <span class="ai-card-icon">📊</span>
-                            <span class="ai-card-title">数据预览</span>
-                            <span class="ai-status-badge" id="aiDataStatusBadge">
-                                <span class="ai-status-dot"></span>
-                                <span class="ai-status-text">已就绪</span>
-                            </span>
-                        </div>
-                        <svg class="ai-chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"/>
-                        </svg>
-                    </div>
-                    <div class="ai-card-body" id="aiPreviewCardBody">
-                        <div class="ai-data-stats">
-                            <div class="ai-stat-item">
-                                <span class="ai-stat-icon">🏃</span>
-                                <div class="ai-stat-info">
-                                    <span class="ai-stat-label">活动记录</span>
-                                    <span class="ai-stat-value" id="aiPageActivityCount">0</span>
-                                </div>
-                            </div>
-                            <div class="ai-stat-item">
-                                <span class="ai-stat-icon">💓</span>
-                                <div class="ai-stat-info">
-                                    <span class="ai-stat-label">健康数据</span>
-                                    <span class="ai-stat-value" id="aiPageHealthCount">0</span>
-                                </div>
-                            </div>
-                            <div class="ai-stat-item">
-                                <span class="ai-stat-icon">📆</span>
-                                <div class="ai-stat-info">
-                                    <span class="ai-stat-label">分析天数</span>
-                                    <span class="ai-stat-value" id="aiPageDayCount">0</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 高级选项（折叠内容） -->
-                        <div class="ai-advanced-section">
-                            <div class="ai-advanced-toggle" id="aiAdvancedToggle">
-                                <span>高级选项</span>
-                                <svg class="ai-chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="6 9 12 15 18 9"/>
-                                </svg>
-                            </div>
-                            <div class="ai-advanced-content hidden" id="aiAdvancedContent">
-                                <div class="ai-option-group">
-                                    <label class="ai-option-item">
-                                        <input type="checkbox" id="aiPageIncludeActivities" checked>
-                                        <span>活动记录</span>
-                                    </label>
-                                    <label class="ai-option-item">
-                                        <input type="checkbox" id="aiPageIncludeHealth" checked>
-                                        <span>健康数据</span>
-                                    </label>
-                                    <label class="ai-option-item">
-                                        <input type="checkbox" id="aiPageIncludeProfile" checked>
-                                        <span>个人信息</span>
-                                    </label>
-                                    <label class="ai-option-item">
-                                        <input type="checkbox" id="aiPageIncludeMedication" checked>
-                                        <span>用药情况</span>
-                                    </label>
-                                </div>
-                                <div class="ai-custom-prompt">
-                                    <textarea id="aiPageCustomPrompt" rows="2" placeholder="额外关注的问题（可选）"></textarea>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 开始按钮 -->
-                        <button id="startAiPageDiagnosisBtn" class="ai-start-btn">
-                            <span class="ai-start-btn-text">开始分析</span>
-                            <svg class="ai-start-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polygon points="5 3 19 12 5 21 5 3"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 对话卡片（主区域） -->
-                <div class="ai-chat-card hidden" id="aiChatCard">
-                    <div class="ai-chat-header">
-                        <div class="ai-chat-title">
-                            <span class="ai-chat-icon">💬</span>
-                            <span>AI健康分析</span>
-                            <span class="ai-chat-status" id="aiChatStatus"></span>
-                        </div>
-                        <button class="ai-new-chat-btn" id="aiPageNewDiagnosisBtn" title="新对话">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M23 4v6h-6M1 20v-6h6"/>
-                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                            </svg>
-                            <span>新对话</span>
-                        </button>
-                    </div>
-                    <div class="ai-chat-messages" id="aiPageChatMessages">
-                        <div class="ai-chat-placeholder" id="aiChatPlaceholder">
-                            <span class="ai-placeholder-icon">🤖</span>
-                            <p>点击"开始分析"获取健康建议</p>
-                        </div>
-                    </div>
+                <div class="ai-header-actions">
+                    <button type="button" class="ai-header-btn" id="aiPageNewDiagnosisBtn" title="新对话" style="display:none;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                    <button type="button" class="ai-header-btn" id="aiPageSettingsBtn" aria-label="设置">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </button>
                 </div>
             </div>
 
-            <!-- 底部输入框（固定） -->
-            <div class="ai-page-footer hidden" id="aiPageFooter">
-                <div class="ai-input-wrapper">
-                    <textarea
-                        id="aiPageFollowupInput"
-                        class="ai-chat-input"
-                        rows="1"
-                        placeholder="继续提问... (Ctrl+Enter 发送)"
-                    ></textarea>
-                    <button class="ai-send-btn" id="sendAiPageFollowupBtn" title="发送 (Ctrl+Enter)">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="22" y1="2" x2="11" y2="13"/>
-                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                        </svg>
+            <!-- 时间范围胶囊条（固定在Header下方） -->
+            <div class="ai-range-bar">
+                <div class="ai-range-scroll">
+                    <label class="ai-range-pill">
+                        <input type="radio" name="aiPageRange" value="today" checked>
+                        <span>今天</span>
+                    </label>
+                    <label class="ai-range-pill">
+                        <input type="radio" name="aiPageRange" value="3days">
+                        <span>3天</span>
+                    </label>
+                    <label class="ai-range-pill">
+                        <input type="radio" name="aiPageRange" value="week">
+                        <span>7天</span>
+                    </label>
+                    <label class="ai-range-pill">
+                        <input type="radio" name="aiPageRange" value="month">
+                        <span>30天</span>
+                    </label>
+                    <label class="ai-range-pill">
+                        <input type="radio" name="aiPageRange" value="quarter">
+                        <span>90天</span>
+                    </label>
+                    <label class="ai-range-pill">
+                        <input type="radio" name="aiPageRange" value="custom">
+                        <span>自定义</span>
+                    </label>
+                </div>
+                <div id="aiPageDateRangeInputs" class="ai-date-range-inputs hidden">
+                    <input type="date" id="aiPageStartDate" class="ai-date-input">
+                    <span class="ai-date-sep">至</span>
+                    <input type="date" id="aiPageEndDate" class="ai-date-input">
+                </div>
+            </div>
+
+            <!-- 对话主区域 -->
+            <div class="ai-chat-area" id="aiChatArea">
+                <!-- 欢迎卡片（初始状态） -->
+                <div class="ai-welcome" id="aiWelcome">
+                    <div class="ai-welcome-avatar">🤖</div>
+                    <div class="ai-welcome-text">AI健康助手</div>
+                    <div class="ai-welcome-sub">选择时间范围，开始分析您的健康数据</div>
+                    <div class="ai-welcome-stats" id="aiWelcomeStats">
+                        <span class="ai-wtag">📊 <b id="aiPageActivityCount">0</b> 条活动</span>
+                        <span class="ai-wtag">💓 <b id="aiPageHealthCount">0</b> 条健康</span>
+                        <span class="ai-wtag">📆 <b id="aiPageDayCount">0</b> 天</span>
+                    </div>
+                    <button id="startAiPageDiagnosisBtn" class="ai-start-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        <span class="ai-start-btn-text">开始分析</span>
+                    </button>
+                    <div class="ai-welcome-advanced">
+                        <button type="button" class="ai-advanced-toggle" id="aiAdvancedToggle">
+                            高级选项
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="ai-advanced-panel hidden" id="aiAdvancedContent">
+                            <label class="ai-adv-check"><input type="checkbox" id="aiPageIncludeActivities" checked><span>活动记录</span></label>
+                            <label class="ai-adv-check"><input type="checkbox" id="aiPageIncludeHealth" checked><span>健康数据</span></label>
+                            <label class="ai-adv-check"><input type="checkbox" id="aiPageIncludeProfile" checked><span>个人信息</span></label>
+                            <label class="ai-adv-check"><input type="checkbox" id="aiPageIncludeMedication" checked><span>用药情况</span></label>
+                            <textarea id="aiPageCustomPrompt" rows="2" placeholder="额外关注的问题（可选）" class="ai-adv-textarea"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 对话消息流（分析后显示） -->
+                <div class="ai-messages" id="aiPageChatMessages" style="display:none;"></div>
+            </div>
+
+            <!-- 底部栏（输入+推荐问题） -->
+            <div class="ai-bottom-bar" id="aiPageFooter" style="display:none;">
+                <div class="ai-suggest-scroll" id="aiSuggestScroll"></div>
+                <div class="ai-input-row">
+                    <textarea id="aiPageFollowupInput" class="ai-chat-input" rows="1" placeholder="继续提问..."></textarea>
+                    <button class="ai-send-btn" id="sendAiPageFollowupBtn" title="发送">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9 22 2"/></svg>
                     </button>
                 </div>
             </div>

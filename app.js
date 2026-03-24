@@ -1370,28 +1370,14 @@ function setupEventListeners() {
     document.getElementById('aiPageNewDiagnosisBtn').addEventListener('click', resetAiPageDiagnosis);
     document.getElementById('sendAiPageFollowupBtn').addEventListener('click', sendAiPageFollowup);
 
-    // 预览卡片折叠/展开
-    const previewCardHeader = document.getElementById('aiPreviewCardHeader');
-    const previewCardBody = document.getElementById('aiPreviewCardBody');
-    const previewChevron = previewCardHeader?.querySelector('.ai-chevron-icon');
-    if (previewCardHeader && previewCardBody && previewChevron) {
-        let isExpanded = true;
-        previewCardHeader.addEventListener('click', () => {
-            isExpanded = !isExpanded;
-            previewCardBody.classList.toggle('collapsed', !isExpanded);
-            previewChevron.classList.toggle('rotated', !isExpanded);
-        });
-    }
-
     // 高级选项折叠/展开
     const advancedToggle = document.getElementById('aiAdvancedToggle');
     const advancedContent = document.getElementById('aiAdvancedContent');
-    const advancedChevron = advancedToggle?.querySelector('.ai-chevron-icon');
-    if (advancedToggle && advancedContent && advancedChevron) {
+    if (advancedToggle && advancedContent) {
         advancedToggle.addEventListener('click', () => {
             const isHidden = advancedContent.classList.contains('hidden');
             advancedContent.classList.toggle('hidden', !isHidden);
-            advancedChevron.classList.toggle('rotated', isHidden);
+            advancedToggle.classList.toggle('expanded', isHidden);
         });
     }
 
@@ -1401,14 +1387,12 @@ function setupEventListeners() {
     // AI页面追问输入框支持Ctrl+Enter发送 + 自动高度
     const followupInput = document.getElementById('aiPageFollowupInput');
     if (followupInput) {
-        // 自动调整高度
         const autoResize = () => {
             followupInput.style.height = 'auto';
-            followupInput.style.height = Math.min(followupInput.scrollHeight, 120) + 'px';
+            followupInput.style.height = Math.min(followupInput.scrollHeight, 100) + 'px';
         };
         followupInput.addEventListener('input', autoResize);
 
-        // Ctrl+Enter发送
         followupInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
@@ -1731,12 +1715,8 @@ async function runQuickTodayAiDiagnosis() {
     // 设置默认为今天
     const todayRange = document.querySelector('input[name="aiPageRange"][value="today"]');
     const customRangeInputs = document.getElementById('aiPageDateRangeInputs');
-    if (todayRange) {
-        todayRange.checked = true;
-    }
-    if (customRangeInputs) {
-        customRangeInputs.classList.add('hidden');
-    }
+    if (todayRange) todayRange.checked = true;
+    if (customRangeInputs) customRangeInputs.classList.add('hidden');
     updateAiPageDataPreview();
 }
 
@@ -1780,41 +1760,33 @@ async function startAiPageDiagnosis() {
     btn.disabled = true;
     btnText.textContent = '分析中...';
 
-    const chatCard = document.getElementById('aiChatCard');
+    const welcome = document.getElementById('aiWelcome');
     const chatMessages = document.getElementById('aiPageChatMessages');
-    const chatStatus = document.getElementById('aiChatStatus');
     const pageFooter = document.getElementById('aiPageFooter');
-
-    // 显示对话卡片和底部输入框
-    chatCard.classList.remove('hidden');
-    pageFooter.classList.remove('hidden');
-
-    // 清空并显示占位符
-    chatMessages.innerHTML = `
-        <div class="ai-chat-placeholder" id="aiChatPlaceholder">
-            <span class="ai-placeholder-icon">💭</span>
-            <p>AI正在分析您的健康数据...</p>
-        </div>
-    `;
-
-    // 更新状态指示
-    chatStatus.innerHTML = '<span class="ai-status-indicator thinking"></span>';
+    const newChatBtn = document.getElementById('aiPageNewDiagnosisBtn');
 
     try {
         // 验证API配置
         const aiConfig = getAiConfig();
         if (!aiConfig.apiKey) {
-            chatMessages.innerHTML = `
-                <div class="ai-chat-bubble ai-assistant">
-                    <div class="ai-bubble-content">
-                        请先在「我的」→「大模型配置」中设置API密钥。
-                    </div>
-                </div>
-            `;
-            chatStatus.innerHTML = '';
-            showToast('请先配置API密钥！');
+            showToast('请先在设置中配置API密钥！');
+            btn.disabled = false;
+            btnText.textContent = originalText;
             return;
         }
+
+        // 隐藏欢迎卡，显示消息流和底部栏
+        welcome.style.display = 'none';
+        chatMessages.style.display = 'flex';
+        pageFooter.style.display = 'block';
+        newChatBtn.style.display = 'flex';
+
+        // 显示思考动画
+        chatMessages.innerHTML = '';
+        const thinkingEl = document.createElement('div');
+        thinkingEl.className = 'ai-thinking-indicator';
+        thinkingEl.innerHTML = '<div class="ai-thinking-dots"><span></span><span></span><span></span></div><span>正在分析...</span>';
+        chatMessages.appendChild(thinkingEl);
 
         // 收集数据
         const range = document.querySelector('input[name="aiPageRange"]:checked')?.value || 'today';
@@ -1822,7 +1794,7 @@ async function startAiPageDiagnosis() {
         const analysisData = collectAnalysisData(startDate, endDate);
         const prompt = buildAnalysisPrompt(analysisData);
 
-        // 创建AI消息气泡（流式输出）
+        // 替换思考动画为AI气泡
         chatMessages.innerHTML = '';
         const aiBubble = createAiBubble('');
         chatMessages.appendChild(aiBubble);
@@ -1841,32 +1813,20 @@ async function startAiPageDiagnosis() {
         contentDiv.classList.remove('streaming');
 
         // 保存诊断上下文
-        aiConversationContext = {
-            startDate,
-            endDate,
-            diagnosisResult: rawText
-        };
-        aiConversationHistory = [
-            { role: 'assistant', content: rawText }
-        ];
+        aiConversationContext = { startDate, endDate, diagnosisResult: rawText };
+        aiConversationHistory = [{ role: 'assistant', content: rawText }];
 
         markAiConfigVerified();
-        chatStatus.innerHTML = '';
 
-        // 添加建议问题按钮
-        addSuggestedQuestions(chatMessages);
+        // 添加推荐问题到底部横滑条
+        addSuggestedQuestions();
 
         showToast('AI分析完成！');
     } catch (error) {
         console.error('AI诊断失败:', error);
-        chatMessages.innerHTML = `
-            <div class="ai-chat-bubble ai-assistant">
-                <div class="ai-bubble-content">
-                    诊断失败：${escapeHtml(error.message)}
-                </div>
-            </div>
-        `;
-        chatStatus.innerHTML = '';
+        chatMessages.innerHTML = '';
+        const errBubble = createAiBubble(`诊断失败：${escapeHtml(error.message)}`);
+        chatMessages.appendChild(errBubble);
         showToast('诊断失败，请重试');
     } finally {
         btn.disabled = false;
@@ -1878,12 +1838,16 @@ async function startAiPageDiagnosis() {
 function createAiBubble(content) {
     const bubble = document.createElement('div');
     bubble.className = 'ai-chat-bubble ai-assistant';
+
+    const now = new Date();
+    const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+
     bubble.innerHTML = `
-        <div class="ai-bubble-header">
-            <span>AI健康助手</span>
-            <button class="ai-bubble-copy-btn" title="复制">📋</button>
-        </div>
         <div class="ai-bubble-content">${content}</div>
+        <div class="ai-bubble-footer">
+            <span class="ai-bubble-time">${timeStr}</span>
+            <button class="ai-bubble-copy-btn" title="复制">📋 复制</button>
+        </div>
     `;
 
     const copyBtn = bubble.querySelector('.ai-bubble-copy-btn');
@@ -1892,10 +1856,9 @@ function createAiBubble(content) {
     copyBtn.onclick = () => {
         const text = contentDiv.innerText || contentDiv.textContent;
         navigator.clipboard.writeText(text).then(() => {
-            copyBtn.textContent = '✅';
-            setTimeout(() => {
-                copyBtn.textContent = '📋';
-            }, 2000);
+            copyBtn.textContent = '✅ 已复制';
+            if (navigator.vibrate) navigator.vibrate(50);
+            setTimeout(() => { copyBtn.textContent = '📋 复制'; }, 2000);
         }).catch(() => {
             showToast('复制失败');
         });
@@ -1914,55 +1877,55 @@ function createUserBubble(content) {
     return bubble;
 }
 
-// 添加建议问题
-function addSuggestedQuestions(container) {
+// 添加推荐问题到底部横滑条
+function addSuggestedQuestions() {
+    const scrollContainer = document.getElementById('aiSuggestScroll');
+    if (!scrollContainer) return;
+
     const questions = [
         '有什么改善建议？',
         '需要关注哪些指标？',
-        '如何保持健康状态？'
+        '饮食方面有何建议？',
+        '睡眠质量如何改善？'
     ];
 
-    const suggestionsDiv = document.createElement('div');
-    suggestionsDiv.className = 'ai-suggested-questions';
-    suggestionsDiv.innerHTML = '<span style="font-size:0.85rem;color:var(--text-secondary);width:100%;">您可能想问：</span>';
-
+    scrollContainer.innerHTML = '';
     questions.forEach(q => {
         const btn = document.createElement('button');
-        btn.className = 'ai-suggested-btn';
+        btn.className = 'ai-suggest-btn';
         btn.textContent = q;
         btn.onclick = () => {
             document.getElementById('aiPageFollowupInput').value = q;
             sendAiPageFollowup();
         };
-        suggestionsDiv.appendChild(btn);
+        scrollContainer.appendChild(btn);
     });
-
-    container.appendChild(suggestionsDiv);
 }
 
 // 重置AI页面诊断
 function resetAiPageDiagnosis() {
-    const chatCard = document.getElementById('aiChatCard');
+    const welcome = document.getElementById('aiWelcome');
     const chatMessages = document.getElementById('aiPageChatMessages');
     const pageFooter = document.getElementById('aiPageFooter');
-    const chatStatus = document.getElementById('aiChatStatus');
+    const newChatBtn = document.getElementById('aiPageNewDiagnosisBtn');
+    const suggestScroll = document.getElementById('aiSuggestScroll');
 
-    // 隐藏对话卡片和底部输入框
-    if (chatCard) {
-        chatCard.classList.add('hidden');
+    // 显示欢迎卡，隐藏消息流和底部栏
+    if (welcome) welcome.style.display = 'flex';
+    if (chatMessages) {
+        chatMessages.style.display = 'none';
+        chatMessages.innerHTML = '';
     }
-    if (pageFooter) {
-        pageFooter.classList.add('hidden');
-    }
+    if (pageFooter) pageFooter.style.display = 'none';
+    if (newChatBtn) newChatBtn.style.display = 'none';
+    if (suggestScroll) suggestScroll.innerHTML = '';
 
     // 重置对话上下文
     aiConversationContext = null;
     aiConversationHistory = [];
 
-    // 清空状态
-    if (chatStatus) {
-        chatStatus.innerHTML = '';
-    }
+    // 更新数据预览
+    updateAiPageDataPreview();
 }
 
 // 发送AI页面追问
@@ -1981,7 +1944,10 @@ async function sendAiPageFollowup() {
 
     const chatMessages = document.getElementById('aiPageChatMessages');
     const sendBtn = document.getElementById('sendAiPageFollowupBtn');
-    const chatStatus = document.getElementById('aiChatStatus');
+    const suggestScroll = document.getElementById('aiSuggestScroll');
+
+    // 清空推荐问题
+    if (suggestScroll) suggestScroll.innerHTML = '';
 
     // 添加用户消息气泡
     chatMessages.appendChild(createUserBubble(question));
@@ -1990,19 +1956,15 @@ async function sendAiPageFollowup() {
     input.value = '';
     input.style.height = 'auto';
 
-    // 创建AI消息气泡
-    const aiBubble = createAiBubble('');
-    chatMessages.appendChild(aiBubble);
-
-    const contentDiv = aiBubble.querySelector('.ai-bubble-content');
-    contentDiv.classList.add('streaming');
+    // 显示思考动画
+    const thinkingEl = document.createElement('div');
+    thinkingEl.className = 'ai-thinking-indicator';
+    thinkingEl.innerHTML = '<div class="ai-thinking-dots"><span></span><span></span><span></span></div><span>思考中...</span>';
+    chatMessages.appendChild(thinkingEl);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     aiConversationBusy = true;
     sendBtn.disabled = true;
-
-    // 更新状态指示
-    chatStatus.innerHTML = '<span class="ai-status-indicator thinking"></span>';
 
     try {
         // 构建消息历史
@@ -2014,6 +1976,14 @@ async function sendAiPageFollowup() {
             ...aiConversationHistory,
             { role: 'user', content: question }
         ];
+
+        // 替换思考动画为AI气泡
+        thinkingEl.remove();
+        const aiBubble = createAiBubble('');
+        chatMessages.appendChild(aiBubble);
+
+        const contentDiv = aiBubble.querySelector('.ai-bubble-content');
+        contentDiv.classList.add('streaming');
 
         let fullResponse = '';
         await callAiApiStream(messages, {}, (chunk, fullText) => {
@@ -2027,11 +1997,14 @@ async function sendAiPageFollowup() {
         aiConversationHistory.push({ role: 'assistant', content: fullResponse });
 
         contentDiv.classList.remove('streaming');
-        chatStatus.innerHTML = '';
+
+        // 重新添加推荐问题
+        addSuggestedQuestions();
     } catch (error) {
         console.error('追问失败:', error);
-        contentDiv.innerHTML = `<span style="color: #d32f2f;">追问失败：${escapeHtml(error.message)}</span>`;
-        chatStatus.innerHTML = '';
+        thinkingEl.remove();
+        const errBubble = createAiBubble(`<span style="color: #d32f2f;">追问失败：${escapeHtml(error.message)}</span>`);
+        chatMessages.appendChild(errBubble);
     } finally {
         aiConversationBusy = false;
         sendBtn.disabled = false;
