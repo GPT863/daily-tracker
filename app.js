@@ -1847,10 +1847,12 @@ function createAiBubble(content) {
         <div class="ai-bubble-footer">
             <span class="ai-bubble-time">${timeStr}</span>
             <button class="ai-bubble-copy-btn" title="复制">📋 复制</button>
+            <button class="ai-bubble-play-btn" title="语音播放">🔊 播放</button>
         </div>
     `;
 
     const copyBtn = bubble.querySelector('.ai-bubble-copy-btn');
+    const playBtn = bubble.querySelector('.ai-bubble-play-btn');
     const contentDiv = bubble.querySelector('.ai-bubble-content');
 
     copyBtn.onclick = () => {
@@ -1864,7 +1866,86 @@ function createAiBubble(content) {
         });
     };
 
+    playBtn.onclick = () => {
+        const text = contentDiv.innerText || contentDiv.textContent;
+        aiSpeechPlay(text, playBtn);
+    };
+
     return bubble;
+}
+
+// 当前语音实例
+let currentSpeechUtterance = null;
+let currentSpeechBtn = null;
+
+// AI语音播放（支持暂停/继续）
+function aiSpeechPlay(text, btn) {
+    if (!('speechSynthesis' in window)) {
+        showToast('当前浏览器不支持语音合成');
+        return;
+    }
+
+    // 情况1：点击的是当前正在播放的按钮 → 暂停
+    if (currentSpeechBtn === btn && speechSynthesis.speaking && !speechSynthesis.paused) {
+        speechSynthesis.pause();
+        btn.textContent = '▶️ 继续';
+        showToast('语音已暂停');
+        return;
+    }
+
+    // 情况2：点击的是当前已暂停的按钮 → 继续播放
+    if (currentSpeechBtn === btn && speechSynthesis.paused) {
+        speechSynthesis.resume();
+        btn.textContent = '⏸️ 暂停';
+        showToast('语音继续播放');
+        return;
+    }
+
+    // 情况3：点击的是其他按钮，或首次播放 → 停止旧的，开始新的
+    if (speechSynthesis.speaking || speechSynthesis.paused) {
+        speechSynthesis.cancel();
+    }
+    // 重置所有播放按钮
+    document.querySelectorAll('.ai-bubble-play-btn').forEach(b => {
+        b.textContent = '🔊 播放';
+        b.classList.remove('playing');
+    });
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-CN';
+    utterance.rate = 1;
+    utterance.pitch = 1;
+
+    // 尝试选择中文语音
+    const voices = speechSynthesis.getVoices();
+    const zhVoice = voices.find(v => v.lang.startsWith('zh'));
+    if (zhVoice) utterance.voice = zhVoice;
+
+    currentSpeechUtterance = utterance;
+    currentSpeechBtn = btn;
+    btn.textContent = '⏸️ 暂停';
+    btn.classList.add('playing');
+
+    utterance.onend = () => {
+        currentSpeechUtterance = null;
+        currentSpeechBtn = null;
+        btn.textContent = '🔊 播放';
+        btn.classList.remove('playing');
+        showToast('语音播放完毕');
+    };
+
+    utterance.onerror = (e) => {
+        currentSpeechUtterance = null;
+        currentSpeechBtn = null;
+        btn.textContent = '🔊 播放';
+        btn.classList.remove('playing');
+        // canceled 不是失败，是用户主动切换导致的取消
+        if (e.error !== 'canceled') {
+            showToast('语音播放失败');
+        }
+    };
+
+    speechSynthesis.speak(utterance);
 }
 
 // 创建用户消息气泡
@@ -8117,11 +8198,79 @@ async function callAiApiStream(promptOrMessages, options = {}, onChunk) {
 
 // 格式化AI响应
 function formatAiResponse(response) {
-    // 简单的Markdown格式化
-    return response
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/\n/g, '<br>');
+    let html = response;
+
+    // 代码块（```...```）— 先提取保护
+    const codeBlocks = [];
+    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+        codeBlocks.push(`<pre><code>${code.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code></pre>`);
+        return `%%CODEBLOCK_${codeBlocks.length - 1}%%`;
+    });
+
+    // 行内代码
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // 分隔线（---、***、___）→ 移除
+    html = html.replace(/^[-*_]{3,}\s*$/gm, '');
+
+    // 标题（行首 #，从多到少匹配）
+    html = html.replace(/^#{5,}\s+(.+)$/gm, '<h4>$1</h4>');
+    html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+    html = html.replace(/^###\s+(.+)$/gm, '<h4>$1</h4>');
+    html = html.replace(/^##\s+(.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^#\s+(.+)$/gm, '<h3>$1</h3>');
+
+    // 加粗、斜体
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+    // 无序列表（- 或 *）
+    html = html.replace(/^[\-\*]\s+(.+)$/gm, '<li>$1</li>');
+
+    // 有序列表（1. 2. ...）
+    html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
+
+    // 将连续 <li> 包裹为 <ul>
+    html = html.replace(/((?:<li>[\s\S]*?<\/li>\s*)+)/g, '<ul>$1</ul>');
+
+    // 段落处理：连续两个换行 → 段落分隔
+    html = html.replace(/\n{2,}/g, '</p><p>');
+    // 单个换行 → <br>
+    html = html.replace(/\n/g, '<br>');
+    // 包裹首尾 <p>
+    html = '<p>' + html + '</p>';
+
+    // 清理：移除包裹了块级元素的 <p> 标签
+    html = html.replace(/<p>\s*(<h[34]>)/g, '$1');
+    html = html.replace(/(<\/h[34]>)\s*<\/p>/g, '$1');
+    html = html.replace(/<p>\s*(<ul>)/g, '$1');
+    html = html.replace(/(<\/ul>)\s*<\/p>/g, '$1');
+    html = html.replace(/<p>\s*(<pre>)/g, '$1');
+    html = html.replace(/(<\/pre>)\s*<\/p>/g, '$1');
+    // 清理空 <p> 和仅含 <br> 的 <p>
+    html = html.replace(/<p>\s*<\/p>/g, '');
+    html = html.replace(/<p>(<br>)+<\/p>/g, '');
+    // 清理标题前后多余 <br>
+    html = html.replace(/<br>\s*(<h[34]>)/g, '$1');
+    html = html.replace(/(<\/h[34]>)\s*<br>/g, '$1');
+    // 清理 <ul> 前后多余 <br>
+    html = html.replace(/<br>\s*(<ul>)/g, '$1');
+    html = html.replace(/(<\/ul>)\s*<br>/g, '$1');
+    // 清理 <ul> 内多余 <br>
+    html = html.replace(/<ul><br>/g, '<ul>');
+    html = html.replace(/<br><\/ul>/g, '</ul>');
+    html = html.replace(/<\/li><br><li>/g, '</li><li>');
+    html = html.replace(/<\/li><br>/g, '</li>');
+    // 清理开头结尾多余 <br>
+    html = html.replace(/^<p><br>/g, '<p>');
+    html = html.replace(/<br><\/p>$/g, '</p>');
+
+    // 恢复代码块
+    codeBlocks.forEach((block, i) => {
+        html = html.replace(`%%CODEBLOCK_${i}%%`, block);
+    });
+
+    return html;
 }
 
 // 复制AI结果
