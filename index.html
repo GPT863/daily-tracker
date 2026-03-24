@@ -684,6 +684,34 @@
                         <button id="recordTabHealth" class="tab-btn records-tab-btn" type="button" data-record-view="health">测量</button>
                         <button id="recordTabSymptom" class="tab-btn records-tab-btn" type="button" data-record-view="symptom">症状</button>
                     </div>
+                    <div class="records-date-selector">
+                        <button id="recordsPrevDay" class="date-btn records-date-btn" type="button" aria-label="上一天">◀</button>
+                        <div class="current-date-wrap records-date-wrap">
+                            <button id="recordsCurrentDate" class="current-date-btn records-current-date-btn" type="button"></button>
+                            <div id="recordsCurrentDatePanel" class="current-date-panel records-current-date-panel hidden">
+                                <div class="date-calendar-header">
+                                    <button id="recordsCalendarPrevMonth" type="button" class="date-calendar-nav">◀</button>
+                                    <div id="recordsCalendarMonthLabel" class="date-calendar-month"></div>
+                                    <button id="recordsCalendarNextMonth" type="button" class="date-calendar-nav">▶</button>
+                                </div>
+                                <div class="date-calendar-weekdays">
+                                    <span>一</span>
+                                    <span>二</span>
+                                    <span>三</span>
+                                    <span>四</span>
+                                    <span>五</span>
+                                    <span>六</span>
+                                    <span>日</span>
+                                </div>
+                                <div id="recordsCalendarDayGrid" class="date-calendar-grid"></div>
+                                <div class="date-calendar-actions">
+                                    <button id="recordsCalendarClearBtn" type="button" class="date-calendar-action">清除</button>
+                                    <button id="recordsCalendarTodayBtn" type="button" class="date-calendar-action primary">今天</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="recordsNextDay" class="date-btn records-date-btn" type="button" aria-label="下一天">▶</button>
+                    </div>
                     <div id="recordsList" class="reminder-detail-list records-stream"></div>
                     <div id="recordsEmptyState" class="empty-state">
                         <p id="recordsEmptyTitle">今天还没有活动记录</p>

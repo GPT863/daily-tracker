@@ -43,6 +43,23 @@ let calendarViewDate = new Date();
 let currentPage = 'home';
 let currentRecordView = 'activity';
 
+const datePickerConfigs = {
+    home: {
+        panelId: 'currentDatePanel',
+        monthLabelId: 'calendarMonthLabel',
+        dayGridId: 'calendarDayGrid',
+        clearBtnId: 'calendarClearBtn',
+        todayBtnId: 'calendarTodayBtn'
+    },
+    records: {
+        panelId: 'recordsCurrentDatePanel',
+        monthLabelId: 'recordsCalendarMonthLabel',
+        dayGridId: 'recordsCalendarDayGrid',
+        clearBtnId: 'recordsCalendarClearBtn',
+        todayBtnId: 'recordsCalendarTodayBtn'
+    }
+};
+
 // 获取类型标签
 function getTypeLabel(type) {
     const labels = {
@@ -1166,6 +1183,13 @@ function setupEventListeners() {
     document.getElementById('calendarNextMonth').addEventListener('click', () => shiftCalendarMonth(1));
     document.getElementById('calendarDayGrid').addEventListener('click', handleCalendarDayClick);
     document.getElementById('currentDatePanel').addEventListener('click', handleCalendarPanelClick);
+    document.getElementById('recordsPrevDay')?.addEventListener('click', () => changeDate(-1));
+    document.getElementById('recordsNextDay')?.addEventListener('click', () => changeDate(1));
+    document.getElementById('recordsCurrentDate')?.addEventListener('click', openRecordsDatePicker);
+    document.getElementById('recordsCalendarPrevMonth')?.addEventListener('click', () => shiftCalendarMonthFor('records', -1));
+    document.getElementById('recordsCalendarNextMonth')?.addEventListener('click', () => shiftCalendarMonthFor('records', 1));
+    document.getElementById('recordsCalendarDayGrid')?.addEventListener('click', handleRecordsCalendarDayClick);
+    document.getElementById('recordsCurrentDatePanel')?.addEventListener('click', handleRecordsCalendarPanelClick);
 
     document.getElementById('homeBtn').addEventListener('click', () => switchPage('home'));
     document.getElementById('recordBtn').addEventListener('click', () => switchPage('records'));
@@ -1266,10 +1290,11 @@ function setupEventListeners() {
             closeModal(e.target);
         }
 
-        const dateWrap = document.querySelector('.current-date-wrap');
-        if (dateWrap && !dateWrap.contains(e.target)) {
-            document.getElementById('currentDatePanel')?.classList.add('hidden');
-        }
+        document.querySelectorAll('.current-date-wrap').forEach((dateWrap) => {
+            if (!dateWrap.contains(e.target)) {
+                dateWrap.querySelector('.current-date-panel')?.classList.add('hidden');
+            }
+        });
     });
 
     // 取消按钮
@@ -1369,18 +1394,31 @@ async function changeDate(days) {
     await refreshDailyNoteFromBackend(getDateKey(currentDate), { silent: true });
 }
 
-function openCurrentDatePicker() {
-    const panel = document.getElementById('currentDatePanel');
+function getDatePickerConfig(target = 'home') {
+    return datePickerConfigs[target] || datePickerConfigs.home;
+}
+
+function openDatePicker(target = 'home') {
+    const config = getDatePickerConfig(target);
+    const panel = document.getElementById(config.panelId);
     if (!panel) return;
 
     calendarViewDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    renderCalendarPanel();
+    renderCalendarPanel(target);
     panel.classList.toggle('hidden');
+}
+
+function openCurrentDatePicker() {
+    openDatePicker('home');
+}
+
+function openRecordsDatePicker() {
+    openDatePicker('records');
 }
 
 async function selectCurrentDate(date) {
     currentDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
-    document.getElementById('currentDatePanel')?.classList.add('hidden');
+    document.querySelectorAll('.current-date-panel').forEach(panel => panel.classList.add('hidden'));
     loadActivities();
     loadHealthRecords();
     loadSymptomRecords();
@@ -1392,21 +1430,42 @@ async function selectCurrentDate(date) {
 }
 
 function shiftCalendarMonth(offset) {
+    shiftCalendarMonthFor('home', offset);
+}
+
+function shiftCalendarMonthFor(target, offset) {
     calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + offset, 1);
-    renderCalendarPanel();
+    renderCalendarPanel(target);
 }
 
 function clearCalendarPanel() {
-    document.getElementById('currentDatePanel')?.classList.add('hidden');
+    clearCalendarPanelFor('home');
+}
+
+function clearCalendarPanelFor(target) {
+    const config = getDatePickerConfig(target);
+    document.getElementById(config.panelId)?.classList.add('hidden');
 }
 
 function selectTodayFromCalendar() {
+    selectTodayFromCalendarFor('home');
+}
+
+function selectTodayFromCalendarFor(target) {
     const today = new Date();
     calendarViewDate = new Date(today.getFullYear(), today.getMonth(), 1);
     selectCurrentDate(today);
 }
 
 function handleCalendarDayClick(e) {
+    handleCalendarDayClickFor('home', e);
+}
+
+function handleRecordsCalendarDayClick(e) {
+    handleCalendarDayClickFor('records', e);
+}
+
+function handleCalendarDayClickFor(target, e) {
     const dayBtn = e.target.closest('.date-calendar-day');
     if (!dayBtn) return;
 
@@ -1417,23 +1476,33 @@ function handleCalendarDayClick(e) {
 }
 
 function handleCalendarPanelClick(e) {
-    e.stopPropagation();
+    handleCalendarPanelClickFor('home', e);
+}
 
-    const clearBtn = e.target.closest('#calendarClearBtn');
+function handleRecordsCalendarPanelClick(e) {
+    handleCalendarPanelClickFor('records', e);
+}
+
+function handleCalendarPanelClickFor(target, e) {
+    e.stopPropagation();
+    const config = getDatePickerConfig(target);
+
+    const clearBtn = e.target.closest(`#${config.clearBtnId}`);
     if (clearBtn) {
-        clearCalendarPanel();
+        clearCalendarPanelFor(target);
         return;
     }
 
-    const todayBtn = e.target.closest('#calendarTodayBtn');
+    const todayBtn = e.target.closest(`#${config.todayBtnId}`);
     if (todayBtn) {
-        selectTodayFromCalendar();
+        selectTodayFromCalendarFor(target);
     }
 }
 
-function renderCalendarPanel() {
-    const monthLabel = document.getElementById('calendarMonthLabel');
-    const grid = document.getElementById('calendarDayGrid');
+function renderCalendarPanel(target = 'home') {
+    const config = getDatePickerConfig(target);
+    const monthLabel = document.getElementById(config.monthLabelId);
+    const grid = document.getElementById(config.dayGridId);
     if (!monthLabel || !grid) return;
 
     const viewYear = calendarViewDate.getFullYear();
@@ -1667,6 +1736,7 @@ function renderRecordCard({
     badgeText = '',
     headerMain,
     headerSide = '',
+    headerSubline = '',
     title,
     notes = '',
     image = '',
@@ -1677,9 +1747,10 @@ function renderRecordCard({
     return `
         <div class="reminder-detail-item record-detail-item" data-type="${accentType}">
             <div class="reminder-detail-header">
-                <div>
+                <div class="record-detail-time-block">
                     <span class="reminder-detail-time">${headerMain}</span>
                     ${headerSide ? `<span class="reminder-detail-date">${headerSide}</span>` : ''}
+                    ${headerSubline ? `<div class="record-detail-subline">${headerSubline}</div>` : ''}
                 </div>
                 ${badgeText ? `<div>${badgeText}</div>` : ''}
             </div>
@@ -1794,10 +1865,23 @@ function updateHealthSectionButton() {
     // no-op: kept for updateDisplay() compatibility
 }
 
+function formatDateWithWeekday(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    return `${year}-${month}-${day} ${weekdays[date.getDay()]}`;
+}
+
 // 更新日期显示
 function updateDateDisplay() {
     const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
-    document.getElementById('currentDate').textContent = currentDate.toLocaleDateString('zh-CN', options);
+    const dateText = currentDate.toLocaleDateString('zh-CN', options);
+    document.getElementById('currentDate').textContent = dateText;
+    const recordsDateBtn = document.getElementById('recordsCurrentDate');
+    if (recordsDateBtn) {
+        recordsDateBtn.textContent = dateText;
+    }
 }
 
 // 更新时间线
@@ -1840,6 +1924,7 @@ function renderRecordActivityItem(activity) {
         badgeText: `${typeIcons[activity.type] || '📝'} ${getActivityTypeLabel(activity.type)}`,
         headerMain: getActivityTimeRangeText(activity),
         headerSide: duration ? `${duration} 分钟` : '',
+        headerSubline: formatDateWithWeekday(currentDate),
         title: activity.content,
         notes: activity.feeling || '',
         image: activity.image || '',

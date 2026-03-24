@@ -1597,6 +1597,52 @@ body.elder-mode .form-actions button {
     background: rgba(40, 122, 68, 0.04) !important;
 }
 
+.records-date-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid rgba(40, 122, 68, 0.08);
+    background: #fff;
+}
+
+.records-date-wrap {
+    flex: 1;
+    min-width: 0;
+}
+
+.records-date-btn {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    border: 1px solid rgba(40, 122, 68, 0.14);
+    background: rgba(223, 245, 228, 0.62);
+    color: var(--forest-color);
+    font-size: 0.9rem;
+}
+
+.records-current-date-btn {
+    width: 100%;
+    min-height: 38px;
+    justify-content: center;
+    background: rgba(223, 245, 228, 0.55);
+    border: 1px solid rgba(40, 122, 68, 0.12);
+    color: var(--forest-color);
+    font-size: 0.92rem;
+    padding: 8px 12px;
+}
+
+.records-current-date-btn:hover {
+    background: rgba(223, 245, 228, 0.82);
+    border-color: rgba(40, 122, 68, 0.2);
+}
+
+.records-current-date-panel {
+    min-width: 280px;
+}
+
 .records-stream {
     display: flex;
     flex-direction: column;
@@ -2437,6 +2483,17 @@ body.elder-mode .form-actions button {
     color: var(--text-secondary);
     margin-left: 8px;
     white-space: nowrap;
+}
+
+.record-detail-time-block {
+    min-width: 0;
+}
+
+.record-detail-subline {
+    margin-top: 3px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.35;
 }
 
 .reminder-detail-title {
@@ -3834,6 +3891,16 @@ body.elder-mode .stats-card-value {
     .records-tab-bar {
         gap: 8px;
         padding: 5px;
+    }
+
+    .records-date-selector {
+        padding: 8px 12px 6px;
+        gap: 8px;
+    }
+
+    .records-current-date-btn {
+        font-size: 0.86rem;
+        padding: 8px 10px;
     }
 
     .my-panel {
