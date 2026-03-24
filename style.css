@@ -2374,6 +2374,19 @@ body.elder-mode .form-actions button {
 /* 提醒管理 */
 .reminder-content {
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.records-fixed-header {
+    flex-shrink: 0;
+    background: var(--card-bg);
+}
+
+.records-scrollable-content {
+    flex: 1;
+    overflow-y: auto;
 }
 
 .reminder-tabs {
@@ -2622,7 +2635,9 @@ body.elder-mode .form-actions button {
 }
 
 .modal.page-mode .reminder-content {
-    min-height: calc(100vh - 220px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 /* 提醒历史页面样式 */
@@ -4394,6 +4409,26 @@ body {
     border-radius: 0 !important;
     box-shadow: none;
     overflow: visible;
+}
+
+/* 记录页面模态框：固定高度，内容可滚动 */
+#recordsModal.modal.page-mode .modal-content {
+    height: calc(100vh - var(--nav-height));
+    max-height: calc(100vh - var(--nav-height));
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#recordsModal.modal.page-mode .modal-header {
+    flex-shrink: 0;
+}
+
+#recordsModal.modal.page-mode .reminder-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .modal.page-mode .modal-content::before {
