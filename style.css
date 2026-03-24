@@ -921,40 +921,41 @@ body.elder-mode .form-actions button {
 
 /* 提醒区域 */
 .reminder-section {
-    background:
-        radial-gradient(circle at top right, rgba(223, 245, 228, 0.28), transparent 34%),
-        linear-gradient(135deg, #2f8f4c 0%, var(--forest-color) 55%, var(--primary-color) 100%);
+    background: var(--card-bg);
+    border: 1px solid rgba(40,122,68,0.08);
     border-radius: var(--radius-lg);
-    padding: 14px;
-    box-shadow: var(--shadow-md);
+    padding: 16px;
+    box-shadow: var(--shadow);
 }
 
 .reminder-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 }
 
 .reminder-header h2 {
-    color: white;
-    font-size: 1.2rem;
+    color: var(--forest-color);
+    font-size: 1.05rem;
+    font-weight: 700;
     margin: 0;
 }
 
 .text-btn {
-    background: rgba(255,255,255,0.2);
+    background: rgba(31, 122, 61, 0.08);
     border: none;
-    color: white;
-    padding: 6px 12px;
-    border-radius: 15px;
+    color: var(--forest-color);
+    padding: 6px 14px;
+    border-radius: 12px;
     font-size: 0.85rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: all 0.2s;
 }
 
 .text-btn:hover {
-    background: rgba(255,255,255,0.3);
+    background: rgba(31, 122, 61, 0.15);
 }
 
 .reminder-list {
@@ -964,18 +965,20 @@ body.elder-mode .form-actions button {
 }
 
 .reminder-item {
-    background: rgba(255,255,255,0.95);
-    padding: 10px 13px;
-    border-radius: 10px;
+    background: #fff;
+    border: 1px solid rgba(40,122,68,0.08);
+    padding: 12px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     cursor: pointer;
-    transition: transform 0.3s;
+    transition: all 0.2s;
 }
 
 .reminder-item:hover {
-    transform: translateX(5px);
+    border-color: rgba(40,122,68,0.2);
+    box-shadow: 0 2px 8px rgba(31, 122, 61, 0.08);
 }
 
 .reminder-thumb-wrap {
@@ -4249,10 +4252,10 @@ body.elder-mode .stats-card-value {
     transform: translateY(0);
 }
 
-/* 提醒区域空状态：深色背景上用白色文字 */
+/* 提醒区域空状态 */
 .reminder-section .empty-state,
 .reminder-section .empty-state p {
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--text-secondary);
 }
 
 /* daily summary card */
@@ -4355,11 +4358,6 @@ body.elder-mode .stats-card-value {
     margin-right: 8px;
     vertical-align: middle;
     flex-shrink: 0;
-}
-
-/* 提醒区域 h2 颜色：保持白色 */
-.reminder-header h2::before {
-    background: rgba(255,255,255,0.6);
 }
 
 /* ==================== 全局移动端外观 ==================== */
