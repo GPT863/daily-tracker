@@ -1251,6 +1251,9 @@ function setupEventListeners() {
     document.getElementById('viewAllReminders').addEventListener('click', () => {
         openReminderPage('all');
     });
+    document.getElementById('reminderEmptyActionBtn').addEventListener('click', () => {
+        openReminderPage('add');
+    });
 
     // 模态框关闭
     document.querySelectorAll('.close').forEach(btn => {
@@ -1478,6 +1481,7 @@ async function changeDate(days) {
     loadHealthRecords();
     loadSymptomRecords();
     updateDisplay();
+    updateRemindersDisplay();
     await refreshActivitiesFromBackend(getDateKey(currentDate), { silent: true });
     await refreshHealthRecordsFromBackend(getDateKey(currentDate), { silent: true });
     await refreshSymptomRecordsFromBackend(getDateKey(currentDate), { silent: true });
@@ -4815,17 +4819,39 @@ window.deleteReminder = function(id) {
 
 // 更新主页提醒显示
 function updateRemindersDisplay() {
-    const todayReminders = reminders.filter(r => isReminderForToday(r))
-        .sort((a, b) => a.time.localeCompare(b.time));
+    const selectedDateKey = getDateKey(currentDate);
+    const todayReminders = reminders.filter(r => {
+        if (r.completed) return false;
+        const reminderDateKey = r.date;
+        // 精确匹配选中日期
+        if (reminderDateKey === selectedDateKey) return true;
+        // 如果提醒日期在选中日期之后，不显示
+        if (reminderDateKey > selectedDateKey) return false;
+        // 非重复提醒，不显示
+        if (!isRepeatingReminder(r.repeat)) return false;
+        // 重复提醒计算是否在选中日期显示
+        const repeat = normalizeReminderRepeat(r.repeat);
+        const originDate = new Date(r.date + 'T00:00:00');
+        const selectedDate = new Date(selectedDateKey + 'T00:00:00');
+        const daysDiff = Math.round((selectedDate - originDate) / (1000 * 60 * 60 * 24));
+        if (daysDiff <= 0) return false;
+        switch (repeat) {
+            case 'daily': return true;
+            case 'weekly': return daysDiff % 7 === 0;
+            case 'biweekly': return daysDiff % 14 === 0;
+            case 'monthly': return originDate.getDate() === selectedDate.getDate();
+            default: return false;
+        }
+    }).sort((a, b) => a.time.localeCompare(b.time));
 
     const container = document.getElementById('todayReminders');
-    const emptyState = document.getElementById('noReminders');
+    const emptyState = document.getElementById('todayRemindersEmptyState');
 
     if (todayReminders.length === 0) {
         container.innerHTML = '';
-        emptyState.style.display = 'block';
+        if (emptyState) emptyState.style.display = 'block';
     } else {
-        emptyState.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'none';
         container.innerHTML = todayReminders.slice(0, 3).map(r => `
             <div class="reminder-item" onclick="openReminderManagerFor('${r.id}')">
                 ${r.image ? `
