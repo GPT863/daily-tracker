@@ -1255,6 +1255,9 @@ function setupEventListeners() {
         openReminderPage('add');
     });
 
+    // 大模型配置按钮
+    document.getElementById('aiConfigBtn').addEventListener('click', () => switchPage('ai-config'));
+
     // 模态框关闭
     document.querySelectorAll('.close').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -1263,6 +1266,11 @@ function setupEventListeners() {
     });
     document.querySelectorAll('.page-back-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+            const backDest = btn.dataset.backDest;
+            if (backDest) {
+                switchPage(backDest);
+                return;
+            }
             const modalId = btn.dataset.backModal;
             if (!modalId) return;
             const modal = document.getElementById(modalId);
@@ -1356,6 +1364,31 @@ function setupEventListeners() {
         const savedValue = input.dataset.savedValue || '';
         meta.textContent = input.value === savedValue ? '已保存' : '有未保存修改';
     });
+
+    // AI页面事件
+    document.getElementById('startAiPageDiagnosisBtn').addEventListener('click', startAiPageDiagnosis);
+
+    // AI页面数据范围选择
+    document.querySelectorAll('input[name="aiPageRange"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            const dateInputs = document.getElementById('aiPageDateRangeInputs');
+            if (dateInputs) {
+                if (radio.value === 'custom') {
+                    dateInputs.classList.remove('hidden');
+                } else {
+                    dateInputs.classList.add('hidden');
+                }
+            }
+            updateAiPageDataPreview();
+        });
+    });
+
+    // 大模型配置页面事件
+    document.getElementById('aiConfigProvider').addEventListener('change', () => syncAiProviderFields('aiConfig'));
+    document.getElementById('saveAiConfigPageBtn').addEventListener('click', saveAiConfigFromPage);
+    document.getElementById('testAiConfigPageBtn').addEventListener('click', testAiConfigConnectionPage);
+    document.getElementById('toggleAiConfigApiKeyBtn').addEventListener('click', () => toggleAiPasswordVisibility('aiConfig'));
+    document.getElementById('gotoAiAnalysisBtn').addEventListener('click', () => switchPage('ai'));
 
     // 模板相关事件
     document.getElementById('saveAsTemplateBtn').addEventListener('click', saveAsTemplate);
@@ -1643,19 +1676,116 @@ function renderCalendarDay(date, { muted, todayKey, selectedKey }) {
 }
 
 async function runQuickTodayAiDiagnosis() {
-    openAiDiagnosisModal();
+    // 直接切换到AI分析页面
+    switchPage('ai');
 
-    const todayRange = document.querySelector('input[name="aiRange"][value="today"]');
-    const customRangeInputs = document.getElementById('aiDateRangeInputs');
+    // 设置默认为今天
+    const todayRange = document.querySelector('input[name="aiPageRange"][value="today"]');
+    const customRangeInputs = document.getElementById('aiPageDateRangeInputs');
     if (todayRange) {
         todayRange.checked = true;
     }
     if (customRangeInputs) {
         customRangeInputs.classList.add('hidden');
     }
-    updateAiDataPreview();
+    updateAiPageDataPreview();
+}
 
-    await startAiDiagnosis();
+// 更新AI页面数据预览
+function updateAiPageDataPreview() {
+    const range = document.querySelector('input[name="aiPageRange"]:checked')?.value || 'today';
+    const { startDate, endDate } = getAiDateRange(range);
+
+    // 计算天数
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const dayCount = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1);
+
+    // 收集活动数据
+    let activityCount = 0;
+    Object.keys(allActivitiesData).forEach(dateKey => {
+        if (dateKey >= startDate && dateKey <= endDate) {
+            activityCount += allActivitiesData[dateKey].length;
+        }
+    });
+
+    // 收集健康数据
+    let healthCount = 0;
+    Object.keys(allHealthRecordsData).forEach(dateKey => {
+        if (dateKey >= startDate && dateKey <= endDate) {
+            healthCount += allHealthRecordsData[dateKey].length;
+        }
+    });
+
+    document.getElementById('aiPageActivityCount').textContent = activityCount;
+    document.getElementById('aiPageHealthCount').textContent = healthCount;
+    document.getElementById('aiPageDayCount').textContent = dayCount;
+}
+
+// 开始AI页面诊断
+async function startAiPageDiagnosis() {
+    const btn = document.getElementById('startAiPageDiagnosisBtn');
+    btn.disabled = true;
+    btn.textContent = '分析中...';
+
+    const traceSection = document.getElementById('aiPageTraceSection');
+    const traceOutput = document.getElementById('aiPageTraceOutput');
+
+    traceSection.classList.remove('hidden');
+    traceOutput.innerHTML = '';
+
+    const appendMessage = (type, text) => {
+        const div = document.createElement('div');
+        div.className = `ai-trace-message ${type}`;
+        div.textContent = text;
+        traceOutput.appendChild(div);
+        traceOutput.scrollTop = traceOutput.scrollHeight;
+    };
+
+    try {
+        appendMessage('running', '开始诊断，正在检查配置...');
+
+        // 验证API配置
+        const aiConfig = getAiConfig();
+        if (!aiConfig.apiKey) {
+            appendMessage('error', '未检测到 API 密钥，请先保存 AI 配置。');
+            showToast('请先配置API密钥！');
+            return;
+        }
+
+        appendMessage('success', 'AI 配置检查通过。');
+
+        // 收集数据
+        const range = document.querySelector('input[name="aiPageRange"]:checked')?.value || 'today';
+        const { startDate, endDate } = getAiDateRange(range);
+        appendMessage('running', `正在汇总 ${startDate} 至 ${endDate} 的活动、健康和档案数据。`);
+
+        const analysisData = collectAnalysisData(startDate, endDate);
+        appendMessage('success', `数据汇总完成：${analysisData.activities.length} 条活动，${analysisData.healthRecords.length} 条健康数据，${analysisData.symptomRecords.length} 条症状记录。`);
+
+        // 构建提示词
+        const prompt = buildAnalysisPrompt(analysisData);
+
+        // 调用AI API
+        appendMessage('running', '正在请求 AI 服务，请稍候...');
+        const response = await callAiApi(prompt);
+        markAiConfigVerified();
+        appendMessage('success', 'AI 服务已返回结果，正在整理展示内容。');
+
+        // 显示结果
+        const resultHtml = formatAiResponse(response);
+        traceOutput.innerHTML += resultHtml;
+        appendMessage('success', '诊断结果已生成并显示。');
+
+        showToast('AI诊断完成！');
+    } catch (error) {
+        console.error('AI诊断失败:', error);
+        appendMessage('error', `诊断失败：${error.message}`);
+        showToast('诊断失败，请重试');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '开始AI诊断';
+    }
 }
 
 // 更新显示
@@ -1680,10 +1810,18 @@ function switchPage(page) {
     if (page === 'records' || page === 'activity-form' || page === 'health-form' || page === 'symptom-form') {
         updateRecordsPage();
     }
+    if (page === 'ai-config' || page === 'ai') {
+        loadAiConfig();
+    }
+    if (page === 'ai') {
+        updateAiPageDataPreview();
+    }
 }
 
 function updatePageDisplay() {
     const homePage = document.getElementById('homePage');
+    const aiConfigPage = document.getElementById('aiConfigModal');
+    const aiAnalysisPage = document.getElementById('aiAnalysisModal');
     const recordsPage = document.getElementById('recordsModal');
     const reminderPage = document.getElementById('reminderModal');
     const reminderFormPage = document.getElementById('reminderFormModal');
@@ -1702,8 +1840,10 @@ function updatePageDisplay() {
     const reminderBtn = document.getElementById('reminderBtn');
     const myBtn = document.getElementById('myBtn');
     const bottomActions = document.querySelector('.bottom-actions');
-    if (!homePage || !recordsPage || !reminderPage || !myPage || !exportPage || !cloudSyncPage || !profilePage || !homeBtn || !recordBtn || !reminderBtn || !myBtn) return;
+    if (!homePage || !aiConfigPage || !aiAnalysisPage || !recordsPage || !reminderPage || !myPage || !exportPage || !cloudSyncPage || !profilePage || !homeBtn || !recordBtn || !reminderBtn || !myBtn) return;
     const isHome = currentPage === 'home';
+    const isAiConfig = currentPage === 'ai-config';
+    const isAi = currentPage === 'ai';
     const isRecords = currentPage === 'records';
 
     const isReminders = currentPage === 'reminders';
@@ -1721,6 +1861,10 @@ function updatePageDisplay() {
     const isRecordFormPage = isActivityForm || isHealthForm || isSymptomForm;
     const isRecordFlowPage = isRecords || isActivityForm || isHealthForm || isSymptomForm;
     homePage.classList.toggle('hidden', !isHome);
+    aiConfigPage.classList.toggle('page-mode', isAiConfig);
+    aiConfigPage.style.display = isAiConfig ? 'block' : 'none';
+    aiAnalysisPage.classList.toggle('page-mode', isAi);
+    aiAnalysisPage.style.display = isAi ? 'block' : 'none';
     recordsPage.classList.toggle('page-mode', isRecords);
     recordsPage.style.display = isRecords ? 'block' : 'none';
     reminderPage.classList.toggle('page-mode', isReminders);
@@ -1764,8 +1908,8 @@ function updatePageDisplay() {
     homeBtn.classList.toggle('nav-active', isHome);
     recordBtn.classList.toggle('nav-active', isRecordFlowPage);
     reminderBtn.classList.toggle('nav-active', isReminders || isReminderAdd);
-    myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile || isMedicineBox || isMedicineEdit || isMedicineDetail);
-    bottomActions?.classList.toggle('hidden', isRecordFormPage || isReminderAdd);
+    myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile || isMedicineBox || isMedicineEdit || isMedicineDetail || isAiConfig);
+    bottomActions?.classList.toggle('hidden', isRecordFormPage || isReminderAdd || isAi || isAiConfig);
 }
 
 function openReminderPage(tab = 'today') {
@@ -6619,6 +6763,15 @@ function loadAiConfig() {
                 document.getElementById('customApiEndpoint').value = aiConfig.apiEndpoint;
             }
             syncAiProviderFields();
+            // 同步到大模型配置页面
+            document.getElementById('aiConfigProvider').value = aiConfig.provider || 'openai';
+            document.getElementById('aiConfigApiKey').value = aiConfig.apiKey || '';
+            document.getElementById('aiConfigModel').value = aiConfig.model || '';
+            if (aiConfig.apiEndpoint) {
+                document.getElementById('aiConfigCustomApiEndpoint').value = aiConfig.apiEndpoint;
+            }
+            syncAiProviderFields('aiConfig');
+            updateAiConfigPageSection();
         } catch (e) {
             console.error('加载AI配置失败:', e);
         }
@@ -6632,7 +6785,13 @@ function loadAiConfig() {
             verifiedAt: ''
         };
         syncAiProviderFields();
+        syncAiProviderFields('aiConfig');
     }
+}
+
+// 获取已保存的AI配置
+function getAiConfig() {
+    return aiConfig;
 }
 
 // 保存AI配置
@@ -6663,15 +6822,57 @@ function saveAiConfig() {
     showToast('AI配置已保存！');
 }
 
-function syncAiProviderFields() {
-    const customGroup = document.getElementById('customApiEndpointGroup');
-    if (!customGroup) return;
+function syncAiProviderFields(prefix = 'ai') {
+    const providerElem = document.getElementById(`${prefix}Provider`);
+    const customGroup = document.getElementById(`${prefix}CustomApiEndpointGroup`);
+    if (!providerElem || !customGroup) return;
 
-    if (document.getElementById('aiProvider')?.value === 'custom') {
+    if (providerElem.value === 'custom') {
         customGroup.classList.remove('hidden');
     } else {
         customGroup.classList.add('hidden');
     }
+}
+
+// 从大模型配置页面保存配置
+function saveAiConfigFromPage() {
+    aiConfig = {
+        provider: document.getElementById('aiConfigProvider').value,
+        apiKey: document.getElementById('aiConfigApiKey').value.trim(),
+        model: document.getElementById('aiConfigModel').value.trim(),
+        apiEndpoint: document.getElementById('aiConfigCustomApiEndpoint').value.trim(),
+        verified: false,
+        verifiedAt: ''
+    };
+    localStorage.setItem('dailyTracker_aiConfig', JSON.stringify(aiConfig));
+    updateAiConfigPageSection();
+    showToast('AI配置已保存！');
+}
+
+// 更新大模型配置页面显示
+function updateAiConfigPageSection() {
+    const summary = document.getElementById('aiConfigPageSummary');
+    if (!summary) return;
+
+    if (aiConfig.verified) {
+        summary.classList.remove('hidden');
+        summary.textContent = `已配置：${getProviderLabel(aiConfig.provider)}${aiConfig.model ? ` (${aiConfig.model})` : ''}`;
+        summary.style.color = 'var(--forest-color)';
+    } else {
+        summary.classList.add('hidden');
+    }
+}
+
+function getProviderLabel(provider) {
+    const labels = {
+        openai: 'OpenAI',
+        anthropic: 'Anthropic',
+        deepseek: 'DeepSeek',
+        moonshot: 'Moonshot',
+        tongyi: '通义千问',
+        custom: '自定义'
+    };
+    return labels[provider] || provider;
 }
 
 function hasUsableAiConfig() {
@@ -6755,8 +6956,37 @@ function setAiApiKeyVisibility(visible) {
     toggleBtn.title = visible ? '隐藏API密钥' : '显示API密钥';
 }
 
+function toggleAiPasswordVisibility(prefix) {
+    const input = document.getElementById(`${prefix}ApiKey`);
+    const toggleBtn = document.getElementById(`toggle${prefix.charAt(0).toUpperCase() + prefix.slice(1)}ApiKeyBtn`);
+    if (!input || !toggleBtn) return;
+
+    const isVisible = input.type === 'text';
+    input.type = isVisible ? 'password' : 'text';
+    toggleBtn.textContent = isVisible ? '👁' : '🙈';
+    toggleBtn.setAttribute('aria-label', isVisible ? '显示API密钥' : '隐藏API密钥');
+    toggleBtn.title = isVisible ? '显示API密钥' : '隐藏API密钥';
+}
+
 function setAiConfigTestStatus(message = '', type = '') {
     const status = document.getElementById('aiConfigTestStatus');
+    if (!status) return;
+
+    if (!message) {
+        status.textContent = '';
+        status.classList.add('hidden');
+        status.classList.remove('success', 'error');
+        return;
+    }
+
+    status.textContent = message;
+    status.classList.remove('hidden');
+    status.classList.toggle('success', type === 'success');
+    status.classList.toggle('error', type === 'error');
+}
+
+function setAiConfigPageTestStatus(message = '', type = '') {
+    const status = document.getElementById('aiConfigPageTestStatus');
     if (!status) return;
 
     if (!message) {
@@ -6794,7 +7024,7 @@ async function testAiConfigConnection() {
     testBtn.textContent = '测试中...';
 
     try {
-        await callAiApi('请只回复“连接成功”四个字。', { config });
+        await callAiApi('请只回复”连接成功”四个字。', { config });
         aiConfig = {
             ...config,
             verified: true,
@@ -6807,6 +7037,54 @@ async function testAiConfigConnection() {
     } catch (error) {
         console.error('测试AI连接失败:', error);
         setAiConfigTestStatus(`连接失败：${error.message}`, 'error');
+        showToast('大模型连接失败');
+    } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = originalText;
+    }
+}
+
+async function testAiConfigConnectionPage() {
+    const testBtn = document.getElementById('testAiConfigPageBtn');
+    if (!testBtn) return;
+
+    const config = {
+        provider: document.getElementById('aiConfigProvider').value,
+        apiKey: document.getElementById('aiConfigApiKey').value.trim(),
+        model: document.getElementById('aiConfigModel').value.trim(),
+        apiEndpoint: document.getElementById('aiConfigCustomApiEndpoint').value.trim()
+    };
+
+    if (!config.apiKey) {
+        setAiConfigPageTestStatus('请先填写 API 密钥', 'error');
+        showToast('请先填写API密钥');
+        return;
+    }
+    if (config.provider === 'custom' && !config.apiEndpoint) {
+        setAiConfigPageTestStatus('自定义 API 需要填写接口地址', 'error');
+        showToast('请先填写自定义API端点');
+        return;
+    }
+
+    const originalText = testBtn.textContent;
+    testBtn.disabled = true;
+    setAiConfigPageTestStatus('正在测试连接，请稍候...', '');
+    testBtn.textContent = '测试中...';
+
+    try {
+        await callAiApi('请只回复”连接成功”四个字。', { config });
+        aiConfig = {
+            ...config,
+            verified: true,
+            verifiedAt: new Date().toISOString()
+        };
+        localStorage.setItem('dailyTracker_aiConfig', JSON.stringify(aiConfig));
+        updateAiConfigPageSection();
+        setAiConfigPageTestStatus('连接成功，可以正常访问大模型', 'success');
+        showToast('大模型连接成功');
+    } catch (error) {
+        console.error('测试AI连接失败:', error);
+        setAiConfigPageTestStatus(`连接失败：${error.message}`, 'error');
         showToast('大模型连接失败');
     } finally {
         testBtn.disabled = false;
@@ -6968,8 +7246,10 @@ function getAiDateRange(range) {
             startDate.setDate(endDate.getDate() - 89);
             break;
         case 'custom':
-            const customStart = document.getElementById('aiStartDate').value;
-            const customEnd = document.getElementById('aiEndDate').value;
+            const isAiPage = currentPage === 'ai';
+            const prefix = isAiPage ? 'aiPage' : 'ai';
+            const customStart = document.getElementById(`${prefix}StartDate`)?.value;
+            const customEnd = document.getElementById(`${prefix}EndDate`)?.value;
             if (customStart && customEnd) {
                 return { startDate: customStart, endDate: customEnd };
             }
@@ -7124,6 +7404,9 @@ async function sendAiFollowup() {
 
 // 收集分析数据
 function collectAnalysisData(startDate, endDate) {
+    const isAiPage = currentPage === 'ai';
+    const prefix = isAiPage ? 'aiPage' : 'ai';
+
     const data = {
         period: { start: startDate, end: endDate },
         activities: [],
@@ -7131,12 +7414,12 @@ function collectAnalysisData(startDate, endDate) {
         symptomRecords: [],
         profile: null,
         options: {
-            includeActivities: document.getElementById('aiIncludeActivities').checked,
-            includeHealth: document.getElementById('aiIncludeHealth').checked,
-            includeProfile: document.getElementById('aiIncludeProfile').checked,
-            includeMedication: document.getElementById('aiIncludeMedication').checked
+            includeActivities: document.getElementById(`${prefix}IncludeActivities`)?.checked ?? true,
+            includeHealth: document.getElementById(`${prefix}IncludeHealth`)?.checked ?? true,
+            includeProfile: document.getElementById(`${prefix}IncludeProfile`)?.checked ?? true,
+            includeMedication: document.getElementById(`${prefix}IncludeMedication`)?.checked ?? true
         },
-        customPrompt: document.getElementById('aiCustomPrompt').value.trim()
+        customPrompt: document.getElementById(`${prefix}CustomPrompt`)?.value.trim() || ''
     };
 
     // 收集活动数据

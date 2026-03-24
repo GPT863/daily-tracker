@@ -2067,6 +2067,10 @@ body.elder-mode .form-actions button {
     grid-column: 1 / -1;
 }
 
+.full-width {
+    width: 100%;
+}
+
 .form-group {
     margin-bottom: 20px;
 }
@@ -4661,6 +4665,29 @@ body {
     padding: 10px;
 }
 
+/* AI分析页面内容（全屏模式） */
+.ai-analysis-content {
+    max-height: calc(100vh - 70px);
+    overflow-y: auto;
+    padding: 16px;
+}
+
+/* 大模型配置页面内容 */
+.ai-config-page-content {
+    max-height: calc(100vh - 70px);
+    overflow-y: auto;
+    padding: 20px;
+    background: var(--bg-color);
+}
+
+.ai-config-page-content .ai-config-section {
+    background: var(--card-bg);
+    border: 1px solid rgba(40,122,68,0.08);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
 .ai-section-title {
     font-size: 1.1rem;
     font-weight: 600;
@@ -4674,6 +4701,7 @@ body {
 .ai-config-section,
 .ai-data-section,
 .ai-options-section,
+.ai-start-section,
 .ai-action-section {
     margin-bottom: 20px;
     padding: 15px;

@@ -166,6 +166,14 @@
                         </span>
                         <span class="my-panel-arrow" aria-hidden="true"></span>
                     </button>
+                    <button id="aiConfigBtn" class="my-panel-action">
+                        <span class="my-panel-icon">🤖</span>
+                        <span class="my-panel-text">
+                            <strong>大模型配置</strong>
+                            <small>配置AI健康诊断的API密钥</small>
+                        </span>
+                        <span class="my-panel-arrow" aria-hidden="true"></span>
+                    </button>
                     <button id="seedDemoBtn" class="my-panel-action">
                         <span class="my-panel-icon">📂</span>
                         <span class="my-panel-text">
@@ -491,6 +499,174 @@
                             <button id="confirmImportMerge" type="button" class="btn-submit">合并导入</button>
                             <button id="confirmImportReplace" type="button" class="section-order-btn">替换导入</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 大模型配置页面（全屏页面模式） -->
+        <div id="aiConfigModal" class="modal page-mode">
+            <div class="modal-content">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-dest="my" aria-label="返回"></button>
+                    <h2>🤖 大模型配置</h2>
+                </div>
+                <div class="ai-config-page-content">
+                    <div class="ai-config-section">
+                        <div class="ai-config-header">
+                            <div>
+                                <h3 class="ai-section-title">API配置</h3>
+                                <p id="aiConfigPageSummary" class="ai-config-summary hidden"></p>
+                            </div>
+                        </div>
+                        <div id="aiConfigPageFormWrap" class="ai-config-form">
+                            <div class="form-group">
+                                <label for="aiConfigProvider">AI服务提供商</label>
+                                <select id="aiConfigProvider">
+                                    <option value="openai">OpenAI (GPT-4/GPT-3.5)</option>
+                                    <option value="anthropic">Anthropic (Claude)</option>
+                                    <option value="deepseek">DeepSeek</option>
+                                    <option value="moonshot">Moonshot (Kimi)</option>
+                                    <option value="tongyi">通义千问</option>
+                                    <option value="custom">自定义API</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="aiConfigApiKey">API密钥</label>
+                                <div class="ai-password-field">
+                                    <input type="password" id="aiConfigApiKey" placeholder="请输入您的API密钥">
+                                    <button type="button" id="toggleAiConfigApiKeyBtn" class="ai-password-toggle" aria-label="显示API密钥" title="显示API密钥">👁</button>
+                                </div>
+                                <small class="form-hint">密钥仅存储在本地浏览器中，不会上传到服务器</small>
+                            </div>
+                            <div class="form-group hidden" id="aiConfigCustomApiEndpointGroup">
+                                <label for="aiConfigCustomApiEndpoint">自定义API端点</label>
+                                <input type="text" id="aiConfigCustomApiEndpoint" placeholder="https://api.example.com/v1/chat">
+                            </div>
+                            <div class="form-group">
+                                <label for="aiConfigModel">模型（可选）</label>
+                                <input type="text" id="aiConfigModel" placeholder="留空使用默认模型">
+                                <small class="form-hint">例如: gpt-4, claude-3-opus-20240229</small>
+                            </div>
+                            <div class="ai-config-actions">
+                                <button type="button" id="testAiConfigPageBtn" class="btn-secondary">测试连接</button>
+                                <button type="button" id="saveAiConfigPageBtn" class="btn-submit">保存配置</button>
+                            </div>
+                            <div class="ai-config-actions" style="margin-top: 8px;">
+                                <button type="button" id="gotoAiAnalysisBtn" class="btn-submit full-width">去AI诊断</button>
+                            </div>
+                            <p id="aiConfigPageTestStatus" class="ai-config-test-status hidden"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI分析页面（全屏页面模式） -->
+        <div id="aiAnalysisModal" class="modal page-mode">
+            <div class="modal-content large">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-dest="home" aria-label="返回"></button>
+                    <h2>🤖 AI健康诊断</h2>
+                </div>
+                <div class="ai-analysis-content">
+                    <!-- 数据范围选择 -->
+                    <div class="ai-data-section">
+                        <h3 class="ai-section-title">选择分析数据范围</h3>
+                        <div class="ai-range-options">
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiPageRange" value="today" checked>
+                                <span>今天</span>
+                            </label>
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiPageRange" value="3days">
+                                <span>最近3天</span>
+                            </label>
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiPageRange" value="week">
+                                <span>最近7天</span>
+                            </label>
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiPageRange" value="month">
+                                <span>最近30天</span>
+                            </label>
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiPageRange" value="quarter">
+                                <span>最近90天</span>
+                            </label>
+                            <label class="ai-range-option">
+                                <input type="radio" name="aiPageRange" value="custom">
+                                <span>自定义范围</span>
+                            </label>
+                        </div>
+                        <div id="aiPageDateRangeInputs" class="ai-date-range-inputs hidden">
+                            <div class="date-range-row">
+                                <label>开始日期</label>
+                                <input type="date" id="aiPageStartDate">
+                            </div>
+                            <div class="date-range-row">
+                                <label>结束日期</label>
+                                <input type="date" id="aiPageEndDate">
+                            </div>
+                        </div>
+                        <div id="aiPageDataPreview" class="ai-data-preview">
+                            <h4>数据预览</h4>
+                            <div id="aiPageDataStats" class="ai-data-stats">
+                                <div class="ai-stat-item">
+                                    <span class="ai-stat-label">活动记录</span>
+                                    <span class="ai-stat-value" id="aiPageActivityCount">0</span>
+                                </div>
+                                <div class="ai-stat-item">
+                                    <span class="ai-stat-label">健康数据</span>
+                                    <span class="ai-stat-value" id="aiPageHealthCount">0</span>
+                                </div>
+                                <div class="ai-stat-item">
+                                    <span class="ai-stat-label">分析天数</span>
+                                    <span class="ai-stat-value" id="aiPageDayCount">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 诊断选项 -->
+                    <div class="ai-options-section">
+                        <h3 class="ai-section-title">诊断选项</h3>
+                        <div class="ai-option-checks">
+                            <label class="ai-option-check">
+                                <input type="checkbox" id="aiPageIncludeActivities" checked>
+                                <span>分析活动记录（饮食、运动、睡眠等）</span>
+                            </label>
+                            <label class="ai-option-check">
+                                <input type="checkbox" id="aiPageIncludeHealth" checked>
+                                <span>分析健康数据（血压、心率、血糖等）</span>
+                            </label>
+                            <label class="ai-option-check">
+                                <input type="checkbox" id="aiPageIncludeProfile" checked>
+                                <span>结合个人信息（年龄、病史、用药等）</span>
+                            </label>
+                            <label class="ai-option-check">
+                                <input type="checkbox" id="aiPageIncludeMedication" checked>
+                                <span>分析用药情况</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="aiPageCustomPrompt">额外关注的问题（可选）</label>
+                            <textarea id="aiPageCustomPrompt" rows="2" placeholder="例如：最近血压偏高，想了解原因和建议"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 开始诊断按钮 -->
+                    <div class="ai-start-section">
+                        <button id="startAiPageDiagnosisBtn" class="btn-submit full-width">开始AI诊断</button>
+                    </div>
+
+                    <!-- 诊断过程与结果 -->
+                    <div id="aiPageTraceSection" class="ai-trace-section hidden">
+                        <div class="ai-trace-header">
+                            <h3>诊断过程</h3>
+                            <button id="aiPageNewDiagnosisBtn" class="btn-secondary">新诊断</button>
+                        </div>
+                        <div id="aiPageTraceOutput" class="ai-trace-output"></div>
                     </div>
                 </div>
             </div>
