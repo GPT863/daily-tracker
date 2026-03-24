@@ -3204,6 +3204,97 @@ body.elder-mode .stats-card-value {
     box-shadow: 0 0 0 3px rgba(40, 122, 68, 0.08);
 }
 
+/* 诊断过程区域 */
+.ai-trace-section {
+    margin-top: 20px;
+}
+
+.ai-trace-section.hidden {
+    display: none;
+}
+
+.ai-trace-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.ai-trace-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.ai-trace-message {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.ai-trace-message.running {
+    background: rgba(76, 175, 80, 0.08);
+    color: var(--forest-color);
+}
+
+.ai-trace-message.success {
+    background: rgba(76, 175, 80, 0.12);
+    color: var(--forest-color);
+}
+
+.ai-trace-message.error {
+    background: rgba(244, 67, 54, 0.1);
+    color: #d32f2f;
+}
+
+/* AI结果容器 */
+.ai-result-container {
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.ai-result-content {
+    color: var(--text-color);
+    line-height: 1.8;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+}
+
+.ai-result-content strong {
+    color: #000;
+    font-weight: 600;
+}
+
+.ai-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    background: var(--mint-color);
+    border: 1px solid rgba(31, 122, 61, 0.2);
+    border-radius: 8px;
+    color: var(--forest-color);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ai-copy-btn:hover {
+    background: rgba(31, 122, 61, 0.12);
+    border-color: rgba(31, 122, 61, 0.35);
+}
+
+.ai-copy-btn:active {
+    transform: scale(0.98);
+}
+
 .ai-chat-section {
     margin-top: 16px;
     padding: 16px;

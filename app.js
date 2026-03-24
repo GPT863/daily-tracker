@@ -1367,6 +1367,7 @@ function setupEventListeners() {
 
     // AI页面事件
     document.getElementById('startAiPageDiagnosisBtn').addEventListener('click', startAiPageDiagnosis);
+    document.getElementById('aiPageNewDiagnosisBtn').addEventListener('click', resetAiPageDiagnosis);
 
     // AI页面数据范围选择
     document.querySelectorAll('input[name="aiPageRange"]').forEach(radio => {
@@ -1772,9 +1773,33 @@ async function startAiPageDiagnosis() {
         markAiConfigVerified();
         appendMessage('success', 'AI 服务已返回结果，正在整理展示内容。');
 
-        // 显示结果
-        const resultHtml = formatAiResponse(response);
-        traceOutput.innerHTML += resultHtml;
+        // 显示结果 - 包裹在容器中并添加复制按钮
+        const resultContainer = document.createElement('div');
+        resultContainer.className = 'ai-result-container';
+
+        const resultContent = document.createElement('div');
+        resultContent.className = 'ai-result-content';
+        resultContent.innerHTML = formatAiResponse(response);
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'ai-copy-btn';
+        copyBtn.innerHTML = '📋 复制';
+        copyBtn.onclick = () => {
+            const text = resultContent.innerText || resultContent.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('已复制到剪贴板');
+                copyBtn.innerHTML = '✅ 已复制';
+                setTimeout(() => {
+                    copyBtn.innerHTML = '📋 复制';
+                }, 2000);
+            }).catch(() => {
+                showToast('复制失败');
+            });
+        };
+
+        resultContainer.appendChild(resultContent);
+        resultContainer.appendChild(copyBtn);
+        traceOutput.appendChild(resultContainer);
         appendMessage('success', '诊断结果已生成并显示。');
 
         showToast('AI诊断完成！');
@@ -1785,6 +1810,18 @@ async function startAiPageDiagnosis() {
     } finally {
         btn.disabled = false;
         btn.textContent = '开始AI诊断';
+    }
+}
+
+// 重置AI页面诊断
+function resetAiPageDiagnosis() {
+    const traceSection = document.getElementById('aiPageTraceSection');
+    const traceOutput = document.getElementById('aiPageTraceOutput');
+    if (traceSection) {
+        traceSection.classList.add('hidden');
+    }
+    if (traceOutput) {
+        traceOutput.innerHTML = '';
     }
 }
 
