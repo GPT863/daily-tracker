@@ -4242,10 +4242,19 @@ function getFilteredReminderHistory() {
     return filtered;
 }
 
+function formatReminderFullDate(date) {
+    return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'short'
+    });
+}
+
 // 渲染提醒历史项（包含操作历史）
 function renderReminderHistoryItem(reminder) {
     const date = new Date(reminder.date + 'T' + reminder.time);
-    const dateStr = date.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' });
+    const dateStr = formatReminderFullDate(date);
     const timeStr = reminder.time;
     const isCompleted = reminder.completed;
     const completedAt = reminder.completedAt ? new Date(reminder.completedAt) : null;
@@ -4340,7 +4349,7 @@ function renderReminderHistoryItem(reminder) {
 // 渲染单个提醒项
 function renderReminderItem(reminder, showDate = false) {
     const date = new Date(reminder.date + 'T' + reminder.time);
-    const dateStr = date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+    const dateStr = formatReminderFullDate(date);
     const timeStr = reminder.time;
     const isCompleted = reminder.completed;
     const isPast = date < new Date();
@@ -4352,7 +4361,7 @@ function renderReminderItem(reminder, showDate = false) {
             <div class="reminder-detail-header">
                 <div>
                     <span class="reminder-detail-time">${timeStr}</span>
-                    ${showDate ? `<span class="reminder-detail-date">${dateStr}</span>` : ''}
+                    <span class="reminder-detail-date">${dateStr}</span>
                     ${repeatLabel ? `<span style="margin-left:8px;font-size:0.8rem;">🔄 ${repeatLabel}</span>` : ''}
                 </div>
                 <div>

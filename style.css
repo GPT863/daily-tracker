@@ -2435,6 +2435,8 @@ body.elder-mode .form-actions button {
 .reminder-detail-date {
     font-size: 0.85rem;
     color: var(--text-secondary);
+    margin-left: 8px;
+    white-space: nowrap;
 }
 
 .reminder-detail-title {
