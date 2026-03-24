@@ -1211,6 +1211,7 @@ function setupEventListeners() {
         document.getElementById(id).addEventListener('click', openExportModal);
     });
     document.getElementById('timelineOrderBtn').addEventListener('click', toggleTimelineOrder);
+    document.getElementById('timelineEmptyActionBtn').addEventListener('click', () => openModal());
     document.getElementById('cloudSyncBtn').addEventListener('click', openCloudSyncModal);
     document.getElementById('profileBtn').addEventListener('click', openProfileModal);
 
