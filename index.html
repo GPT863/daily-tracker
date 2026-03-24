@@ -736,37 +736,41 @@
                     </div>
                 </div>
                     <div class="reminder-content">
-                        <div class="reminder-tabs">
-                            <button class="tab-btn active" data-tab="today">今日提醒</button>
-                            <button class="tab-btn" data-tab="all">全部提醒</button>
-                        </div>
-
-                        <div id="tab-today" class="tab-content active">
-                            <div id="todayReminderList" class="reminder-detail-list"></div>
-                        </div>
-
-                        <div id="tab-all" class="tab-content">
-                            <div class="reminder-history-header">
-                                <div class="reminder-search-box">
-                                <input type="text" id="reminderSearchInput" placeholder="搜索提醒内容或备注...">
-                            </div>
-                            <div class="reminder-filter-box">
-                                <select id="reminderTypeFilter">
-                                    <option value="all">所有类型</option>
-                                    <option value="meal">🍽️ 用餐</option>
-                                    <option value="medication">💊 用药</option>
-                                    <option value="exercise">🏃 运动</option>
-                                    <option value="sleep">😴 睡眠</option>
-                                    <option value="other">📌 其他</option>
-                                </select>
-                                <select id="reminderStatusFilter">
-                                    <option value="all">所有状态</option>
-                                    <option value="completed">已完成</option>
-                                    <option value="pending">未完成</option>
-                                </select>
+                        <div class="reminder-fixed-header">
+                            <div class="reminder-tabs">
+                                <button class="tab-btn active" data-tab="today">今日提醒</button>
+                                <button class="tab-btn" data-tab="all">全部提醒</button>
                             </div>
                         </div>
-                        <div id="allReminderList" class="reminder-detail-list"></div>
+                        <div class="reminder-scrollable-content">
+                            <div id="tab-today" class="tab-content active">
+                                <div id="todayReminderList" class="reminder-detail-list"></div>
+                            </div>
+
+                            <div id="tab-all" class="tab-content">
+                                <div class="reminder-history-header">
+                                    <div class="reminder-search-box">
+                                        <input type="text" id="reminderSearchInput" placeholder="搜索提醒内容或备注...">
+                                    </div>
+                                    <div class="reminder-filter-box">
+                                        <select id="reminderTypeFilter">
+                                            <option value="all">所有类型</option>
+                                            <option value="meal">🍽️ 用餐</option>
+                                            <option value="medication">💊 用药</option>
+                                            <option value="exercise">🏃 运动</option>
+                                            <option value="sleep">😴 睡眠</option>
+                                            <option value="other">📌 其他</option>
+                                        </select>
+                                        <select id="reminderStatusFilter">
+                                            <option value="all">所有状态</option>
+                                            <option value="completed">已完成</option>
+                                            <option value="pending">未完成</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div id="allReminderList" class="reminder-detail-list"></div>
+                            </div>
+                        </div>
                     </div>
 
                 </div>

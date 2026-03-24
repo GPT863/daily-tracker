@@ -2384,7 +2384,17 @@ body.elder-mode .form-actions button {
     background: var(--card-bg);
 }
 
+.reminder-fixed-header {
+    flex-shrink: 0;
+    background: var(--card-bg);
+}
+
 .records-scrollable-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.reminder-scrollable-content {
     flex: 1;
     overflow-y: auto;
 }
@@ -2446,6 +2456,22 @@ body.elder-mode .form-actions button {
 
 .tab-content.active {
     display: block;
+}
+
+/* 提醒页面：固定标签，内容可滚动 */
+#reminderModal.modal.page-mode .reminder-scrollable-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+#reminderModal.modal.page-mode .tab-content {
+    height: 100%;
+    display: none;
+    flex-direction: column;
+}
+
+#reminderModal.modal.page-mode .tab-content.active {
+    display: flex;
 }
 
 .reminder-detail-list {
@@ -4425,6 +4451,26 @@ body {
 }
 
 #recordsModal.modal.page-mode .reminder-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 提醒页面模态框：固定高度，内容可滚动 */
+#reminderModal.modal.page-mode .modal-content {
+    height: calc(100vh - var(--nav-height));
+    max-height: calc(100vh - var(--nav-height));
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#reminderModal.modal.page-mode .modal-header {
+    flex-shrink: 0;
+}
+
+#reminderModal.modal.page-mode .reminder-content {
     flex: 1;
     display: flex;
     flex-direction: column;
