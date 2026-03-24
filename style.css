@@ -3355,6 +3355,27 @@ body.elder-mode .stats-card-value {
     margin-bottom: 6px;
 }
 
+.ai-chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.ai-chat-copy-btn {
+    background: none;
+    border: none;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.ai-chat-copy-btn:hover {
+    background: rgba(0, 0, 0, 0.06);
+}
+
 .ai-chat-content {
     color: var(--text-color);
 }

@@ -1368,6 +1368,18 @@ function setupEventListeners() {
     // AI页面事件
     document.getElementById('startAiPageDiagnosisBtn').addEventListener('click', startAiPageDiagnosis);
     document.getElementById('aiPageNewDiagnosisBtn').addEventListener('click', resetAiPageDiagnosis);
+    document.getElementById('sendAiPageFollowupBtn').addEventListener('click', sendAiPageFollowup);
+
+    // AI页面追问输入框支持Ctrl+Enter发送
+    const followupInput = document.getElementById('aiPageFollowupInput');
+    if (followupInput) {
+        followupInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                sendAiPageFollowup();
+            }
+        });
+    }
 
     // AI页面数据范围选择
     document.querySelectorAll('input[name="aiPageRange"]').forEach(radio => {
@@ -1809,6 +1821,47 @@ async function startAiPageDiagnosis() {
 
         resultContainer.appendChild(copyBtn);
 
+        // 保存诊断上下文用于对话
+        aiConversationContext = {
+            startDate,
+            endDate,
+            diagnosisResult: rawText
+        };
+        aiConversationHistory = [
+            { role: 'assistant', content: rawText }
+        ];
+
+        // 显示对话区域
+        const chatSection = document.getElementById('aiPageChatSection');
+        const chatMessages = document.getElementById('aiPageChatMessages');
+        if (chatSection) {
+            chatSection.classList.remove('hidden');
+
+            // 将初始诊断结果添加到对话区域
+            const initialMsgDiv = document.createElement('div');
+            initialMsgDiv.className = 'ai-chat-message ai-chat-assistant';
+            initialMsgDiv.innerHTML = `
+                <div class="ai-chat-header">
+                    <span class="ai-chat-role">AI助手</span>
+                    <button class="ai-chat-copy-btn" title="复制">📋</button>
+                </div>
+                <div class="ai-chat-content">${formatAiResponse(rawText)}</div>
+            `;
+            const copyBtn = initialMsgDiv.querySelector('.ai-chat-copy-btn');
+            copyBtn.onclick = () => {
+                const text = initialMsgDiv.querySelector('.ai-chat-content').innerText || initialMsgDiv.querySelector('.ai-chat-content').textContent;
+                navigator.clipboard.writeText(text).then(() => {
+                    copyBtn.innerHTML = '✅';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = '📋';
+                    }, 2000);
+                }).catch(() => {
+                    showToast('复制失败');
+                });
+            };
+            chatMessages.appendChild(initialMsgDiv);
+        }
+
         showToast('AI诊断完成！');
     } catch (error) {
         console.error('AI诊断失败:', error);
@@ -1824,12 +1877,127 @@ async function startAiPageDiagnosis() {
 function resetAiPageDiagnosis() {
     const traceSection = document.getElementById('aiPageTraceSection');
     const traceOutput = document.getElementById('aiPageTraceOutput');
+    const chatSection = document.getElementById('aiPageChatSection');
+    const chatMessages = document.getElementById('aiPageChatMessages');
+
     if (traceSection) {
         traceSection.classList.add('hidden');
     }
     if (traceOutput) {
         traceOutput.innerHTML = '';
     }
+    if (chatSection) {
+        chatSection.classList.add('hidden');
+    }
+    if (chatMessages) {
+        chatMessages.innerHTML = '';
+    }
+
+    // 重置对话上下文
+    aiConversationContext = null;
+    aiConversationHistory = [];
+}
+
+// 发送AI页面追问
+async function sendAiPageFollowup() {
+    if (aiConversationBusy) {
+        showToast('请等待当前回复完成');
+        return;
+    }
+
+    const input = document.getElementById('aiPageFollowupInput');
+    const question = input.value.trim();
+    if (!question) {
+        showToast('请输入追问内容');
+        return;
+    }
+
+    const chatMessages = document.getElementById('aiPageChatMessages');
+    const sendBtn = document.getElementById('sendAiPageFollowupBtn');
+
+    // 添加用户消息
+    const userMsgDiv = document.createElement('div');
+    userMsgDiv.className = 'ai-chat-message ai-chat-user';
+    userMsgDiv.innerHTML = `
+        <span class="ai-chat-role">您</span>
+        <div class="ai-chat-content">${escapeHtml(question)}</div>
+    `;
+    chatMessages.appendChild(userMsgDiv);
+
+    // 清空输入框
+    input.value = '';
+
+    // 添加AI回复占位
+    const aiMsgDiv = document.createElement('div');
+    aiMsgDiv.className = 'ai-chat-message ai-chat-assistant';
+    aiMsgDiv.innerHTML = `
+        <div class="ai-chat-header">
+            <span class="ai-chat-role">AI助手</span>
+            <button class="ai-chat-copy-btn" title="复制">📋</button>
+        </div>
+        <div class="ai-chat-content streaming"></div>
+    `;
+    chatMessages.appendChild(aiMsgDiv);
+
+    const aiContentDiv = aiMsgDiv.querySelector('.ai-chat-content');
+    const copyBtn = aiMsgDiv.querySelector('.ai-chat-copy-btn');
+
+    copyBtn.onclick = () => {
+        const text = aiContentDiv.innerText || aiContentDiv.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            copyBtn.innerHTML = '✅';
+            setTimeout(() => {
+                copyBtn.innerHTML = '📋';
+            }, 2000);
+        }).catch(() => {
+            showToast('复制失败');
+        });
+    };
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    aiConversationBusy = true;
+    sendBtn.disabled = true;
+    sendBtn.textContent = '思考中...';
+
+    try {
+        // 构建消息历史
+        const messages = [
+            {
+                role: 'system',
+                content: `你是一位专业的健康顾问。用户之前在${aiConversationContext.startDate}至${aiConversationContext.endDate}期间进行了健康诊断，下面是之前的诊断结果和对话历史。请基于这些信息继续回答用户的追问，保持专业友好的语气。`
+            },
+            ...aiConversationHistory,
+            { role: 'user', content: question }
+        ];
+
+        let fullResponse = '';
+        await callAiApiStream(messages, {}, (chunk, fullText) => {
+            fullResponse = fullText;
+            aiContentDiv.innerHTML = formatAiResponse(fullText);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+
+        // 保存到对话历史
+        aiConversationHistory.push({ role: 'user', content: question });
+        aiConversationHistory.push({ role: 'assistant', content: fullResponse });
+
+        aiContentDiv.classList.remove('streaming');
+        showToast('回复已生成');
+    } catch (error) {
+        console.error('追问失败:', error);
+        aiContentDiv.innerHTML = `<span style="color: #d32f2f;">追问失败：${escapeHtml(error.message)}</span>`;
+    } finally {
+        aiConversationBusy = false;
+        sendBtn.disabled = false;
+        sendBtn.textContent = '发送追问';
+    }
+}
+
+// HTML转义函数
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // 更新显示
