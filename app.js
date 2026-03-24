@@ -4133,9 +4133,6 @@ function renderReminderTabs(tab) {
         case 'today':
             renderTodayReminders();
             break;
-        case 'upcoming':
-            renderUpcomingReminders();
-            break;
         case 'all':
             renderAllReminders();
             break;
@@ -4192,20 +4189,6 @@ function renderTodayReminders() {
     container.innerHTML = todayReminders.length === 0
         ? '<p class="text-secondary">今天没有提醒</p>'
         : todayReminders.map(r => renderReminderItem(r)).join('');
-}
-
-// 渲染即将到来的提醒
-function renderUpcomingReminders() {
-    const now = new Date();
-    const upcoming = reminders
-        .filter(r => new Date(r.date + 'T' + r.time) > now && !r.completed)
-        .sort((a, b) => new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time))
-        .slice(0, 10);
-
-    const container = document.getElementById('upcomingReminderList');
-    container.innerHTML = upcoming.length === 0
-        ? '<p class="text-secondary">没有即将到来的提醒</p>'
-        : upcoming.map(r => renderReminderItem(r)).join('');
 }
 
 // 渲染所有提醒
