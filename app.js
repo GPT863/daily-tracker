@@ -37,6 +37,7 @@ let aiConfig = {
 let aiConversationContext = null;
 let aiConversationHistory = [];
 let aiConversationBusy = false;
+let aiPendingFiles = []; // 待发送的附件 { type: 'image'|'pdf', name, base64, mimeType }
 let cloudSyncBusy = false;
 let cloudSyncTimer = null;
 let calendarViewDate = new Date();
@@ -1401,6 +1402,20 @@ function setupEventListeners() {
         });
     }
 
+    // AI页面附件上传
+    const aiAttachBtn = document.getElementById('aiAttachBtn');
+    const aiFileInput = document.getElementById('aiFileInput');
+    if (aiAttachBtn && aiFileInput) {
+        aiAttachBtn.addEventListener('click', () => aiFileInput.click());
+        aiFileInput.addEventListener('change', handleAiFileSelect);
+    }
+
+    // 欢迎页附件上传（开始分析前）
+    const aiWelcomeAttachBtn = document.getElementById('aiWelcomeAttachBtn');
+    if (aiWelcomeAttachBtn && aiFileInput) {
+        aiWelcomeAttachBtn.addEventListener('click', () => aiFileInput.click());
+    }
+
     // AI页面数据范围选择
     document.querySelectorAll('input[name="aiPageRange"]').forEach(radio => {
         radio.addEventListener('change', () => {
@@ -1794,6 +1809,19 @@ async function startAiPageDiagnosis() {
         const analysisData = collectAnalysisData(startDate, endDate);
         const prompt = buildAnalysisPrompt(analysisData);
 
+        // 快照并清空预上传的附件
+        const startFiles = aiPendingFiles.length > 0 ? [...aiPendingFiles] : null;
+        aiPendingFiles = [];
+        renderAiAttachPreview();
+
+        // 构建消息（可能含附件）
+        let apiInput;
+        if (startFiles && startFiles.length) {
+            apiInput = [{ role: 'user', content: buildMultimodalContent(prompt, startFiles) }];
+        } else {
+            apiInput = prompt;
+        }
+
         // 替换思考动画为AI气泡
         chatMessages.innerHTML = '';
         const aiBubble = createAiBubble('');
@@ -1804,7 +1832,7 @@ async function startAiPageDiagnosis() {
 
         // 调用AI API（流式）
         let rawText = '';
-        await callAiApiStream(prompt, {}, (chunk, fullText) => {
+        await callAiApiStream(apiInput, {}, (chunk, fullText) => {
             rawText = fullText;
             contentDiv.innerHTML = formatAiResponse(fullText);
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -1948,12 +1976,180 @@ function aiSpeechPlay(text, btn) {
     speechSynthesis.speak(utterance);
 }
 
+// 检查当前provider是否支持multimodal（图片/文件）
+function getProviderMultimodalSupport() {
+    const config = getAiConfig();
+    const provider = config.provider;
+    const model = (config.model || '').toLowerCase();
+
+    // OpenAI: gpt-4o / gpt-4-vision 等支持图片，不支持PDF
+    if (provider === 'openai') {
+        const supportsVision = model.includes('gpt-4o') || model.includes('gpt-4-vision') || model.includes('gpt-4-turbo');
+        return { image: supportsVision, pdf: false, name: 'OpenAI' };
+    }
+    // Anthropic: Claude 3+ 支持图片和PDF
+    if (provider === 'anthropic') {
+        return { image: true, pdf: true, name: 'Anthropic Claude' };
+    }
+    // DeepSeek: 目前不支持图片
+    if (provider === 'deepseek') {
+        return { image: false, pdf: false, name: 'DeepSeek' };
+    }
+    // 通义千问: qwen-vl 系列支持图片
+    if (provider === 'tongyi') {
+        const supportsVision = model.includes('vl');
+        return { image: supportsVision, pdf: false, name: '通义千问' };
+    }
+    // Custom: 默认假设支持图片（用户自选模型）
+    if (provider === 'custom') {
+        return { image: true, pdf: false, name: '自定义模型' };
+    }
+    return { image: false, pdf: false, name: provider };
+}
+
+// AI附件文件选择处理
+async function handleAiFileSelect(e) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    const support = getProviderMultimodalSupport();
+
+    for (const file of files) {
+        const isImage = file.type.startsWith('image/');
+        const isPdf = file.type === 'application/pdf';
+
+        if (!isImage && !isPdf) {
+            showToast('仅支持图片和PDF文件');
+            continue;
+        }
+
+        // 检查provider支持
+        if (isImage && !support.image) {
+            showToast(`当前模型（${support.name}）不支持图片识别，请切换至支持视觉的模型`);
+            continue;
+        }
+        if (isPdf && !support.pdf) {
+            showToast(`当前模型（${support.name}）不支持PDF文件，请切换至 Anthropic Claude`);
+            continue;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            showToast(`文件 ${file.name} 超过10MB限制`);
+            continue;
+        }
+
+        try {
+            let base64, mimeType;
+            if (isImage) {
+                base64 = await readAndCompressImage(file);
+                mimeType = 'image/jpeg';
+            } else {
+                base64 = await readFileAsBase64(file);
+                mimeType = file.type;
+            }
+
+            aiPendingFiles.push({
+                type: isImage ? 'image' : 'pdf',
+                name: file.name,
+                base64,
+                mimeType
+            });
+        } catch (err) {
+            showToast(`文件 ${file.name} 读取失败`);
+        }
+    }
+
+    renderAiAttachPreview();
+    // 重置file input以便重复选择同一文件
+    e.target.value = '';
+}
+
+// 读取文件为base64
+function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('文件读取失败'));
+        reader.readAsDataURL(file);
+    });
+}
+
+// 渲染附件预览区（同时更新欢迎页和底部栏两个预览区）
+function renderAiAttachPreview() {
+    const containers = [
+        document.getElementById('aiAttachPreview'),
+        document.getElementById('aiWelcomeAttachPreview')
+    ].filter(Boolean);
+
+    containers.forEach(container => {
+        container.innerHTML = '';
+        aiPendingFiles.forEach((f, idx) => {
+            const item = document.createElement('div');
+            item.className = 'ai-attach-item' + (f.type === 'pdf' ? ' pdf' : '');
+
+            if (f.type === 'image') {
+                item.innerHTML = `<img src="${f.base64}" alt="${escapeHtml(f.name)}">`;
+            } else {
+                item.innerHTML = `<span class="ai-attach-pdf-icon">📄</span><span class="ai-attach-pdf-name">${escapeHtml(f.name)}</span>`;
+            }
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'ai-attach-remove';
+            removeBtn.textContent = '×';
+            removeBtn.onclick = () => {
+                aiPendingFiles.splice(idx, 1);
+                renderAiAttachPreview();
+            };
+            item.appendChild(removeBtn);
+            container.appendChild(item);
+        });
+    });
+}
+
+// 构建带附件的消息content（OpenAI Vision 格式）
+function buildMultimodalContent(text, files) {
+    const content = [];
+    if (text) {
+        content.push({ type: 'text', text });
+    }
+    files.forEach(f => {
+        if (f.type === 'image') {
+            content.push({
+                type: 'image_url',
+                image_url: { url: f.base64 }
+            });
+        } else if (f.type === 'pdf') {
+            // 大多数API不直接支持PDF，将base64附带并提示AI
+            content.push({
+                type: 'text',
+                text: `[用户上传了PDF文件: ${f.name}，请分析其内容]`
+            });
+            // 对于支持的provider(如Anthropic)，会在callAiApiStream中特殊处理
+        }
+    });
+    return content;
+}
+
 // 创建用户消息气泡
-function createUserBubble(content) {
+function createUserBubble(content, attachments) {
     const bubble = document.createElement('div');
     bubble.className = 'ai-chat-bubble ai-user';
+
+    let attachHtml = '';
+    if (attachments && attachments.length) {
+        attachHtml = '<div class="ai-bubble-attachments">';
+        attachments.forEach(f => {
+            if (f.type === 'image') {
+                attachHtml += `<img class="ai-bubble-attach-img" src="${f.base64}" alt="${escapeHtml(f.name)}">`;
+            } else {
+                attachHtml += `<span class="ai-bubble-attach-pdf">📄 ${escapeHtml(f.name)}</span>`;
+            }
+        });
+        attachHtml += '</div>';
+    }
+
     bubble.innerHTML = `
-        <div class="ai-bubble-content">${escapeHtml(content)}</div>
+        <div class="ai-bubble-content">${attachHtml}${content ? escapeHtml(content) : ''}</div>
     `;
     return bubble;
 }
@@ -2005,6 +2201,10 @@ function resetAiPageDiagnosis() {
     aiConversationContext = null;
     aiConversationHistory = [];
 
+    // 清空待发送附件
+    aiPendingFiles = [];
+    renderAiAttachPreview();
+
     // 更新数据预览
     updateAiPageDataPreview();
 }
@@ -2018,8 +2218,10 @@ async function sendAiPageFollowup() {
 
     const input = document.getElementById('aiPageFollowupInput');
     const question = input.value.trim();
-    if (!question) {
-        showToast('请输入追问内容');
+    const hasFiles = aiPendingFiles.length > 0;
+
+    if (!question && !hasFiles) {
+        showToast('请输入内容或上传文件');
         return;
     }
 
@@ -2030,8 +2232,13 @@ async function sendAiPageFollowup() {
     // 清空推荐问题
     if (suggestScroll) suggestScroll.innerHTML = '';
 
-    // 添加用户消息气泡
-    chatMessages.appendChild(createUserBubble(question));
+    // 快照附件并清空
+    const sentFiles = hasFiles ? [...aiPendingFiles] : null;
+    aiPendingFiles = [];
+    renderAiAttachPreview();
+
+    // 添加用户消息气泡（带附件）
+    chatMessages.appendChild(createUserBubble(question, sentFiles));
 
     // 清空输入框并重置高度
     input.value = '';
@@ -2048,6 +2255,14 @@ async function sendAiPageFollowup() {
     sendBtn.disabled = true;
 
     try {
+        // 构建用户消息（可能含附件）
+        let userMessage;
+        if (sentFiles && sentFiles.length) {
+            userMessage = { role: 'user', content: buildMultimodalContent(question || '请分析这些文件', sentFiles) };
+        } else {
+            userMessage = { role: 'user', content: question };
+        }
+
         // 构建消息历史
         const messages = [
             {
@@ -2055,7 +2270,7 @@ async function sendAiPageFollowup() {
                 content: `你是一位专业的健康顾问。用户之前在${aiConversationContext.startDate}至${aiConversationContext.endDate}期间进行了健康诊断，下面是之前的诊断结果和对话历史。请基于这些信息继续回答用户的追问，保持专业友好的语气。`
             },
             ...aiConversationHistory,
-            { role: 'user', content: question }
+            userMessage
         ];
 
         // 替换思考动画为AI气泡
@@ -2073,8 +2288,11 @@ async function sendAiPageFollowup() {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         });
 
-        // 保存到对话历史
-        aiConversationHistory.push({ role: 'user', content: question });
+        // 保存到对话历史（纯文本，避免存base64）
+        const historyText = sentFiles && sentFiles.length
+            ? (question || '') + sentFiles.map(f => `\n[附件: ${f.name}]`).join('')
+            : question;
+        aiConversationHistory.push({ role: 'user', content: historyText });
         aiConversationHistory.push({ role: 'assistant', content: fullResponse });
 
         contentDiv.classList.remove('streaming');
@@ -7937,7 +8155,9 @@ async function callAiApi(promptOrMessages, options = {}) {
     const systemPrompt = options.systemPrompt || '你是一位专业的健康顾问，擅长分析健康数据并提供个性化建议。';
     const messages = Array.isArray(promptOrMessages)
         ? promptOrMessages
-        : [{ role: 'user', content: promptOrMessages }];
+        : typeof promptOrMessages === 'string'
+            ? [{ role: 'user', content: promptOrMessages }]
+            : [promptOrMessages];
 
     let apiUrl = '';
     let headers = {
@@ -8042,6 +8262,40 @@ async function callAiApi(promptOrMessages, options = {}) {
     }
 }
 
+// 转换multimodal content为Anthropic格式
+function convertToAnthropicContent(content) {
+    // 纯字符串直接返回
+    if (typeof content === 'string') return content;
+    // 数组格式（multimodal）→ 转换为 Anthropic content blocks
+    if (!Array.isArray(content)) return content;
+
+    return content.map(block => {
+        if (block.type === 'text') {
+            return { type: 'text', text: block.text };
+        }
+        if (block.type === 'image_url' && block.image_url?.url) {
+            // data:image/jpeg;base64,xxxx → 提取 media_type 和 data
+            const match = block.image_url.url.match(/^data:([^;]+);base64,(.+)$/);
+            if (match) {
+                return {
+                    type: 'image',
+                    source: {
+                        type: 'base64',
+                        media_type: match[1],
+                        data: match[2]
+                    }
+                };
+            }
+            // URL格式
+            return {
+                type: 'image',
+                source: { type: 'url', url: block.image_url.url }
+            };
+        }
+        return block;
+    });
+}
+
 // 调用AI API（流式输出）
 async function callAiApiStream(promptOrMessages, options = {}, onChunk) {
     const config = options.config || aiConfig;
@@ -8049,7 +8303,9 @@ async function callAiApiStream(promptOrMessages, options = {}, onChunk) {
     const systemPrompt = options.systemPrompt || '你是一位专业的健康顾问，擅长分析健康数据并提供个性化建议。';
     const messages = Array.isArray(promptOrMessages)
         ? promptOrMessages
-        : [{ role: 'user', content: promptOrMessages }];
+        : typeof promptOrMessages === 'string'
+            ? [{ role: 'user', content: promptOrMessages }]
+            : [promptOrMessages];
 
     let apiUrl = '';
     let headers = {
@@ -8084,7 +8340,7 @@ async function callAiApiStream(promptOrMessages, options = {}, onChunk) {
                 stream: true,
                 messages: messages.map(message => ({
                     role: message.role === 'assistant' ? 'assistant' : 'user',
-                    content: message.content
+                    content: convertToAnthropicContent(message.content)
                 }))
             };
             break;
