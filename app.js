@@ -1924,7 +1924,6 @@ function renderRecordActivityItem(activity) {
         badgeText: `${typeIcons[activity.type] || '📝'} ${getActivityTypeLabel(activity.type)}`,
         headerMain: getActivityTimeRangeText(activity),
         headerSide: duration ? `${duration} 分钟` : '',
-        headerSubline: formatDateWithWeekday(currentDate),
         title: activity.content,
         notes: activity.feeling || '',
         image: activity.image || '',
