@@ -66,9 +66,6 @@
                         <button id="viewAllReminders" class="text-btn">查看全部</button>
                     </div>
                     <div id="todayReminders" class="reminder-list"></div>
-                    <div id="noReminders" class="empty-state small">
-                        <p>今天没有提醒</p>
-                    </div>
                 </section>
 
                 <section class="daily-summary-section">
@@ -76,6 +73,7 @@
                         <h2>🧾 今日状态记录</h2>
                     </div>
                     <div id="dailySummaryCard" class="daily-summary-card">
+                        <button id="dailyNoteFullscreenBtn" class="daily-note-fullscreen-btn" title="全屏编辑">⛶</button>
                         <textarea id="dailyNoteInput" class="daily-note-input" placeholder="记录今天的感受、状态变化、需要关注的事项..."></textarea>
                         <div class="daily-note-actions">
                             <span id="dailyNoteMeta" class="daily-note-meta">草稿状态</span>

@@ -1344,6 +1344,7 @@ function setupEventListeners() {
     document.getElementById('cloudPullBtn').addEventListener('click', pullSnapshotFromCloud);
     document.getElementById('saveDailyNoteBtn').addEventListener('click', saveDailyNote);
     document.getElementById('quickAiDiagnosisBtn').addEventListener('click', runQuickTodayAiDiagnosis);
+    document.getElementById('dailyNoteFullscreenBtn').addEventListener('click', toggleDailyNoteFullscreen);
     document.getElementById('dailyNoteInput').addEventListener('input', () => {
         const input = document.getElementById('dailyNoteInput');
         const meta = document.getElementById('dailyNoteMeta');
@@ -4857,6 +4858,39 @@ function updateDailySummary() {
     input.value = content;
     input.dataset.savedValue = content;
     meta.textContent = updatedAt ? `已保存：${new Date(updatedAt).toLocaleString('zh-CN')}` : '尚未保存';
+}
+
+function toggleDailyNoteFullscreen() {
+    const card = document.getElementById('dailySummaryCard');
+    const btn = document.getElementById('dailyNoteFullscreenBtn');
+    if (!card || !btn) return;
+
+    card.classList.toggle('fullscreen');
+    const isFullscreen = card.classList.contains('fullscreen');
+
+    // 按 ESC 退出全屏
+    if (isFullscreen) {
+        btn.textContent = '⛶';
+        btn.title = '退出全屏';
+
+        const handleEscape = (e) => {
+            if (e.key === 'Escape' && card.classList.contains('fullscreen')) {
+                toggleDailyNoteFullscreen();
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+
+        // 保存引用以便清理
+        card._escapeHandler = handleEscape;
+    } else {
+        btn.textContent = '⛶';
+        btn.title = '全屏编辑';
+
+        if (card._escapeHandler) {
+            document.removeEventListener('keydown', card._escapeHandler);
+            delete card._escapeHandler;
+        }
+    }
 }
 
 async function saveDailyNote() {
