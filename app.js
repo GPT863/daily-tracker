@@ -1379,6 +1379,94 @@ function setupEventListeners() {
 
     // 初始化药品管理事件
     setupMedicineEventListeners();
+
+    // 标签页滑动手势切换
+    setupSwipeNavigation();
+}
+
+// 标签页滑动手势切换
+function setupSwipeNavigation() {
+    // 提醒页面滑动手势
+    const reminderScrollableContent = document.querySelector('#reminderModal .reminder-scrollable-content');
+    if (reminderScrollableContent) {
+        setupSwipeGestures(reminderScrollableContent, {
+            onSwipeLeft: () => {
+                // 左滑：today -> all
+                if (currentReminderTab === 'today') {
+                    renderReminderTabs('all');
+                }
+            },
+            onSwipeRight: () => {
+                // 右滑：all -> today
+                if (currentReminderTab === 'all') {
+                    renderReminderTabs('today');
+                }
+            }
+        });
+    }
+
+    // 记录页面滑动手势
+    const recordsScrollableContent = document.querySelector('#recordsModal .records-scrollable-content');
+    if (recordsScrollableContent) {
+        setupSwipeGestures(recordsScrollableContent, {
+            onSwipeLeft: () => {
+                // 左滑：activity -> health -> symptom
+                const views = ['activity', 'health', 'symptom'];
+                const currentIndex = views.indexOf(currentRecordView);
+                if (currentIndex < views.length - 1) {
+                    setCurrentRecordView(views[currentIndex + 1]);
+                }
+            },
+            onSwipeRight: () => {
+                // 右滑：symptom -> health -> activity
+                const views = ['activity', 'health', 'symptom'];
+                const currentIndex = views.indexOf(currentRecordView);
+                if (currentIndex > 0) {
+                    setCurrentRecordView(views[currentIndex - 1]);
+                }
+            }
+        });
+    }
+}
+
+// 通用滑动手势处理
+function setupSwipeGestures(element, callbacks) {
+    let startX = 0;
+    let startY = 0;
+    let isDragging = false;
+    const SWIPE_THRESHOLD = 80; // 滑动阈值（像素）
+    const VELOCITY_THRESHOLD = 0.3; // 速度阈值
+
+    element.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        isDragging = true;
+    }, { passive: true });
+
+    element.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+    }, { passive: true });
+
+    element.addEventListener('touchend', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+
+        const endX = e.changedTouches[0].clientX;
+        const endY = e.changedTouches[0].clientY;
+        const diffX = endX - startX;
+        const diffY = endY - startY;
+        const absDiffX = Math.abs(diffX);
+        const absDiffY = Math.abs(diffY);
+
+        // 只响应水平滑动，且水平位移大于垂直位移
+        if (absDiffX > absDiffY && absDiffX > SWIPE_THRESHOLD) {
+            if (diffX > 0 && callbacks.onSwipeRight) {
+                callbacks.onSwipeRight();
+            } else if (diffX < 0 && callbacks.onSwipeLeft) {
+                callbacks.onSwipeLeft();
+            }
+        }
+    }, { passive: true });
 }
 
 // 更改日期
