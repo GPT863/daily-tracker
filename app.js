@@ -1767,20 +1767,30 @@ async function startAiPageDiagnosis() {
         // 构建提示词
         const prompt = buildAnalysisPrompt(analysisData);
 
-        // 调用AI API
-        appendMessage('running', '正在请求 AI 服务，请稍候...');
-        const response = await callAiApi(prompt);
-        markAiConfigVerified();
-        appendMessage('success', 'AI 服务已返回结果，正在整理展示内容。');
-
-        // 显示结果 - 包裹在容器中并添加复制按钮
+        // 创建结果容器（流式输出前创建）
         const resultContainer = document.createElement('div');
         resultContainer.className = 'ai-result-container';
 
         const resultContent = document.createElement('div');
         resultContent.className = 'ai-result-content';
-        resultContent.innerHTML = formatAiResponse(response);
+        resultContainer.appendChild(resultContent);
+        traceOutput.appendChild(resultContainer);
 
+        // 调用AI API（流式）
+        appendMessage('running', '正在请求 AI 服务，流式返回分析结果...');
+        resultContent.classList.add('streaming');  // 添加流式状态
+        let rawText = '';
+        const response = await callAiApiStream(prompt, {}, (chunk, fullText) => {
+            rawText = fullText;
+            resultContent.innerHTML = formatAiResponse(fullText);
+            traceOutput.scrollTop = traceOutput.scrollHeight;
+        });
+
+        resultContent.classList.remove('streaming');  // 移除流式状态
+        markAiConfigVerified();
+        appendMessage('success', 'AI 服务已返回完整结果。');
+
+        // 添加复制按钮
         const copyBtn = document.createElement('button');
         copyBtn.className = 'ai-copy-btn';
         copyBtn.innerHTML = '📋 复制';
@@ -1797,10 +1807,7 @@ async function startAiPageDiagnosis() {
             });
         };
 
-        resultContainer.appendChild(resultContent);
         resultContainer.appendChild(copyBtn);
-        traceOutput.appendChild(resultContainer);
-        appendMessage('success', '诊断结果已生成并显示。');
 
         showToast('AI诊断完成！');
     } catch (error) {
@@ -7773,6 +7780,160 @@ async function callAiApi(promptOrMessages, options = {}) {
     } else {
         return result.choices[0].message.content;
     }
+}
+
+// 调用AI API（流式输出）
+async function callAiApiStream(promptOrMessages, options = {}, onChunk) {
+    const config = options.config || aiConfig;
+    const { provider, apiKey, model, apiEndpoint } = config;
+    const systemPrompt = options.systemPrompt || '你是一位专业的健康顾问，擅长分析健康数据并提供个性化建议。';
+    const messages = Array.isArray(promptOrMessages)
+        ? promptOrMessages
+        : [{ role: 'user', content: promptOrMessages }];
+
+    let apiUrl = '';
+    let headers = {
+        'Content-Type': 'application/json'
+    };
+    let body = {};
+
+    switch (provider) {
+        case 'openai':
+            apiUrl = 'https://api.openai.com/v1/chat/completions';
+            headers['Authorization'] = `Bearer ${apiKey}`;
+            body = {
+                model: model || 'gpt-4o-mini',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    ...messages
+                ],
+                temperature: 0.7,
+                max_tokens: 2000,
+                stream: true
+            };
+            break;
+
+        case 'anthropic':
+            apiUrl = 'https://api.anthropic.com/v1/messages';
+            headers['x-api-key'] = apiKey;
+            headers['anthropic-version'] = '2023-06-01';
+            body = {
+                model: model || 'claude-3-haiku-20240307',
+                system: systemPrompt,
+                max_tokens: 2000,
+                stream: true,
+                messages: messages.map(message => ({
+                    role: message.role === 'assistant' ? 'assistant' : 'user',
+                    content: message.content
+                }))
+            };
+            break;
+
+        case 'deepseek':
+            apiUrl = 'https://api.deepseek.com/v1/chat/completions';
+            headers['Authorization'] = `Bearer ${apiKey}`;
+            body = {
+                model: model || 'deepseek-chat',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    ...messages
+                ],
+                temperature: 0.7,
+                max_tokens: 2000,
+                stream: true
+            };
+            break;
+
+        case 'tongyi':
+            apiUrl = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
+            headers['Authorization'] = `Bearer ${apiKey}`;
+            body = {
+                model: model || 'qwen-turbo',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    ...messages
+                ],
+                temperature: 0.7,
+                max_tokens: 2000,
+                stream: true
+            };
+            break;
+
+        case 'custom':
+            apiUrl = apiEndpoint;
+            headers['Authorization'] = `Bearer ${apiKey}`;
+            body = {
+                model: model || 'gpt-3.5-turbo',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    ...messages
+                ],
+                temperature: 0.7,
+                max_tokens: 2000,
+                stream: true
+            };
+            break;
+
+        default:
+            throw new Error('不支持的AI服务提供商');
+    }
+
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`API请求失败 (${response.status}): ${errorData.error?.message || response.statusText}`);
+    }
+
+    // 处理流式响应
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+            if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+
+                try {
+                    const parsed = JSON.parse(data);
+
+                    // 根据不同提供商提取文本
+                    let content = '';
+                    if (provider === 'anthropic') {
+                        if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                            content = parsed.delta.text;
+                        }
+                    } else {
+                        // OpenAI-compatible
+                        if (parsed.choices?.[0]?.delta?.content) {
+                            content = parsed.choices[0].delta.content;
+                        }
+                    }
+
+                    if (content) {
+                        fullText += content;
+                        if (onChunk) onChunk(content, fullText);
+                    }
+                } catch (e) {
+                    // 忽略解析错误
+                }
+            }
+        }
+    }
+
+    return fullText;
 }
 
 // 格式化AI响应

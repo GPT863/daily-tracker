@@ -3266,6 +3266,21 @@ body.elder-mode .stats-card-value {
     margin-bottom: 12px;
 }
 
+/* 流式输出时光标动画 */
+.ai-result-content.streaming::after {
+    content: '▊';
+    display: inline-block;
+    margin-left: 2px;
+    color: var(--primary-color);
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
 .ai-result-content strong {
     color: #000;
     font-weight: 600;
