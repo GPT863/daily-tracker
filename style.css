@@ -400,6 +400,11 @@ body.elder-mode .form-actions button {
     transition: background 0.22s, border-color 0.22s, transform 0.18s, box-shadow 0.22s;
 }
 
+.date-btn svg {
+    display: block;
+    transition: transform 0.2s ease;
+}
+
 .date-btn:hover {
     background: rgba(255,255,255,0.24);
     border-color: rgba(255,255,255,0.5);
@@ -407,9 +412,17 @@ body.elder-mode .form-actions button {
     box-shadow: 0 4px 14px rgba(0,0,0,0.15);
 }
 
+.date-btn:hover svg {
+    transform: scale(1.1);
+}
+
 .date-btn:active {
     transform: scale(0.94);
     background: rgba(255,255,255,0.32);
+}
+
+.date-btn:active svg {
+    transform: scale(0.95);
 }
 
 #currentDate {
@@ -480,6 +493,29 @@ body.elder-mode .form-actions button {
     color: var(--forest-color);
     cursor: pointer;
     font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.date-calendar-nav svg {
+    display: block;
+    transition: transform 0.2s ease;
+}
+
+.date-calendar-nav:hover {
+    background: rgba(223, 245, 228, 1);
+    border-color: rgba(31, 122, 61, 0.3);
+    transform: scale(1.05);
+}
+
+.date-calendar-nav:hover svg {
+    transform: scale(1.15);
+}
+
+.date-calendar-nav:active {
+    transform: scale(0.95);
 }
 
 .date-calendar-month {
@@ -602,6 +638,15 @@ body.elder-mode .form-actions button {
     display: flex;
     align-items: center;
     gap: 6px;
+    margin: 0;
+    line-height: 1;
+}
+
+.section-icon {
+    color: var(--forest-color);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
 }
 
 .section-tools {
@@ -957,6 +1002,33 @@ body.elder-mode .form-actions button {
     font-size: 1.05rem;
     font-weight: 700;
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1;
+}
+
+.reminder-icon {
+    color: var(--forest-color);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    animation: bellRing 2s ease-in-out infinite;
+}
+
+@keyframes bellRing {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    10%, 30% {
+        transform: rotate(-10deg);
+    }
+    20%, 40% {
+        transform: rotate(10deg);
+    }
+    50% {
+        transform: rotate(0deg);
+    }
 }
 
 .text-btn {
@@ -1982,6 +2054,25 @@ body.elder-mode .form-actions button {
 .modal-header h2 {
     font-size: 1.15rem;
     color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    line-height: 1;
+}
+
+.reminder-page-icon {
+    color: var(--forest-color);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.my-page-icon {
+    color: var(--forest-color);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
 }
 
 .page-nav-header {
