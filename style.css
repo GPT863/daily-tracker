@@ -1429,7 +1429,7 @@ body.elder-mode .form-actions button {
 
 /* ==================== 列表底部提示 ==================== */
 .timeline:not(:empty)::after,
-.reminder-detail-list:not(:empty)::after,
+.reminder-detail-list:has(.reminder-detail-item)::after,
 .records-stream:not(:empty)::after,
 .medicine-list:not(:empty)::after,
 .template-manager-list:not(:empty)::after {
@@ -2614,6 +2614,13 @@ body.elder-mode .form-actions button {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    min-height: 200px;
+}
+
+/* 当列表为空时，让空状态垂直居中 */
+.reminder-detail-list:has(.reminder-empty-state) {
+    justify-content: center;
+    align-items: center;
 }
 
 .reminder-detail-item {

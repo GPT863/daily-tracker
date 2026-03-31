@@ -5036,7 +5036,7 @@ function renderTodayReminders() {
 
     const container = document.getElementById('todayReminderList');
     container.innerHTML = todayReminders.length === 0
-        ? '<p class="text-secondary">今天没有提醒</p>'
+        ? '<div class="reminder-empty-state"><div class="reminder-empty-state-icon">📋</div><div class="reminder-empty-state-text">今天没有提醒</div></div>'
         : todayReminders.map(r => renderReminderItem(r)).join('');
 }
 
