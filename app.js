@@ -42,6 +42,7 @@ let cloudSyncBusy = false;
 let cloudSyncTimer = null;
 let calendarViewDate = new Date();
 let currentPage = 'home';
+let pageHistory = [];
 let currentRecordView = 'activity';
 
 const datePickerConfigs = {
@@ -1215,6 +1216,14 @@ function setupEventListeners() {
     document.getElementById('timelineEmptyActionBtn').addEventListener('click', () => openModal());
     document.getElementById('cloudSyncBtn').addEventListener('click', openCloudSyncModal);
     document.getElementById('profileBtn').addEventListener('click', openProfileModal);
+    document.getElementById('aiHealthAnalysisBtn')?.addEventListener('click', () => {
+        switchPage('ai');
+        // 如果是从 Modal（例如小屏幕下“我的”可能是一个弹窗）触发的，则尝试关闭
+        const myModal = document.getElementById('myModal');
+        if (myModal && myModal.style.display === 'block') {
+            closeModal(myModal);
+        }
+    });
 
     // 数据辅助入口
     document.getElementById('seedDemoBtn').addEventListener('click', loadDemoData);
@@ -1314,6 +1323,21 @@ function setupEventListeners() {
     document.querySelectorAll('.btn-cancel').forEach(btn => {
         btn.addEventListener('click', (e) => {
             closeModal(e.target.closest('.modal'));
+        });
+    });
+
+    // 通用返回按钮 (优先使用历史记录，没有时使用 data-back-dest 默认值)
+    document.querySelectorAll('[data-back-dest]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const dest = btn.dataset.backDest;
+            if (pageHistory.length > 0) {
+                const prevPage = pageHistory.pop();
+                switchPage(prevPage, true);
+            } else if (dest) {
+                switchPage(dest);
+            } else {
+                switchPage('home');
+            }
         });
     });
 
@@ -2333,7 +2357,10 @@ function updateDisplay() {
     updateStats();
 }
 
-function switchPage(page) {
+function switchPage(page, isBack = false) {
+    if (!isBack && currentPage && currentPage !== page) {
+        pageHistory.push(currentPage);
+    }
     currentPage = page;
     updatePageDisplay();
     if (page === 'records' || page === 'activity-form' || page === 'health-form' || page === 'symptom-form') {
