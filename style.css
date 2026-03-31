@@ -2012,6 +2012,27 @@ body.elder-mode .form-actions button {
     overflow-y: auto;
     animation: slideUp 0.28s ease-out;
     box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    /* 自定义滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: #ccc transparent;
+}
+
+/* Webkit 浏览器滚动条样式 */
+.modal-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: #999;
 }
 
 
@@ -4898,6 +4919,27 @@ body {
     max-height: 70vh;
     overflow-y: auto;
     padding: 10px;
+    /* 自定义滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: #ccc transparent;
+}
+
+/* Webkit 浏览器滚动条样式 */
+.ai-diagnosis-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ai-diagnosis-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ai-diagnosis-content::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.ai-diagnosis-content::-webkit-scrollbar-thumb:hover {
+    background: #999;
 }
 
 /* AI分析页面内容（全屏模式） */
@@ -4905,6 +4947,27 @@ body {
     max-height: calc(100vh - 70px);
     overflow-y: auto;
     padding: 16px;
+    /* 自定义滚动条样式 */
+    scrollbar-width: thin;
+    scrollbar-color: #ccc transparent;
+}
+
+/* Webkit 浏览器滚动条样式 */
+.ai-analysis-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ai-analysis-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ai-analysis-content::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.ai-analysis-content::-webkit-scrollbar-thumb:hover {
+    background: #999;
 }
 
 /* 大模型配置页面内容 */
@@ -5238,6 +5301,27 @@ body {
     background: #f8f9fa;
     border-radius: 6px;
     font-size: 0.95rem;
+    /* 隐藏滚动条但保持滚动功能 */
+    scrollbar-width: thin;
+    scrollbar-color: #ccc transparent;
+}
+
+/* Webkit 浏览器滚动条样式 */
+.ai-result-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ai-result-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ai-result-content::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.ai-result-content::-webkit-scrollbar-thumb:hover {
+    background: #999;
 }
 
 .ai-result-content h1,
@@ -5679,7 +5763,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    padding: 16px;
+    padding: 12px;
     min-height: 100%;
 }
 
@@ -5687,7 +5771,7 @@ body {
 .ai-chat-bubble {
     display: flex;
     flex-direction: column;
-    max-width: 92%;
+    max-width: 98%;
     animation: ai-bubble-in 0.3s ease-out;
 }
 
@@ -5716,7 +5800,6 @@ body {
 .ai-assistant .ai-bubble-content {
     background: var(--card-bg);
     border: 1px solid rgba(0,0,0,0.06);
-    border-left: 3px solid var(--forest-color);
     border-top-left-radius: 4px;
     border-bottom-left-radius: 4px;
     color: var(--text-color);
@@ -5874,7 +5957,6 @@ body {
     padding: 12px 16px;
     background: var(--card-bg);
     border: 1px solid rgba(0,0,0,0.06);
-    border-left: 3px solid var(--forest-color);
     border-radius: 18px;
     border-top-left-radius: 4px;
     border-bottom-left-radius: 4px;

@@ -7347,12 +7347,49 @@ function saveAiConfig() {
 function syncAiProviderFields(prefix = 'ai') {
     const providerElem = document.getElementById(`${prefix}Provider`);
     const customGroup = document.getElementById(`${prefix}CustomApiEndpointGroup`);
+    const modelInput = document.getElementById(`${prefix}Model`);
     if (!providerElem || !customGroup) return;
 
     if (providerElem.value === 'custom') {
         customGroup.classList.remove('hidden');
     } else {
         customGroup.classList.add('hidden');
+    }
+
+    // 根据提供商更新模型输入框的 placeholder
+    if (modelInput) {
+        const provider = providerElem.value;
+        let placeholder = '留空使用默认模型';
+        let hint = '';
+
+        switch (provider) {
+            case 'openai':
+                hint = '例如: gpt-4o, gpt-4o-mini, gpt-3.5-turbo';
+                break;
+            case 'anthropic':
+                hint = '例如: claude-3-5-sonnet-20241022, claude-3-opus-20240229';
+                break;
+            case 'deepseek':
+                hint = '例如: deepseek-chat, deepseek-reasoner';
+                break;
+            case 'moonshot':
+                hint = '例如: moonshot-v1-8k, moonshot-v1-32k';
+                break;
+            case 'tongyi':
+                hint = '例如: qwen-plus, qwen-max, qwen-turbo, qwen2.5-72b-instruct';
+                break;
+            case 'custom':
+                hint = '例如: gpt-4, claude-3-opus-20240229';
+                break;
+            default:
+                hint = '例如: gpt-4, claude-3-opus-20240229';
+        }
+
+        modelInput.placeholder = placeholder;
+        const hintElem = modelInput.nextElementSibling;
+        if (hintElem && hintElem.classList.contains('form-hint')) {
+            hintElem.textContent = hint;
+        }
     }
 }
 
