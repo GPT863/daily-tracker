@@ -1943,6 +1943,11 @@ body.elder-mode .form-actions button {
     stroke: currentColor;
 }
 
+.my-panel-icon.my-panel-icon-text {
+    font-size: 0.65rem;
+    font-weight: 700;
+}
+
 .my-panel-action.danger .my-panel-icon {
     background: rgba(192, 57, 43, 0.1);
     color: #c0392b;
