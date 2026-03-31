@@ -5478,8 +5478,15 @@ body {
 .ai-welcome-avatar {
     font-size: 3.5rem;
     line-height: 1;
-    margin-bottom: 4px;
+    margin-bottom: 12px;
     animation: ai-float 3s ease-in-out infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ai-welcome-avatar svg {
+    filter: drop-shadow(0 4px 12px rgba(76, 175, 80, 0.15));
 }
 
 @keyframes ai-float {
