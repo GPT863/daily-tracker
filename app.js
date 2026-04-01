@@ -176,6 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadSymptomRecords();
     loadReminders();
     loadProfile();
+    loadMedicines();
     setupEventListeners();
     setupReminderListeners();
     setupProfileListeners();
@@ -1468,10 +1469,10 @@ function setupEventListeners() {
     document.getElementById('gotoAiAnalysisBtn').addEventListener('click', () => switchPage('ai'));
 
     // 模板相关事件
-    document.getElementById('saveAsTemplateBtn').addEventListener('click', saveAsTemplate);
-    document.getElementById('addTemplateBtn').addEventListener('click', () => openTemplateEditModal());
-    document.getElementById('createTemplateBtn').addEventListener('click', () => openTemplateEditModal());
-    document.getElementById('templateForm').addEventListener('submit', handleTemplateFormSubmit);
+    document.getElementById('saveAsTemplateBtn')?.addEventListener('click', saveAsTemplate);
+    document.getElementById('addTemplateBtn')?.addEventListener('click', () => openTemplateEditModal());
+    document.getElementById('createTemplateBtn')?.addEventListener('click', () => openTemplateEditModal());
+    document.getElementById('templateForm')?.addEventListener('submit', handleTemplateFormSubmit);
 
     // 模板列表点击事件（事件委托）
     document.addEventListener('click', (e) => {
@@ -2380,6 +2381,7 @@ function switchPage(page, isBack = false) {
 }
 
 function updatePageDisplay() {
+    console.log('updatePageDisplay - currentPage:', currentPage);
     const homePage = document.getElementById('homePage');
     const aiConfigPage = document.getElementById('aiConfigModal');
     const aiAnalysisPage = document.getElementById('aiAnalysisModal');
@@ -2401,7 +2403,11 @@ function updatePageDisplay() {
     const reminderBtn = document.getElementById('reminderBtn');
     const myBtn = document.getElementById('myBtn');
     const bottomActions = document.querySelector('.bottom-actions');
-    if (!homePage || !aiConfigPage || !aiAnalysisPage || !recordsPage || !reminderPage || !myPage || !exportPage || !cloudSyncPage || !profilePage || !homeBtn || !recordBtn || !reminderBtn || !myBtn) return;
+    console.log('medicineBoxPage:', medicineBoxPage);
+    if (!homePage || !aiConfigPage || !aiAnalysisPage || !recordsPage || !reminderPage || !myPage || !exportPage || !cloudSyncPage || !profilePage || !medicineBoxPage || !homeBtn || !recordBtn || !reminderBtn || !myBtn) {
+        console.error('Missing elements - returning early');
+        return;
+    }
     const isHome = currentPage === 'home';
     const isAiConfig = currentPage === 'ai-config';
     const isAi = currentPage === 'ai';
@@ -4413,6 +4419,10 @@ function loadProfile() {
     profile = profile || {};
 }
 
+function loadMedicines() {
+    medicines = medicines || [];
+}
+
 async function saveProfile() {
     if (isBackendProfileModeEnabled()) {
         const response = await cloudSyncRequest('/api/profile', {
@@ -4446,7 +4456,13 @@ async function saveProfile() {
 // ==================== 药品管理 ====================
 
 async function openMedicineBoxModal() {
+    console.log('openMedicineBoxModal called');
+    console.log('medicines:', medicines);
+    console.log('currentPage before:', currentPage);
+    
     openMySubPage('medicine-box');
+    
+    console.log('currentPage after:', currentPage);
 
     // 如果列表为空，添加 mock 数据
     if (medicines.length === 0) {
@@ -4455,6 +4471,7 @@ async function openMedicineBoxModal() {
     }
 
     renderMedicineList();
+    console.log('renderMedicineList called');
 }
 
 function getMedicineExpiryDays(med) {

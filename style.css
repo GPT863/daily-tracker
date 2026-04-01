@@ -472,7 +472,7 @@ body.elder-mode .form-actions button {
     padding: 10px 12px;
     box-shadow: 0 12px 30px rgba(0,0,0,0.16);
     backdrop-filter: blur(10px);
-    z-index: 20;
+    z-index: 150;
     min-width: 270px;
 }
 
@@ -2267,14 +2267,15 @@ body.elder-mode .form-actions button {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-width: 120px;
-    padding: 12px 20px;
+    width: 100%;
+    max-width: 280px;
+    padding: 14px 24px;
     border-radius: 10px;
     background: linear-gradient(135deg, rgba(40, 122, 68, 0.08), rgba(76, 175, 80, 0.08));
     border: 2px dashed rgba(40, 122, 68, 0.3);
     color: var(--forest-color);
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     cursor: pointer;
     transition: all 0.25s;
     position: relative;
