@@ -1372,12 +1372,6 @@ function setupEventListeners() {
     });
     document.getElementById('exportStartDate').addEventListener('change', updateExportPreview);
     document.getElementById('exportEndDate').addEventListener('change', updateExportPreview);
-    document.getElementById('importJsonBtn').addEventListener('click', () => {
-        document.getElementById('importJsonInput').click();
-    });
-    document.getElementById('importJsonInput').addEventListener('change', handleImportFileSelection);
-    document.getElementById('confirmImportMerge').addEventListener('click', () => confirmImport('merge'));
-    document.getElementById('confirmImportReplace').addEventListener('click', () => confirmImport('replace'));
     document.getElementById('snoozeMinutes').addEventListener('change', toggleCustomSnoozeField);
     document.getElementById('saveCloudConfigBtn').addEventListener('click', saveCloudSyncConfig);
     document.getElementById('cloudAuthSubmitBtn').addEventListener('click', submitCloudAuth);
