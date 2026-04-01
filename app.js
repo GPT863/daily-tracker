@@ -1207,6 +1207,10 @@ function setupEventListeners() {
         setCurrentRecordView('health');
         switchPage('records');
     });
+    document.getElementById('viewHealthHistoryBtn')?.addEventListener('click', () => {
+        setCurrentRecordView('health');
+        switchPage('records');
+    });
 
     // 我的模块入口
     ['exportBtn'].forEach(id => {
@@ -2611,7 +2615,7 @@ function sortTimeValues(a, b) {
 }
 
 function getRecordsTopTitle(view) {
-    if (view === 'health') return '🩺 测量管理';
+    if (view === 'health') return '<svg class="section-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> 测量管理';
     if (view === 'symptom') return '🩹 症状管理';
     return '🏃 活动管理';
 }
@@ -2637,7 +2641,7 @@ function updateRecordsPage() {
     });
 
     const config = getCurrentRecordConfig();
-    topTitle.textContent = getRecordsTopTitle(currentRecordView);
+    topTitle.innerHTML = getRecordsTopTitle(currentRecordView);
     actionBtn.textContent = config.actionLabel;
     emptyTitle.textContent = config.emptyTitle;
     emptyHint.textContent = config.emptyHint;
