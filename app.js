@@ -7046,7 +7046,6 @@ function renderActivityTemplates() {
         <div class="template-item" data-template-id="${template.id}">
             <span class="template-item-icon">${template.icon}</span>
             <span class="template-item-name">${escapeHtml(template.name)}</span>
-            <span class="template-item-type">${getTypeLabel(template.type)}</span>
         </div>
     `).join('');
 }
