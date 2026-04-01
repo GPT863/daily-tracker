@@ -10,7 +10,7 @@ let allSymptomRecordsData = {};
 let allDailyNotesData = {};
 let editingId = null;
 let timelineOrder = localStorage.getItem('dailyTracker_timelineOrder') || 'desc';
-let pendingActivityImage = null;
+let pendingActivityImages = [];
 let pendingReminderImage = null;
 let pendingHealthImage = null;
 let pendingSymptomImage = null;
@@ -195,6 +195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(checkReminders, 60000);
     await registerServiceWorker();
     await syncRemindersToServiceWorker();
+    setupImageViewer();
 });
 
 function getDefaultMetadata() {
@@ -1351,7 +1352,7 @@ function setupEventListeners() {
     document.getElementById('activityEndTime').addEventListener('input', updateActivityDurationField);
     document.getElementById('activityType').addEventListener('change', updateActivityDurationField);
     document.getElementById('activityImageUpload').addEventListener('change', handleActivityImageChange);
-    document.getElementById('removeActivityImage').addEventListener('click', clearPendingActivityImage);
+    document.getElementById('activityImagePreview').addEventListener('click', handleImageGalleryClick);
     document.getElementById('healthForm').addEventListener('submit', handleHealthFormSubmit);
     document.getElementById('healthType').addEventListener('change', syncHealthUnitField);
     document.getElementById('healthImageUpload').addEventListener('change', handleHealthImageChange);
@@ -2973,11 +2974,11 @@ function openModal(activity = null) {
         document.getElementById('activityContent').value = normalized.content;
         document.getElementById('activityFeeling').value = normalized.feeling || '';
         document.getElementById('activityDuration').value = normalized.duration || '';
-        pendingActivityImage = activity.image || null;
+        pendingActivityImages = Array.isArray(activity.images) ? [...activity.images] : (activity.image ? [activity.image] : []);
     } else {
         editingId = null;
         title.textContent = '添加活动';
-        pendingActivityImage = null;
+        pendingActivityImages = [];
         // 设置默认时间
         const now = new Date();
         const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -3228,7 +3229,8 @@ async function handleFormSubmit(e) {
         content,
         feeling,
         duration: duration ?? null,
-        image: pendingActivityImage,
+        images: pendingActivityImages.length > 0 ? pendingActivityImages : undefined,
+        image: pendingActivityImages.length > 0 ? pendingActivityImages[0] : undefined,
         createdAt: editingId ? activities.find(a => a.id === editingId)?.createdAt : new Date().toISOString(),
         updatedAt: new Date().toISOString()
     };
@@ -3274,7 +3276,7 @@ async function handleFormSubmit(e) {
 
         updateDisplay();
         switchPage('records');
-        pendingActivityImage = null;
+        pendingActivityImages = [];
         resetImageInputs();
         showToast(editingId ? '活动已更新！' : '活动已添加！');
     } catch (error) {
@@ -3596,13 +3598,16 @@ function resetSymptomImageInputs() {
 }
 
 async function handleActivityImageChange(e) {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     try {
-        pendingActivityImage = await readAndCompressImage(file);
+        for (let i = 0; i < files.length; i++) {
+            const compressedImage = await readAndCompressImage(files[i]);
+            pendingActivityImages.push(compressedImage);
+        }
         updateActivityImagePreview();
-        showToast('图片已添加');
+        showToast(`已添加 ${files.length} 张图片`);
     } catch (error) {
         console.error(error);
         showToast('图片处理失败，请重试');
@@ -3611,26 +3616,59 @@ async function handleActivityImageChange(e) {
     }
 }
 
+function handleImageGalleryClick(e) {
+    const item = e.target.closest('.activity-image-item');
+    if (!item) return;
+
+    const removeBtn = e.target.closest('.activity-image-remove');
+    if (removeBtn) {
+        const index = parseInt(item.dataset.index);
+        pendingActivityImages.splice(index, 1);
+        updateActivityImagePreview();
+        showToast('图片已删除');
+        return;
+    }
+
+    const index = parseInt(item.dataset.index);
+    const imageSrc = pendingActivityImages[index];
+    openImageViewer(imageSrc);
+}
+
+function openImageViewer(imageSrc) {
+    const modal = document.getElementById('imageViewerModal');
+    const img = document.getElementById('imageViewerImg');
+    const download = document.getElementById('imageViewerDownload');
+    
+    modal.style.display = 'block';
+    img.src = imageSrc;
+    download.href = imageSrc;
+    download.download = `image_${Date.now()}.jpg`;
+}
+
 function clearPendingActivityImage() {
-    pendingActivityImage = null;
+    pendingActivityImages = [];
     updateActivityImagePreview();
     resetImageInputs();
 }
 
 function updateActivityImagePreview() {
     const preview = document.getElementById('activityImagePreview');
-    const previewImg = document.getElementById('activityImagePreviewImg');
     const hint = document.getElementById('activityImageHint');
 
-    if (!pendingActivityImage) {
+    if (pendingActivityImages.length === 0) {
         preview.classList.add('hidden');
-        previewImg.removeAttribute('src');
+        preview.innerHTML = '';
         hint.style.display = 'block';
         return;
     }
 
     preview.classList.remove('hidden');
-    previewImg.src = pendingActivityImage;
+    preview.innerHTML = pendingActivityImages.map((img, index) => `
+        <div class="activity-image-item" data-index="${index}">
+            <img src="${img}" alt="图片 ${index + 1}">
+            <button type="button" class="activity-image-remove" title="删除图片">×</button>
+        </div>
+    `).join('');
     hint.style.display = 'none';
 }
 
@@ -8688,3 +8726,27 @@ function initAiDiagnosisEvents() {
     }
 }
 window.handleTemplateFormSubmit = handleTemplateFormSubmit;
+
+
+function setupImageViewer() {
+    const modal = document.getElementById('imageViewerModal');
+    const closeBtn = document.querySelector('.image-viewer-close');
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
+    
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.style.display === 'block') {
+            modal.style.display = 'none';
+        }
+    });
+}

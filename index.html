@@ -366,24 +366,27 @@
                     <div class="form-group">
                         <label>图片记录</label>
                             <div class="image-upload-card">
+                                <input type="file" id="activityImageUpload" accept="image/*" multiple hidden>
+                            <div id="activityImageHint" class="image-upload-hint">可上传多张图片，点击图片查看大图，点击×删除</div>
+                            <div id="activityImagePreview" class="activity-image-gallery hidden"></div>
                                 <div class="image-upload-actions">
                                     <label for="activityImageUpload" class="image-upload-btn">上传图片</label>
                                 </div>
-                                <input type="file" id="activityImageUpload" accept="image/*" hidden>
-                            <div id="activityImageHint" class="image-upload-hint">点击上传图片后，可从相机拍照或从相册选择，图片会保存在本地浏览器中。</div>
-                            <div id="activityImagePreview" class="activity-image-preview hidden">
-                                <img id="activityImagePreviewImg" alt="活动图片预览">
-                                <button type="button" id="removeActivityImage" class="remove-image-btn">移除图片</button>
-                            </div>
                         </div>
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" id="saveAsTemplateBtn" class="btn-secondary">💾 存为模板</button>
                         <button type="submit" class="btn-submit">保存</button>
                     </div>
                 </form>
             </div>
+        </div>
+
+        <!-- 图片查看器模态框 -->
+        <div id="imageViewerModal" class="modal image-viewer-modal">
+            <span class="image-viewer-close">&times;</span>
+            <img id="imageViewerImg" class="image-viewer-content" alt="查看图片">
+            <a id="imageViewerDownload" class="image-viewer-download" download>下载图片</a>
         </div>
 
         <!-- 统计模态框 -->

@@ -2256,34 +2256,108 @@ body.elder-mode .form-actions button {
 
 .image-upload-actions {
     display: flex;
+    justify-content: center;
     gap: 10px;
     flex-wrap: wrap;
+    margin-top: 12px;
 }
 
 .image-upload-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     min-width: 120px;
-    padding: 11px 16px;
-    border-radius: 999px;
-    background: linear-gradient(135deg, var(--forest-color), var(--primary-color));
-    color: white;
-    font-weight: 700;
+    padding: 12px 20px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(40, 122, 68, 0.08), rgba(76, 175, 80, 0.08));
+    border: 2px dashed rgba(40, 122, 68, 0.3);
+    color: var(--forest-color);
+    font-weight: 600;
+    font-size: 0.9rem;
     cursor: pointer;
-    box-shadow: var(--leaf-shadow);
-    transition: transform 0.25s, box-shadow 0.25s, opacity 0.25s;
+    transition: all 0.25s;
+    position: relative;
+}
+
+.image-upload-btn::before {
+    content: '+';
+    font-size: 1.4rem;
+    font-weight: 400;
+    line-height: 1;
 }
 
 .image-upload-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 12px 24px rgba(40, 122, 68, 0.18);
+    background: linear-gradient(135deg, rgba(40, 122, 68, 0.12), rgba(76, 175, 80, 0.12));
+    border-color: var(--forest-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 122, 68, 0.15);
 }
 
 .image-upload-hint {
     margin-top: 12px;
     color: var(--text-secondary);
     font-size: 0.9rem;
+}
+
+.activity-image-gallery {
+    margin-top: 0;
+    margin-bottom: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+}
+
+.activity-image-gallery.hidden {
+    display: none;
+}
+
+.activity-image-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid rgba(40, 122, 68, 0.1);
+    transition: all 0.2s;
+}
+
+.activity-image-item:hover {
+    border-color: var(--forest-color);
+    transform: scale(1.02);
+}
+
+.activity-image-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.activity-image-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    transition: all 0.2s;
+    z-index: 2;
+}
+
+.activity-image-remove:hover {
+    background: rgba(220, 53, 69, 0.9);
+    transform: scale(1.1);
 }
 
 .activity-image-preview {
@@ -7214,4 +7288,80 @@ body.elder-mode .health-quick-unit {
     .health-quick-value {
         font-size: 1.08rem;
     }
+}
+
+
+/* 图片查看器模态框 */
+.image-viewer-modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    padding: 0;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.95);
+}
+
+.image-viewer-content {
+    margin: auto;
+    display: block;
+    max-width: 90%;
+    max-height: 90vh;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: zoomIn 0.3s;
+}
+
+@keyframes zoomIn {
+    from {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+.image-viewer-close {
+    position: absolute;
+    top: 20px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 10001;
+    transition: 0.3s;
+}
+
+.image-viewer-close:hover,
+.image-viewer-close:focus {
+    color: #bbb;
+}
+
+.image-viewer-download {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--forest-color);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    z-index: 10001;
+}
+
+.image-viewer-download:hover {
+    background: var(--primary-color);
+    transform: translateX(-50%) translateY(-2px);
 }
