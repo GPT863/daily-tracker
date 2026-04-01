@@ -1195,6 +1195,7 @@ body.elder-mode .form-actions button {
 .cloud-auth-actions {
     display: grid;
     gap: 10px;
+    margin-top: 20px;
 }
 
 .cloud-auth-actions .section-order-btn {
@@ -7365,4 +7366,80 @@ body.elder-mode .health-quick-unit {
 .image-viewer-download:hover {
     background: var(--primary-color);
     transform: translateX(-50%) translateY(-2px);
+}
+
+
+/* 云同步登录方式切换 */
+.cloud-login-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(40, 122, 68, 0.2);
+}
+
+.cloud-login-tab {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.cloud-login-tab.active {
+    background: var(--forest-color);
+    color: white;
+}
+
+.cloud-login-tab:not(.active):hover {
+    background: rgba(40, 122, 68, 0.05);
+}
+
+.cloud-login-form {
+    transition: opacity 0.2s;
+}
+
+.cloud-login-form.hidden {
+    display: none;
+}
+
+/* 短信验证码输入 */
+.cloud-sms-code-wrap {
+    position: relative;
+    display: flex;
+    gap: 8px;
+}
+
+.cloud-sms-code-wrap input {
+    flex: 1;
+}
+
+.cloud-sms-send-btn {
+    padding: 0 16px;
+    border: 1px solid rgba(40, 122, 68, 0.3);
+    border-radius: 8px;
+    background: rgba(40, 122, 68, 0.08);
+    color: var(--forest-color);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    min-width: 100px;
+}
+
+.cloud-sms-send-btn:hover:not(:disabled) {
+    background: rgba(40, 122, 68, 0.12);
+    border-color: var(--forest-color);
+}
+
+.cloud-sms-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }

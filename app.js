@@ -1383,11 +1383,17 @@ function setupEventListeners() {
     document.getElementById('cloudAuthSubmitBtn').addEventListener('click', submitCloudAuth);
     document.getElementById('cloudAuthLogoutBtn').addEventListener('click', logoutCloudSyncAccount);
     document.getElementById('toggleCloudPasswordBtn').addEventListener('click', toggleCloudPasswordVisibility);
+    document.getElementById('sendSmsCodeBtn').addEventListener('click', sendSmsCode);
     document.getElementById('cloudPushBtn').addEventListener('click', () => pushSnapshotToCloud(true));
     document.getElementById('cloudPullBtn').addEventListener('click', pullSnapshotFromCloud);
     document.getElementById('saveDailyNoteBtn').addEventListener('click', saveDailyNote);
     document.getElementById('quickAiDiagnosisBtn').addEventListener('click', runQuickTodayAiDiagnosis);
     document.getElementById('dailyNoteFullscreenBtn').addEventListener('click', toggleDailyNoteFullscreen);
+    
+    // 登录方式切换
+    document.querySelectorAll('.cloud-login-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchLoginType(tab.dataset.loginType));
+    });
     document.getElementById('dailyNoteInput').addEventListener('input', () => {
         const input = document.getElementById('dailyNoteInput');
         const meta = document.getElementById('dailyNoteMeta');
@@ -6138,16 +6144,37 @@ async function ensureCloudSyncLogin() {
 async function submitCloudAuthRequest(path) {
     const endpoint = document.getElementById('cloudEnvId')?.value.trim().replace(/\/+$/, '');
     const account = document.getElementById('cloudAccount')?.value.trim() || '';
-    const password = document.getElementById('cloudPassword')?.value || '';
+    
+    // 根据登录类型获取不同的凭证
+    let credentials = {};
+    if (currentLoginType === 'password') {
+        const password = document.getElementById('cloudPassword')?.value || '';
+        if (!password) {
+            setCloudAuthStatus('请输入密码后再操作。', true);
+            showToast('请填写密码');
+            return false;
+        }
+        credentials = { account, password };
+    } else {
+        const smsCode = document.getElementById('cloudSmsCode')?.value || '';
+        if (!smsCode) {
+            setCloudAuthStatus('请输入验证码后再操作。', true);
+            showToast('请填写验证码');
+            return false;
+        }
+        credentials = { account, smsCode };
+        // 短信登录使用不同的API路径
+        path = '/api/auth/login-sms';
+    }
 
     if (!endpoint) {
         setCloudSyncStatus('请先填写同步服务地址。', true);
         showToast('请先配置同步地址');
         return false;
     }
-    if (!account || !password) {
-        setCloudAuthStatus('请输入账号和密码后再操作。', true);
-        showToast('请填写账号和密码');
+    if (!account) {
+        setCloudAuthStatus('请输入账号后再操作。', true);
+        showToast('请填写账号');
         return false;
     }
 
@@ -6156,7 +6183,7 @@ async function submitCloudAuthRequest(path) {
         const response = await fetch(`${endpoint}${path}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ account, password })
+            body: JSON.stringify(credentials)
         });
 
         if (!response.ok) {
@@ -6212,6 +6239,13 @@ async function submitCloudAuthRequest(path) {
 }
 
 async function submitCloudAuth() {
+    // 短信登录直接调用登录接口，不需要注册流程
+    if (currentLoginType === 'sms') {
+        const loginOk = await submitCloudAuthRequest('/api/auth/login-sms');
+        return loginOk;
+    }
+    
+    // 密码登录：先尝试登录，失败则注册
     const loginOk = await submitCloudAuthRequest('/api/auth/login');
     if (loginOk) {
         return true;
@@ -8766,4 +8800,116 @@ function setupImageViewer() {
             modal.style.display = 'none';
         }
     });
+}
+
+
+let currentLoginType = 'password';
+let smsCodeCountdown = 0;
+let smsCodeTimer = null;
+
+function switchLoginType(type) {
+    currentLoginType = type;
+    
+    // 更新标签状态
+    document.querySelectorAll('.cloud-login-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.loginType === type);
+    });
+    
+    // 更新账号标签和输入框提示
+    const accountLabel = document.querySelector('label[for="cloudAccount"]');
+    const accountInput = document.getElementById('cloudAccount');
+    
+    if (type === 'password') {
+        if (accountLabel) accountLabel.textContent = '账号';
+        if (accountInput) accountInput.placeholder = '请输入电子邮件或手机号码';
+    } else {
+        if (accountLabel) accountLabel.textContent = '手机号';
+        if (accountInput) accountInput.placeholder = '请输入手机号码';
+    }
+    
+    // 切换表单显示
+    const passwordForm = document.getElementById('passwordLoginForm');
+    const smsForm = document.getElementById('smsLoginForm');
+    
+    if (type === 'password') {
+        passwordForm.classList.remove('hidden');
+        smsForm.classList.add('hidden');
+    } else {
+        passwordForm.classList.add('hidden');
+        smsForm.classList.remove('hidden');
+    }
+}
+
+async function sendSmsCode() {
+    const account = document.getElementById('cloudAccount').value.trim();
+    const envId = document.getElementById('cloudEnvId').value.trim();
+    const sendBtn = document.getElementById('sendSmsCodeBtn');
+    
+    if (!account) {
+        showToast('请输入手机号码');
+        return;
+    }
+    
+    // 简单验证手机号格式
+    if (!/^1[3-9]\d{9}$/.test(account)) {
+        showToast('请输入有效的手机号码');
+        return;
+    }
+    
+    if (!envId) {
+        showToast('请输入同步服务地址');
+        return;
+    }
+    
+    try {
+        sendBtn.disabled = true;
+        
+        const response = await fetch(`${envId}/api/auth/send-sms`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: account })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || '发送验证码失败');
+        }
+        
+        showToast('验证码已发送');
+        startSmsCountdown();
+        
+    } catch (error) {
+        console.error('发送验证码失败:', error);
+        showToast(error.message || '发送验证码失败，请检查网络连接');
+        sendBtn.disabled = false;
+    }
+}
+
+function startSmsCountdown() {
+    const sendBtn = document.getElementById('sendSmsCodeBtn');
+    smsCodeCountdown = 60;
+    
+    if (smsCodeTimer) {
+        clearInterval(smsCodeTimer);
+    }
+    
+    updateSmsButtonText();
+    
+    smsCodeTimer = setInterval(() => {
+        smsCodeCountdown--;
+        
+        if (smsCodeCountdown <= 0) {
+            clearInterval(smsCodeTimer);
+            smsCodeTimer = null;
+            sendBtn.disabled = false;
+            sendBtn.textContent = '发送验证码';
+        } else {
+            updateSmsButtonText();
+        }
+    }, 1000);
+}
+
+function updateSmsButtonText() {
+    const sendBtn = document.getElementById('sendSmsCodeBtn');
+    sendBtn.textContent = `${smsCodeCountdown}秒后重试`;
 }

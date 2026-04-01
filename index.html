@@ -1420,6 +1420,13 @@
                             <span class="cloud-auth-tip-icon">!</span>
                             <span id="cloudAuthStatus" class="storage-helper-text">未登录，无法进行数据同步</span>
                         </div>
+                        
+                        <!-- 登录方式切换 -->
+                        <div class="cloud-login-tabs">
+                            <button type="button" class="cloud-login-tab active" data-login-type="password">密码登录</button>
+                            <button type="button" class="cloud-login-tab" data-login-type="sms">短信登录</button>
+                        </div>
+                        
                         <div class="form-group">
                             <div class="cloud-sync-field-label">
                                 <span class="cloud-sync-field-icon">👤</span>
@@ -1427,16 +1434,35 @@
                             </div>
                             <input id="cloudAccount" type="text" placeholder="请输入电子邮件或手机号码">
                         </div>
-                        <div class="form-group">
-                            <div class="cloud-sync-field-label">
-                                <span class="cloud-sync-field-icon">🔒</span>
-                                <label for="cloudPassword">登录密码</label>
-                            </div>
-                            <div class="cloud-password-wrap">
-                                <input id="cloudPassword" type="password">
-                                <button id="toggleCloudPasswordBtn" type="button" class="cloud-password-toggle" aria-label="显示或隐藏密码">👁</button>
+                        
+                        <!-- 密码登录表单 -->
+                        <div id="passwordLoginForm" class="cloud-login-form">
+                            <div class="form-group">
+                                <div class="cloud-sync-field-label">
+                                    <span class="cloud-sync-field-icon">🔒</span>
+                                    <label for="cloudPassword">登录密码</label>
+                                </div>
+                                <div class="cloud-password-wrap">
+                                    <input id="cloudPassword" type="password">
+                                    <button id="toggleCloudPasswordBtn" type="button" class="cloud-password-toggle" aria-label="显示或隐藏密码">👁</button>
+                                </div>
                             </div>
                         </div>
+                        
+                        <!-- 短信登录表单 -->
+                        <div id="smsLoginForm" class="cloud-login-form hidden">
+                            <div class="form-group">
+                                <div class="cloud-sync-field-label">
+                                    <span class="cloud-sync-field-icon">💬</span>
+                                    <label for="cloudSmsCode">验证码</label>
+                                </div>
+                                <div class="cloud-sms-code-wrap">
+                                    <input id="cloudSmsCode" type="text" placeholder="请输入6位验证码" maxlength="6">
+                                    <button id="sendSmsCodeBtn" type="button" class="cloud-sms-send-btn">发送验证码</button>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="cloud-auth-actions">
                             <button id="cloudAuthSubmitBtn" type="button" class="section-order-btn cloud-auth-submit-btn">登录（未注册将自动创建账号）</button>
                             <button id="cloudAuthLogoutBtn" type="button" class="cloud-auth-text-btn hidden">退出登录</button>
@@ -1458,7 +1484,6 @@
                             </div>
                         </div>
                     </div>
-                    <div class="cloud-sync-footer">© 2023 数据云同步服务 | 版本 v1.0.0</div>
                 </div>
             </div>
         </div>
