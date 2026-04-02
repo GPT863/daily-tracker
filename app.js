@@ -1301,7 +1301,8 @@ function setupEventListeners() {
                 } else if (modalId === 'reminderFormModal') {
                     switchPage('reminders');
                 } else if (modalId === 'medicineBoxModal' || modalId === 'exportModal' ||
-                           modalId === 'cloudSyncModal' || modalId === 'profileModal') {
+                           modalId === 'cloudSyncModal' || modalId === 'profileModal' ||
+                           modalId === 'aiConfigModal') {
                     switchPage('my');
                 } else if (modalId === 'reminderModal') {
                     switchPage('reminders');
@@ -2381,7 +2382,6 @@ function switchPage(page, isBack = false) {
 }
 
 function updatePageDisplay() {
-    console.log('updatePageDisplay - currentPage:', currentPage);
     const homePage = document.getElementById('homePage');
     const aiConfigPage = document.getElementById('aiConfigModal');
     const aiAnalysisPage = document.getElementById('aiAnalysisModal');
@@ -2403,11 +2403,7 @@ function updatePageDisplay() {
     const reminderBtn = document.getElementById('reminderBtn');
     const myBtn = document.getElementById('myBtn');
     const bottomActions = document.querySelector('.bottom-actions');
-    console.log('medicineBoxPage:', medicineBoxPage);
-    if (!homePage || !aiConfigPage || !aiAnalysisPage || !recordsPage || !reminderPage || !myPage || !exportPage || !cloudSyncPage || !profilePage || !medicineBoxPage || !homeBtn || !recordBtn || !reminderBtn || !myBtn) {
-        console.error('Missing elements - returning early');
-        return;
-    }
+    if (!homePage || !aiConfigPage || !aiAnalysisPage || !recordsPage || !reminderPage || !myPage || !exportPage || !cloudSyncPage || !profilePage || !homeBtn || !recordBtn || !reminderBtn || !myBtn) return;
     const isHome = currentPage === 'home';
     const isAiConfig = currentPage === 'ai-config';
     const isAi = currentPage === 'ai';
@@ -4456,13 +4452,7 @@ async function saveProfile() {
 // ==================== 药品管理 ====================
 
 async function openMedicineBoxModal() {
-    console.log('openMedicineBoxModal called');
-    console.log('medicines:', medicines);
-    console.log('currentPage before:', currentPage);
-    
     openMySubPage('medicine-box');
-    
-    console.log('currentPage after:', currentPage);
 
     // 如果列表为空，添加 mock 数据
     if (medicines.length === 0) {
@@ -4471,7 +4461,6 @@ async function openMedicineBoxModal() {
     }
 
     renderMedicineList();
-    console.log('renderMedicineList called');
 }
 
 function getMedicineExpiryDays(med) {
