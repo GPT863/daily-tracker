@@ -197,6 +197,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     await registerServiceWorker();
     await syncRemindersToServiceWorker();
     setupImageViewer();
+    window.addEventListener('online', () => {
+        resumePendingCloudSync();
+    });
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            resumePendingCloudSync();
+        }
+    });
+    await resumePendingCloudSync();
 });
 
 function getDefaultMetadata() {
@@ -370,6 +379,10 @@ async function persistAppState(options = {}) {
         schemaVersion: STORAGE_SCHEMA_VERSION
     };
 
+    if (!options.skipAutoCloudSync) {
+        markCloudSyncPending();
+    }
+
     const state = {
         activities: allActivitiesData,
         healthRecords: allHealthRecordsData,
@@ -401,6 +414,7 @@ async function persistAppState(options = {}) {
 
     if (!options.skipAutoCloudSync) {
         scheduleCloudAutoSync();
+        updateCloudSyncStatusSummary(getCloudSyncConfig());
     }
 }
 
@@ -5964,7 +5978,11 @@ function getCloudSyncConfig() {
         account: config.account || '',
         user: config.user || null,
         autoSync: Boolean(config.autoSync),
-        lastSyncedAt: config.lastSyncedAt || ''
+        lastSyncedAt: config.lastSyncedAt || '',
+        pendingUpload: Boolean(config.pendingUpload),
+        pendingUploadSince: config.pendingUploadSince || '',
+        lastSyncError: config.lastSyncError || '',
+        retryCount: Number.isFinite(config.retryCount) ? config.retryCount : 0
     };
 }
 
@@ -5989,11 +6007,111 @@ function updateCloudSyncActionState(config = getCloudSyncConfig()) {
     if (optionsContent) optionsContent.classList.toggle('hidden', !isReady);
 }
 
+function updateCloudSyncStatusSummary(config = getCloudSyncConfig()) {
+    if (!config.endpoint) {
+        setCloudSyncState('idle', '未配置同步地址');
+        setCloudSyncStatus('请先填写同步服务地址并登录后端账号。');
+        return;
+    }
+    if (!isCloudSyncAuthenticated(config)) {
+        setCloudSyncState('idle', '等待登录后启用');
+        setCloudSyncStatus('登录后可同步。');
+        return;
+    }
+    if (config.pendingUpload) {
+        if (config.lastSyncError) {
+            setCloudSyncState('error', '保留未同步改动');
+            setCloudSyncStatus(`本地有未同步改动，最近上传失败：${config.lastSyncError}`, true);
+            return;
+        }
+        setCloudSyncState('pending', config.pendingUploadSince ? `变更开始于 ${new Date(config.pendingUploadSince).toLocaleString('zh-CN')}` : '检测到本地改动');
+        setCloudSyncStatus('本地有待同步改动，条件满足时会自动上传。');
+        return;
+    }
+    if (config.lastSyncedAt) {
+        setCloudSyncState('synced', new Date(config.lastSyncedAt).toLocaleString('zh-CN'));
+        setCloudSyncStatus(`最近同步：${new Date(config.lastSyncedAt).toLocaleString('zh-CN')}`);
+        return;
+    }
+    setCloudSyncState('idle', '尚未完成首次同步');
+    setCloudSyncStatus('登录后可同步。');
+}
+
+function markCloudSyncPending() {
+    const prev = metadata.cloudSync || {};
+    metadata.cloudSync = {
+        ...prev,
+        pendingUpload: true,
+        pendingUploadSince: prev.pendingUploadSince || new Date().toISOString(),
+        lastSyncError: '',
+        retryCount: prev.retryCount || 0
+    };
+}
+
+function clearCloudSyncPending(lastSyncedAt = new Date().toISOString()) {
+    const prev = metadata.cloudSync || {};
+    metadata.cloudSync = {
+        ...prev,
+        lastSyncedAt,
+        pendingUpload: false,
+        pendingUploadSince: '',
+        lastSyncError: '',
+        retryCount: 0
+    };
+}
+
+function markCloudSyncFailure(message) {
+    const prev = metadata.cloudSync || {};
+    metadata.cloudSync = {
+        ...prev,
+        pendingUpload: true,
+        pendingUploadSince: prev.pendingUploadSince || new Date().toISOString(),
+        lastSyncError: message,
+        retryCount: (prev.retryCount || 0) + 1
+    };
+}
+
+function getCloudSyncRetryDelay(config = getCloudSyncConfig()) {
+    const retryCount = Math.max(0, config.retryCount || 0);
+    return Math.min(60000, 4000 * (2 ** retryCount));
+}
+
+async function resumePendingCloudSync() {
+    const config = getCloudSyncConfig();
+    if (!config.pendingUpload) return;
+    if (!navigator.onLine) return;
+    if (!config.autoSync || !isCloudSyncAuthenticated(config)) {
+        updateCloudSyncStatusSummary(config);
+        return;
+    }
+    scheduleCloudAutoSync(1200);
+}
+
 function setCloudSyncStatus(text, isError = false) {
     const status = document.getElementById('cloudSyncStatus');
     if (!status) return;
     status.textContent = text;
     status.style.color = isError ? '#d32f2f' : 'var(--text-secondary)';
+}
+
+function setCloudSyncState(state, metaText = '') {
+    const badge = document.getElementById('cloudSyncStateBadge');
+    const meta = document.getElementById('cloudSyncStateMeta');
+    if (!badge || !meta) return;
+
+    const states = {
+        idle: { label: '未就绪', className: 'cloud-sync-state-idle' },
+        pending: { label: '待同步', className: 'cloud-sync-state-pending' },
+        uploading: { label: '上传中', className: 'cloud-sync-state-uploading' },
+        restoring: { label: '恢复中', className: 'cloud-sync-state-restoring' },
+        synced: { label: '已同步', className: 'cloud-sync-state-synced' },
+        error: { label: '异常', className: 'cloud-sync-state-error' }
+    };
+
+    const current = states[state] || states.idle;
+    badge.className = `cloud-sync-state-badge ${current.className}`;
+    badge.textContent = current.label;
+    meta.textContent = metaText;
 }
 
 function setCloudAuthStatus(text, isError = false) {
@@ -6025,9 +6143,9 @@ function hydrateCloudSyncForm() {
     accountInput.value = '';
     passwordInput.value = '';
     autoSync.checked = config.autoSync;
-    setCloudSyncStatus(config.lastSyncedAt ? `最近同步：${new Date(config.lastSyncedAt).toLocaleString('zh-CN')}` : '登录后可同步。');
     setCloudAuthStatus(getCloudAuthSummary(config));
     updateCloudSyncActionState(config);
+    updateCloudSyncStatusSummary(config);
 }
 
 function openCloudSyncModal() {
@@ -6053,9 +6171,14 @@ async function saveCloudSyncConfig() {
 
     await persistAppState({ skipAutoCloudSync: true });
     const nextConfig = getCloudSyncConfig();
-    setCloudSyncStatus(endpoint ? '配置已保存。' : '已清空同步服务地址。');
     setCloudAuthStatus(getCloudAuthSummary(nextConfig));
     updateCloudSyncActionState(nextConfig);
+    if (endpoint) {
+        updateCloudSyncStatusSummary(nextConfig);
+        resumePendingCloudSync();
+    } else {
+        setCloudSyncStatus('已清空同步服务地址。');
+    }
     showToast('云同步配置已保存');
 }
 
@@ -6107,19 +6230,23 @@ async function ensureCloudSyncLogin() {
         return false;
     }
 
+    setCloudSyncState('uploading', '正在检查服务可达性');
     setCloudSyncStatus('正在测试连接...');
     try {
         await cloudSyncRequest('/health', { method: 'GET' });
+        setCloudSyncState('synced', '服务连接正常');
         setCloudSyncStatus('连接成功，可以开始同步。');
         showToast('同步服务连接成功');
         return true;
     } catch (error) {
         if (String(error.message || '').includes('SYNC_HTTP_404')) {
+            setCloudSyncState('synced', '服务可达');
             setCloudSyncStatus('连接成功（未提供 /health），可直接尝试同步。');
             showToast('服务可达，可直接同步');
             return true;
         }
         console.error(error);
+        setCloudSyncState('error', '服务连接失败');
         setCloudSyncStatus('连接失败，请检查服务地址或跨域配置。', true);
         showToast('连接失败');
         return false;
@@ -6194,8 +6321,8 @@ async function submitCloudAuthRequest(path) {
 
         const summary = getCloudAuthSummary(getCloudSyncConfig());
         setCloudAuthStatus(summary);
-        setCloudSyncStatus('登录成功，可开始上传或恢复数据。');
         updateCloudSyncActionState(getCloudSyncConfig());
+        updateCloudSyncStatusSummary(getCloudSyncConfig());
         document.getElementById('cloudPassword').value = '';
         await refreshActivitiesFromBackend(getDateKey(currentDate), { silent: true });
         await refreshHealthRecordsFromBackend(getDateKey(currentDate), { silent: true });
@@ -6203,6 +6330,7 @@ async function submitCloudAuthRequest(path) {
         await refreshRemindersFromBackend({ silent: true });
         await refreshProfileFromBackend({ silent: true });
         await refreshDailyNoteFromBackend(getDateKey(currentDate), { silent: true });
+        await resumePendingCloudSync();
         showToast(path.endsWith('/register') ? '已注册并登录' : '后端登录成功');
         return true;
     } catch (error) {
@@ -6263,6 +6391,10 @@ function toggleCloudPasswordVisibility() {
 
 async function logoutCloudSyncAccount() {
     const prev = getCloudSyncConfig();
+    if (cloudSyncTimer) {
+        clearTimeout(cloudSyncTimer);
+        cloudSyncTimer = null;
+    }
     metadata.cloudSync = {
         ...prev,
         apiKey: '',
@@ -6287,16 +6419,16 @@ async function logoutCloudSyncAccount() {
     showToast('已退出云端账号');
 }
 
-function scheduleCloudAutoSync() {
+function scheduleCloudAutoSync(delayMs = 4000) {
     const config = getCloudSyncConfig();
-    if (!config.autoSync || !isCloudSyncAuthenticated(config)) return;
+    if (!config.pendingUpload || !config.autoSync || !isCloudSyncAuthenticated(config)) return;
 
     if (cloudSyncTimer) {
         clearTimeout(cloudSyncTimer);
     }
     cloudSyncTimer = setTimeout(() => {
         pushSnapshotToCloud(false);
-    }, 4000);
+    }, delayMs);
 }
 
 async function pushSnapshotToCloud(manual = false) {
@@ -6311,8 +6443,17 @@ async function pushSnapshotToCloud(manual = false) {
         return false;
     }
     if (cloudSyncBusy) return false;
+    if (!navigator.onLine) {
+        const offlineMessage = '当前网络不可用，已保留待同步改动。';
+        markCloudSyncFailure(offlineMessage);
+        await persistAppState({ skipAutoCloudSync: true });
+        setCloudSyncStatus(offlineMessage, true);
+        if (manual) showToast('当前离线，无法上传');
+        return false;
+    }
 
     cloudSyncBusy = true;
+    setCloudSyncState('uploading', '正在写入云端快照');
     setCloudSyncStatus('正在上传到云端...');
 
     try {
@@ -6326,17 +6467,18 @@ async function pushSnapshotToCloud(manual = false) {
             body: JSON.stringify(payload)
         });
 
-        metadata.cloudSync = {
-            ...config,
-            lastSyncedAt: new Date().toISOString()
-        };
+        clearCloudSyncPending(new Date().toISOString());
         await persistAppState({ skipAutoCloudSync: true });
-        setCloudSyncStatus(`上传成功：${new Date(metadata.cloudSync.lastSyncedAt).toLocaleString('zh-CN')}`);
+        updateCloudSyncStatusSummary(getCloudSyncConfig());
         if (manual) showToast('已同步到云端');
         return true;
     } catch (error) {
         console.error(error);
-        setCloudSyncStatus('上传失败，请检查同步服务。', true);
+        const message = '上传失败，请检查同步服务。';
+        markCloudSyncFailure(message);
+        await persistAppState({ skipAutoCloudSync: true });
+        setCloudSyncStatus(message, true);
+        scheduleCloudAutoSync(getCloudSyncRetryDelay(getCloudSyncConfig()));
         if (manual) showToast('上传失败');
         return false;
     } finally {
@@ -6358,6 +6500,7 @@ async function pullSnapshotFromCloud() {
     if (cloudSyncBusy) return;
 
     cloudSyncBusy = true;
+    setCloudSyncState('restoring', '正在读取云端快照');
     setCloudSyncStatus('正在从云端拉取...');
 
     try {
@@ -6369,7 +6512,12 @@ async function pullSnapshotFromCloud() {
             return;
         }
 
-        const shouldRestore = confirm('将使用云端数据覆盖本地数据，是否继续？');
+        const localConfig = getCloudSyncConfig();
+        const shouldRestore = confirm(
+            localConfig.pendingUpload
+                ? '本地还有未上传到云端的改动，继续恢复会覆盖本地数据。是否仍然继续？'
+                : '将使用云端数据覆盖本地数据，是否继续？'
+        );
         if (!shouldRestore) {
             setCloudSyncStatus('已取消恢复');
             return;
@@ -6384,10 +6532,7 @@ async function pullSnapshotFromCloud() {
         medicines = normalized.medicines || [];
         profile = normalized.profile || {};
         metadata.lastImportAt = new Date().toISOString();
-        metadata.cloudSync = {
-            ...config,
-            lastSyncedAt: response?.updatedAt || new Date().toISOString()
-        };
+        clearCloudSyncPending(response?.updatedAt || new Date().toISOString());
 
         await persistAppState({ skipAutoCloudSync: true });
         loadActivities();
@@ -6398,7 +6543,7 @@ async function pullSnapshotFromCloud() {
         renderReminderTabs('today');
         updateStorageStatus();
 
-        setCloudSyncStatus(`恢复成功：${new Date(metadata.cloudSync.lastSyncedAt).toLocaleString('zh-CN')}`);
+        updateCloudSyncStatusSummary(getCloudSyncConfig());
         showToast('已从云端恢复');
     } catch (error) {
         console.error(error);
@@ -6592,6 +6737,12 @@ function updateSnoozeMeta(reminder) {
 }
 
 function buildFullExportPayload() {
+    const metadataForExport = JSON.parse(JSON.stringify(metadata || {}));
+    if (metadataForExport.cloudSync) {
+        metadataForExport.cloudSync.apiKey = '';
+        metadataForExport.cloudSync.user = null;
+    }
+
     return JSON.parse(JSON.stringify({
         schemaVersion: STORAGE_SCHEMA_VERSION,
         date: getDateKey(currentDate),
@@ -6602,7 +6753,7 @@ function buildFullExportPayload() {
         reminders,
         medicines,
         profile,
-        metadata
+        metadata: metadataForExport
     }));
 }
 

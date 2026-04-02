@@ -4,6 +4,7 @@ using System.Text.Json;
 using DailyTracker.Api.Models;
 using DailyTracker.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -97,6 +98,41 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "DailyTracker API",
+        Version = "v1",
+        Description = "DailyTracker backend API for cloud sync, auth, reminders, profile, and health records."
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Input your JWT token in this format: Bearer {your token here}"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddSingleton<SmsVerificationService>();
@@ -129,6 +165,14 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseSwagger();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "DailyTracker API v1");
+    options.RoutePrefix = "swagger";
+    options.DocumentTitle = "DailyTracker Swagger";
+});
+
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -137,7 +181,7 @@ app.MapGet("/", (IOptions<SnapshotStoreOptions> snapshotOptions) => Results.Ok(n
 {
     service = "DailyTracker Backend",
     message = "Cloud sync service is running.",
-    endpoints = new[] { "/health", "/snapshot", "/api/auth/register", "/api/auth/login" },
+    endpoints = new[] { "/health", "/snapshot", "/swagger", "/api/auth/register", "/api/auth/login" },
     storage = snapshotOptions.Value.Provider
 }));
 

@@ -1299,6 +1299,63 @@ body.elder-mode .form-actions button {
     color: #345341;
 }
 
+.cloud-sync-state-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #f6f8f6;
+    border: 1px solid rgba(21, 52, 33, 0.08);
+}
+
+.cloud-sync-state-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 72px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    flex-shrink: 0;
+}
+
+.cloud-sync-state-meta {
+    color: #6d7b71;
+    font-size: 0.82rem;
+    text-align: right;
+}
+
+.cloud-sync-state-idle {
+    background: #eef2ef;
+    color: #5d6a62;
+}
+
+.cloud-sync-state-pending {
+    background: #fff4d7;
+    color: #9a6a00;
+}
+
+.cloud-sync-state-uploading,
+.cloud-sync-state-restoring {
+    background: #dff3ea;
+    color: #0e6b45;
+}
+
+.cloud-sync-state-synced {
+    background: #daf4e6;
+    color: #126742;
+}
+
+.cloud-sync-state-error {
+    background: #fde5e5;
+    color: #b33b3b;
+}
+
 .cloud-sync-dialog .section-order-btn,
 .cloud-sync-dialog .section-export-btn {
     min-height: 44px;
