@@ -6079,6 +6079,59 @@ body {
     margin-top: 4px;
 }
 
+.ai-basis-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.ai-basis-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+}
+
+.ai-basis-title {
+    color: var(--forest-color);
+    font-weight: 700;
+    font-size: 0.98rem;
+    line-height: 1.4;
+}
+
+.ai-basis-summary {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.ai-basis-toggle {
+    flex-shrink: 0;
+    border: none;
+    background: rgba(31,122,61,0.08);
+    color: var(--forest-color);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.ai-basis-body {
+    overflow: hidden;
+    transition: max-height 0.25s ease, opacity 0.2s ease, margin-top 0.2s ease;
+    max-height: 2400px;
+    opacity: 1;
+}
+
+.ai-bubble-content.collapsed .ai-basis-body {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+}
+
 /* 用户气泡：绿底白字 */
 .ai-user .ai-bubble-content {
     background: var(--forest-color);

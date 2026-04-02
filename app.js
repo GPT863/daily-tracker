@@ -44,6 +44,7 @@ let calendarViewDate = new Date();
 let currentPage = 'home';
 let pageHistory = [];
 let currentRecordView = 'activity';
+let aiBasisCollapsed = localStorage.getItem('dailyTracker_aiBasisCollapsed') !== 'false';
 
 const datePickerConfigs = {
     home: {
@@ -1845,7 +1846,7 @@ async function startAiPageDiagnosis() {
         chatMessages.innerHTML = '';
         const thinkingEl = document.createElement('div');
         thinkingEl.className = 'ai-thinking-indicator';
-        thinkingEl.innerHTML = '<div class="ai-thinking-dots"><span></span><span></span><span></span></div><span>正在分析...</span>';
+        thinkingEl.innerHTML = '<div class="ai-thinking-dots"><span></span><span></span><span></span></div><span>正在整理分析依据...</span>';
         chatMessages.appendChild(thinkingEl);
 
         // 收集数据
@@ -1867,8 +1868,9 @@ async function startAiPageDiagnosis() {
             apiInput = prompt;
         }
 
-        // 替换思考动画为AI气泡
+        // 替换思考动画为“分析依据”数据流 + AI结论气泡
         chatMessages.innerHTML = '';
+        await streamAiPageBasis(chatMessages, { startDate, endDate, analysisData });
         const aiBubble = createAiBubble('');
         chatMessages.appendChild(aiBubble);
 
@@ -1945,6 +1947,171 @@ function createAiBubble(content) {
     };
 
     return bubble;
+}
+
+function createAiCollapsibleBubble(title, summary = '') {
+    const bubble = createAiBubble('');
+    bubble.classList.add('ai-basis-bubble');
+
+    const contentDiv = bubble.querySelector('.ai-bubble-content');
+    const footer = bubble.querySelector('.ai-bubble-footer');
+    const copyBtn = bubble.querySelector('.ai-bubble-copy-btn');
+    const playBtn = bubble.querySelector('.ai-bubble-play-btn');
+
+    contentDiv.innerHTML = `
+        <div class="ai-basis-header">
+            <div class="ai-basis-header-row">
+                <div class="ai-basis-title">${escapeHtml(title)}</div>
+                <button type="button" class="ai-basis-toggle" aria-expanded="${aiBasisCollapsed ? 'false' : 'true'}">${aiBasisCollapsed ? '展开' : '收起'}</button>
+            </div>
+            <div class="ai-basis-summary">${escapeHtml(summary)}</div>
+        </div>
+        <div class="ai-basis-body"></div>
+    `;
+
+    const toggleBtn = contentDiv.querySelector('.ai-basis-toggle');
+    const body = contentDiv.querySelector('.ai-basis-body');
+    if (aiBasisCollapsed) {
+        contentDiv.classList.add('collapsed');
+    }
+    const getSpeakText = () => {
+        const titleText = contentDiv.querySelector('.ai-basis-title')?.innerText || '';
+        const summaryText = contentDiv.querySelector('.ai-basis-summary')?.innerText || '';
+        const bodyText = body?.innerText || '';
+        return [titleText, summaryText, bodyText].filter(Boolean).join('\n');
+    };
+
+    toggleBtn.onclick = () => {
+        const collapsed = contentDiv.classList.toggle('collapsed');
+        aiBasisCollapsed = collapsed;
+        localStorage.setItem('dailyTracker_aiBasisCollapsed', collapsed ? 'true' : 'false');
+        toggleBtn.textContent = collapsed ? '展开' : '收起';
+        toggleBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    };
+
+    copyBtn.onclick = () => {
+        navigator.clipboard.writeText(getSpeakText()).then(() => {
+            copyBtn.textContent = '✅ 已复制';
+            if (navigator.vibrate) navigator.vibrate(50);
+            setTimeout(() => { copyBtn.textContent = '📋 复制'; }, 2000);
+        }).catch(() => {
+            showToast('复制失败');
+        });
+    };
+
+    playBtn.onclick = () => {
+        aiSpeechPlay(getSpeakText(), playBtn);
+    };
+
+    return { bubble, body, contentDiv };
+}
+
+function formatAiPageBasisRangeLine(startDate, endDate) {
+    return `分析范围：${startDate} 至 ${endDate}`;
+}
+
+function collectAiPageBasisSections(analysisData) {
+    const dateKeys = new Set();
+    analysisData.activities.forEach(item => dateKeys.add(item.date));
+    analysisData.healthRecords.forEach(item => dateKeys.add(item.date));
+    analysisData.symptomRecords.forEach(item => dateKeys.add(item.date));
+    analysisData.dailyNotes.forEach(item => dateKeys.add(item.date));
+
+    return [...dateKeys].sort().map(dateKey => ({
+        date: dateKey,
+        activities: analysisData.activities.filter(item => item.date === dateKey),
+        healthRecords: analysisData.healthRecords.filter(item => item.date === dateKey),
+        symptomRecords: analysisData.symptomRecords.filter(item => item.date === dateKey),
+        dailyNote: analysisData.dailyNotes.find(item => item.date === dateKey) || null
+    }));
+}
+
+function formatAiPageBasisSection(section) {
+    const lines = [`### ${section.date}`];
+
+    if (section.activities.length) {
+        lines.push('活动记录');
+        section.activities.forEach(item => {
+            lines.push(`- ${item.time || '时间未记录'} · ${getTypeLabel(item.type)} · ${item.content || '未填写内容'}`);
+            if (item.feeling) lines.push(`  反馈：${item.feeling}`);
+            if (item.duration) lines.push(`  时长：${item.duration}`);
+        });
+    }
+
+    if (section.healthRecords.length) {
+        lines.push('健康数据');
+        section.healthRecords.forEach(item => {
+            lines.push(`- ${item.time || '时间未记录'} · ${healthTypeLabels[item.type] || item.type}：${item.value}${item.unit || ''}`);
+            if (item.notes) lines.push(`  备注：${item.notes}`);
+        });
+    }
+
+    if (section.symptomRecords.length) {
+        lines.push('症状记录');
+        section.symptomRecords.forEach(item => {
+            lines.push(`- ${item.time || '时间未记录'} · ${item.description || '未填写症状描述'}`);
+            if (item.measures) lines.push(`  处理：${item.measures}`);
+        });
+    }
+
+    if (section.dailyNote?.content) {
+        lines.push('状态记录');
+        lines.push(`- ${section.dailyNote.content}`);
+    }
+
+    return `${lines.join('\n')}\n\n`;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function streamAiPageBasis(chatMessages, { startDate, endDate, analysisData }) {
+    const summary = `${startDate} 至 ${endDate} · 活动 ${analysisData.activities.length} 条 · 健康 ${analysisData.healthRecords.length} 条 · 症状 ${analysisData.symptomRecords.length} 条 · 日记 ${analysisData.dailyNotes.length} 条`;
+    const { bubble: basisBubble, body, contentDiv } = createAiCollapsibleBubble('本次分析依据', summary);
+    chatMessages.appendChild(basisBubble);
+    contentDiv.classList.add('streaming');
+
+    let streamedText = `${formatAiPageBasisRangeLine(startDate, endDate)}\n`;
+    streamedText += `活动 ${analysisData.activities.length} 条，健康 ${analysisData.healthRecords.length} 条，症状 ${analysisData.symptomRecords.length} 条，日记 ${analysisData.dailyNotes.length} 条。\n\n`;
+    body.innerHTML = formatAiResponse(streamedText);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    await sleep(350);
+
+    const sections = collectAiPageBasisSections(analysisData);
+    if (!sections.length) {
+        streamedText += '当前范围内没有可供分析的记录。\n';
+        body.innerHTML = formatAiResponse(streamedText);
+        contentDiv.classList.remove('streaming');
+        return;
+    }
+
+    for (const section of sections) {
+        streamedText += formatAiPageBasisSection(section);
+        body.innerHTML = formatAiResponse(streamedText);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        await sleep(240);
+    }
+
+    if (analysisData.profile) {
+        const profileLines = [];
+        if (analysisData.profile.age) profileLines.push(`年龄 ${analysisData.profile.age} 岁`);
+        if (analysisData.profile.gender) profileLines.push(`性别 ${analysisData.profile.gender}`);
+        if (analysisData.profile.height) profileLines.push(`身高 ${analysisData.profile.height} cm`);
+        if (analysisData.profile.weight) profileLines.push(`体重 ${analysisData.profile.weight} kg`);
+        if (analysisData.profile.bloodPressure) profileLines.push(`常见血压 ${analysisData.profile.bloodPressure}`);
+        if (analysisData.profile.bloodSugar) profileLines.push(`常见血糖 ${analysisData.profile.bloodSugar}`);
+        if (analysisData.profile.chronicConditions) profileLines.push(`病史 ${analysisData.profile.chronicConditions}`);
+        if (analysisData.profile.medications) profileLines.push(`长期用药 ${analysisData.profile.medications}`);
+        if (profileLines.length) {
+            streamedText += `### 个人档案\n- ${profileLines.join('\n- ')}\n\n`;
+            body.innerHTML = formatAiResponse(streamedText);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            await sleep(260);
+        }
+    }
+
+    contentDiv.classList.remove('streaming');
 }
 
 // 当前语音实例
@@ -7937,7 +8104,7 @@ function renderAiBasis({ startDate, endDate, analysisData }) {
     appendAiProcess('success', `分析范围：${startDate} 至 ${endDate}。`);
     appendAiProcess(
         'success',
-        `纳入数据：活动 ${analysisData.activities.length} 条，健康 ${analysisData.healthRecords.length} 条，症状 ${analysisData.symptomRecords.length} 条，个人档案 ${analysisData.profile ? '已纳入' : '未纳入'}。`
+        `纳入数据：活动 ${analysisData.activities.length} 条，健康 ${analysisData.healthRecords.length} 条，症状 ${analysisData.symptomRecords.length} 条，日记 ${analysisData.dailyNotes.length} 条，个人档案 ${analysisData.profile ? '已纳入' : '未纳入'}。`
     );
     appendAiProcess('success', `分析选项：${options.join('、') || '无'}。`);
     appendAiProcess('success', `额外问题：${analysisData.customPrompt || '无'}。`);
@@ -8115,7 +8282,7 @@ async function startAiDiagnosis() {
         const analysisData = collectAnalysisData(startDate, endDate);
         appendAiProcess(
             'success',
-            `数据汇总完成：${analysisData.activities.length} 条活动，${analysisData.healthRecords.length} 条健康数据，${analysisData.symptomRecords.length} 条症状记录${analysisData.profile ? '，含个人档案' : ''}。`
+            `数据汇总完成：${analysisData.activities.length} 条活动，${analysisData.healthRecords.length} 条健康数据，${analysisData.symptomRecords.length} 条症状记录，${analysisData.dailyNotes.length} 条日记${analysisData.profile ? '，含个人档案' : ''}。`
         );
 
         // 构建提示词
@@ -8226,6 +8393,7 @@ function collectAnalysisData(startDate, endDate) {
         activities: [],
         healthRecords: [],
         symptomRecords: [],
+        dailyNotes: [],
         profile: null,
         options: {
             includeActivities: document.getElementById(`${prefix}IncludeActivities`)?.checked ?? true,
@@ -8263,6 +8431,7 @@ function collectAnalysisData(startDate, endDate) {
                 allHealthRecordsData[dateKey].forEach(record => {
                     data.healthRecords.push({
                         date: dateKey,
+                        time: record.time || record.recordTime || '',
                         type: record.type,
                         value: record.value,
                         unit: record.unit,
@@ -8270,6 +8439,17 @@ function collectAnalysisData(startDate, endDate) {
                     });
                 });
             }
+        }
+    }
+
+    for (let d = new Date(startDate); d <= new Date(endDate); d.setDate(d.getDate() + 1)) {
+        const dateKey = formatDateKey(d);
+        if (allDailyNotesData[dateKey]?.content) {
+            data.dailyNotes.push({
+                date: dateKey,
+                content: allDailyNotesData[dateKey].content,
+                updatedAt: allDailyNotesData[dateKey].updatedAt || ''
+            });
         }
     }
 
@@ -8392,7 +8572,7 @@ function buildAnalysisPrompt(data) {
             const label = healthTypeLabels[type] || type;
             prompt += `\n${label}记录（${records.length}条）：\n`;
             records.slice(-5).forEach(r => {
-                prompt += `- ${r.date}: ${r.value}${r.unit || ''}\n`;
+                prompt += `- ${r.date} ${r.time || ''}: ${r.value}${r.unit || ''}${r.notes ? `（${r.notes}）` : ''}\n`;
             });
         });
 
@@ -8407,6 +8587,14 @@ function buildAnalysisPrompt(data) {
                 prompt += `；处理措施：${record.measures}`;
             }
             prompt += `\n`;
+        });
+        prompt += `\n`;
+    }
+
+    if (data.dailyNotes.length > 0) {
+        prompt += `【每日状态记录】共${data.dailyNotes.length}条\n`;
+        data.dailyNotes.slice(-10).forEach(note => {
+            prompt += `- ${note.date}：${note.content}\n`;
         });
         prompt += `\n`;
     }
