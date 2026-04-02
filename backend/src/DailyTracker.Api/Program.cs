@@ -99,6 +99,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 builder.Services.AddSingleton<JwtTokenService>();
+builder.Services.AddSingleton<SmsVerificationService>();
 builder.Services.AddSingleton<UserMySqlStore>();
 builder.Services.AddSingleton<SnapshotFileStore>();
 builder.Services.AddSingleton<SnapshotMySqlStore>();
@@ -220,6 +221,66 @@ auth.MapPost("/login", async (
     if (user is null || !userStore.VerifyPassword(user, request.Password))
     {
         return Results.Unauthorized();
+    }
+
+    return Results.Ok(BuildAuthResponse(user, tokenService));
+});
+
+auth.MapPost("/send-sms", (
+    AuthSendSmsRequest request,
+    SmsVerificationService smsVerificationService,
+    ILogger<Program> logger,
+    IHostEnvironment environment) =>
+{
+    var phone = request.Phone?.Trim() ?? string.Empty;
+    if (!IsValidChineseMainlandPhone(phone))
+    {
+        return Results.BadRequest(new { message = "valid phone is required" });
+    }
+
+    var result = smsVerificationService.IssueCode(phone);
+    logger.LogInformation("SMS verification code issued for {Phone}: {Code}, expires at {ExpiresAt}",
+        phone, result.Code, result.ExpiresAt);
+
+    return Results.Ok(new
+    {
+        message = "sms code sent",
+        expiresInSeconds = result.ExpiresInSeconds,
+        debugCode = environment.IsDevelopment() ? result.Code : null
+    });
+});
+
+auth.MapPost("/login-sms", async (
+    AuthLoginSmsRequest request,
+    SmsVerificationService smsVerificationService,
+    UserMySqlStore userStore,
+    JwtTokenService tokenService,
+    CancellationToken cancellationToken) =>
+{
+    var account = request.Account?.Trim() ?? string.Empty;
+    if (!IsValidChineseMainlandPhone(account))
+    {
+        return Results.BadRequest(new { message = "valid phone account is required" });
+    }
+
+    if (string.IsNullOrWhiteSpace(request.SmsCode))
+    {
+        return Results.BadRequest(new { message = "smsCode is required" });
+    }
+
+    if (!smsVerificationService.VerifyCode(account, request.SmsCode.Trim()))
+    {
+        return Results.Unauthorized();
+    }
+
+    var user = await userStore.FindByAccountAsync(account, cancellationToken);
+    if (user is null)
+    {
+        user = await userStore.CreateAsync(
+            account,
+            Guid.NewGuid().ToString("N"),
+            BuildSmsNickname(account),
+            cancellationToken);
     }
 
     return Results.Ok(BuildAuthResponse(user, tokenService));
@@ -432,6 +493,12 @@ static UserDto ToUserDto(UserRecord user) =>
 
 static long ResolveUserId(HttpContext httpContext, long fallbackUserId)
     => ResolveUserIdFromToken(httpContext) ?? fallbackUserId;
+
+static bool IsValidChineseMainlandPhone(string value)
+    => System.Text.RegularExpressions.Regex.IsMatch(value, "^1[3-9]\\d{9}$");
+
+static string BuildSmsNickname(string phone)
+    => phone.Length == 11 ? $"用户{phone[^4..]}" : phone;
 
 static long? ResolveUserIdFromToken(HttpContext httpContext)
 {

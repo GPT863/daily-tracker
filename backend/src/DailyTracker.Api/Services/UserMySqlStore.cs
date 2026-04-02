@@ -1,5 +1,6 @@
 using DailyTracker.Api.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using MySqlConnector;
 
@@ -8,11 +9,13 @@ namespace DailyTracker.Api.Services;
 public sealed class UserMySqlStore
 {
     private readonly UserStoreOptions _options;
+    private readonly string _sharedConnectionString;
     private readonly PasswordHasher<UserRecord> _passwordHasher = new();
 
-    public UserMySqlStore(IOptions<UserStoreOptions> options)
+    public UserMySqlStore(IOptions<UserStoreOptions> options, IConfiguration configuration)
     {
         _options = options.Value;
+        _sharedConnectionString = configuration.GetConnectionString("MySql") ?? string.Empty;
     }
 
     public async Task<UserRecord?> FindByAccountAsync(string account, CancellationToken cancellationToken)
@@ -115,12 +118,16 @@ public sealed class UserMySqlStore
 
     private MySqlConnection CreateConnection()
     {
-        if (string.IsNullOrWhiteSpace(_options.ConnectionString))
+        var connectionString = string.IsNullOrWhiteSpace(_options.ConnectionString)
+            ? _sharedConnectionString
+            : _options.ConnectionString;
+
+        if (string.IsNullOrWhiteSpace(connectionString))
         {
             throw new InvalidOperationException("UserStore:ConnectionString is required.");
         }
 
-        return new MySqlConnection(_options.ConnectionString);
+        return new MySqlConnection(connectionString);
     }
 
     private async Task EnsureTableAsync(MySqlConnection connection, CancellationToken cancellationToken)

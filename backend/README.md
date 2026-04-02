@@ -17,6 +17,8 @@
 
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/send-sms`
+- `POST /api/auth/login-sms`
 - `GET /api/auth/me`
 
 业务接口现在会优先读取 JWT 中的 `userId`；如果请求未携带 token，则仍会回退到各自配置里的 `DefaultUserId`，便于前后端分阶段联调。
@@ -117,6 +119,14 @@ dotnet run
   }
 }
 ```
+
+短信认证说明：
+
+- `POST /api/auth/send-sms` 请求体：`{ "phone": "13800138000" }`
+- `POST /api/auth/login-sms` 请求体：`{ "account": "13800138000", "smsCode": "123456" }`
+- 当前版本未接入真实短信网关，验证码由后端生成并写入服务日志
+- 在 `Development` 环境下，`send-sms` 响应会额外返回 `debugCode` 便于联调
+- `login-sms` 在手机号首次登录时会自动创建账号，再返回 JWT token
 
 示例：
 

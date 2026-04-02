@@ -5976,6 +5976,7 @@ function updateCloudSyncActionState(config = getCloudSyncConfig()) {
     const pushBtn = document.getElementById('cloudPushBtn');
     const pullBtn = document.getElementById('cloudPullBtn');
     const logoutBtn = document.getElementById('cloudAuthLogoutBtn');
+    const loginSection = document.getElementById('cloudAuthLoginSection');
     const optionsSection = document.getElementById('cloudSyncOptionsSection');
     const optionsContent = document.getElementById('cloudSyncOptionsContent');
     const isReady = isCloudSyncAuthenticated(config);
@@ -5983,6 +5984,7 @@ function updateCloudSyncActionState(config = getCloudSyncConfig()) {
     if (pushBtn) pushBtn.disabled = !isReady;
     if (pullBtn) pullBtn.disabled = !isReady;
     if (logoutBtn) logoutBtn.classList.toggle('hidden', !config.apiKey);
+    if (loginSection) loginSection.classList.toggle('hidden', isReady);
     if (optionsSection) optionsSection.classList.toggle('hidden', !isReady);
     if (optionsContent) optionsContent.classList.toggle('hidden', !isReady);
 }
