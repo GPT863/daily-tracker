@@ -197,6 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(checkReminders, 60000);
     await registerServiceWorker();
     await syncRemindersToServiceWorker();
+    await syncRemindersToNative();
     setupImageViewer();
     window.addEventListener('online', () => {
         resumePendingCloudSync();
@@ -4511,6 +4512,7 @@ async function saveReminders() {
     reminders = normalizeReminders(reminders);
     await persistAppState();
     await syncRemindersToServiceWorker();
+    await syncRemindersToNative();
     await updateStorageStatus();
 }
 
@@ -5926,6 +5928,10 @@ function checkReminders() {
 
 // 显示通知
 function showNotification(reminder) {
+    if (isAndroidReminderBridgeAvailable()) {
+        return;
+    }
+
     if ('Notification' in window && Notification.permission === 'granted' && serviceWorkerRegistration?.showNotification) {
         serviceWorkerRegistration.showNotification(`${typeIcons[reminder.type]} ${reminder.title}`, {
             body: reminder.notes || reminder.time,
@@ -6784,6 +6790,16 @@ async function handleProfileSubmit(e) {
 
 // 请求通知权限
 function requestNotificationPermission() {
+    if (typeof window !== 'undefined'
+        && window.AndroidReminders
+        && typeof window.AndroidReminders.requestNotificationPermission === 'function') {
+        try {
+            window.AndroidReminders.requestNotificationPermission();
+        } catch (error) {
+            console.error('Failed to request Android notification permission:', error);
+        }
+    }
+
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission().then(permission => {
             if (permission === 'granted') {
@@ -7134,6 +7150,37 @@ async function syncRemindersToServiceWorker() {
         type: 'SYNC_REMINDERS',
         reminders
     });
+}
+
+function isAndroidReminderBridgeAvailable() {
+    return typeof window !== 'undefined'
+        && window.AndroidReminders
+        && typeof window.AndroidReminders.syncReminders === 'function';
+}
+
+function buildNativeReminderPayload(reminder) {
+    return {
+        id: String(reminder.id || ''),
+        title: reminder.title || '',
+        type: reminder.type || 'other',
+        date: reminder.date || '',
+        time: reminder.time || '',
+        repeat: normalizeReminderRepeat(reminder.repeat),
+        notes: reminder.notes || '',
+        completed: Boolean(reminder.completed),
+        snoozeUntil: reminder.snoozeUntil || null
+    };
+}
+
+async function syncRemindersToNative() {
+    if (!isAndroidReminderBridgeAvailable()) return;
+
+    try {
+        const payload = reminders.map(buildNativeReminderPayload);
+        window.AndroidReminders.syncReminders(JSON.stringify(payload));
+    } catch (error) {
+        console.error('Failed to sync reminders to Android:', error);
+    }
 }
 
 // ==================== 统计功能 ====================

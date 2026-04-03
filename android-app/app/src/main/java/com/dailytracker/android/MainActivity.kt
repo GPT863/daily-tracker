@@ -1,9 +1,11 @@
 package com.dailytracker.android
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.webkit.CookieManager
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -14,19 +16,37 @@ import android.webkit.WebView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.webkit.ServiceWorkerControllerCompat
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
 import androidx.webkit.WebViewFeature
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
+    private var pendingCameraUri: Uri? = null
+    private var pendingReminderId: String? = null
+    private var pageReady = false
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (!granted) {
+                webView.post { webView.evaluateJavascript("window.showToast && window.showToast('请在系统设置中允许通知权限');", null) }
+            }
+        }
 
     private val filePickerLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val callback = filePathCallback
             filePathCallback = null
+            val cameraUri = pendingCameraUri
+            pendingCameraUri = null
 
             if (callback == null) {
                 return@registerForActivityResult
@@ -48,7 +68,13 @@ class MainActivity : AppCompatActivity() {
                 }
             }.distinct().toTypedArray()
 
-            callback.onReceiveValue(if (uris.isEmpty()) null else uris)
+            if (uris.isNotEmpty()) {
+                callback.onReceiveValue(uris)
+            } else if (cameraUri != null) {
+                callback.onReceiveValue(arrayOf(cameraUri))
+            } else {
+                callback.onReceiveValue(null)
+            }
         }
 
     private val assetLoader by lazy {
@@ -58,11 +84,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         webView = findViewById(R.id.webView)
+        pendingReminderId = intent.getStringExtra("reminder_id")
 
+        ReminderScheduler.createNotificationChannel(this)
         configureWebView()
         configureBackNavigation()
 
@@ -76,6 +105,15 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         webView.saveState(outState)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingReminderId = intent.getStringExtra("reminder_id")
+        if (pageReady) {
+            dispatchPendingNavigation()
+        }
     }
 
     override fun onDestroy() {
@@ -111,6 +149,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
+        webView.addJavascriptInterface(ReminderBridge(this), "AndroidReminders")
 
         webView.webViewClient = object : WebViewClientCompat() {
             override fun shouldInterceptRequest(
@@ -133,6 +172,12 @@ class MainActivity : AppCompatActivity() {
                     false
                 }
             }
+
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                pageReady = true
+                dispatchPendingNavigation()
+            }
         }
 
         webView.webChromeClient = object : WebChromeClient() {
@@ -148,18 +193,27 @@ class MainActivity : AppCompatActivity() {
                 this@MainActivity.filePathCallback?.onReceiveValue(null)
                 this@MainActivity.filePathCallback = filePathCallback
 
-                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                val pickIntent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
                     type = "*/*"
                     putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
                     putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/*", "application/pdf"))
                 }
 
+                val captureIntent = createImageCaptureIntent()
+                val chooserIntent = Intent(Intent.ACTION_CHOOSER).apply {
+                    putExtra(Intent.EXTRA_INTENT, pickIntent)
+                    if (captureIntent != null) {
+                        putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(captureIntent))
+                    }
+                }
+
                 return try {
-                    filePickerLauncher.launch(intent)
+                    filePickerLauncher.launch(chooserIntent)
                     true
                 } catch (_: ActivityNotFoundException) {
                     this@MainActivity.filePathCallback = null
+                    pendingCameraUri = null
                     filePathCallback.onReceiveValue(null)
                     false
                 }
@@ -183,5 +237,76 @@ class MainActivity : AppCompatActivity() {
         private const val APP_ASSET_HOST = "appassets.androidplatform.net"
         private const val APP_HOME_URL =
             "https://appassets.androidplatform.net/assets/web/index.html"
+    }
+
+    fun requestNativeNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) {
+            return
+        }
+
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    private fun dispatchPendingNavigation() {
+        val reminderId = pendingReminderId?.takeIf { it.isNotBlank() } ?: return
+        val escapedReminderId = reminderId
+            .replace("\\", "\\\\")
+            .replace("'", "\\'")
+
+        val script = """
+            (function() {
+                if (typeof window.openReminderManagerFor === 'function') {
+                    window.openReminderManagerFor('$escapedReminderId');
+                } else if (typeof window.openReminderPage === 'function') {
+                    window.openReminderPage('today');
+                } else if (typeof window.switchPage === 'function') {
+                    window.switchPage('reminders');
+                }
+            })();
+        """.trimIndent()
+
+        webView.post {
+            webView.evaluateJavascript(script, null)
+        }
+        pendingReminderId = null
+    }
+
+    private fun createImageCaptureIntent(): Intent? {
+        return try {
+            val imageFile = createTempImageFile()
+            val imageUri = FileProvider.getUriForFile(
+                this,
+                "${BuildConfig.APPLICATION_ID}.fileprovider",
+                imageFile
+            )
+            pendingCameraUri = imageUri
+
+            Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                putExtra(MediaStore.EXTRA_OUTPUT, imageUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            }
+        } catch (_: Exception) {
+            pendingCameraUri = null
+            null
+        }
+    }
+
+    private fun createTempImageFile(): File {
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        val storageDir = File(cacheDir, "camera").apply {
+            if (!exists()) {
+                mkdirs()
+            }
+        }
+        return File.createTempFile("IMG_${timeStamp}_", ".jpg", storageDir)
     }
 }

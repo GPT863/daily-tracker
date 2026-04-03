@@ -2,7 +2,9 @@
 .gradle/
 .idea/
 local.properties
+keystore.properties
+*.jks
+*.keystore
 captures/
 build/
 app/build/
-
