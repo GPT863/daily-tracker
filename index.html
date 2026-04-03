@@ -1474,25 +1474,35 @@
 
                     <div class="profile-avatar-section">
                         <div class="profile-avatar-wrap">
-                            <div id="familyMemberAvatarPreview" class="profile-avatar-preview profile-avatar-empty">
-                                <span id="familyMemberAvatarFallback">头像</span>
-                                <img id="familyMemberAvatarImg" alt="家庭成员头像预览">
-                            </div>
-                            <div class="profile-avatar-meta">
-                                <h3>成员头像</h3>
-                                <p>建议上传易识别的照片，列表里会直接显示。</p>
-                            </div>
+                            <button type="button" id="familyMemberAvatarUploadBtn" class="profile-avatar-circle" aria-label="上传头像">
+                                <!-- 头像图片 -->
+                                <img id="familyMemberAvatarImg" class="avatar-img" alt="家庭成员头像">
+                                <!-- 姓名首字 fallback -->
+                                <span id="familyMemberAvatarFallback" class="avatar-initials" aria-hidden="true"></span>
+                                <!-- 空状态占位 -->
+                                <span class="avatar-placeholder" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                        <circle cx="12" cy="13" r="4"/>
+                                    </svg>
+                                    <span>上传头像</span>
+                                </span>
+                                <!-- 压缩中 loading -->
+                                <span class="avatar-loading-overlay hidden" id="familyMemberAvatarLoading" aria-hidden="true">
+                                    <span class="avatar-spinner"></span>
+                                </span>
+                                <!-- 已上传时右下角相机角标 -->
+                                <span class="avatar-edit-badge" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                        <circle cx="12" cy="13" r="4"/>
+                                    </svg>
+                                </span>
+                            </button>
+                            <input type="file" id="familyMemberAvatarUpload" accept="image/*" hidden>
+                            <button type="button" id="removeFamilyMemberAvatar" class="avatar-remove-link hidden">移除头像</button>
                         </div>
-                        <div class="image-upload-card">
-                            <div class="image-upload-actions">
-                                <label class="image-upload-btn">
-                                    选择头像
-                                    <input type="file" id="familyMemberAvatarUpload" accept="image/*" hidden>
-                                </label>
-                                <button type="button" id="removeFamilyMemberAvatar" class="btn-secondary btn-inline hidden">移除头像</button>
-                            </div>
-                            <div id="familyMemberAvatarHint" class="image-upload-hint">头像仅保存在本机，并会随导出文件一起保存。</div>
-                        </div>
+                        <p class="avatar-hint" id="familyMemberAvatarHint">头像仅保存在本机，并会随导出文件一起保存。</p>
                     </div>
 
                     <div class="profile-grid">

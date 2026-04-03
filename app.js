@@ -5301,6 +5301,9 @@ function setupProfileListeners() {
     document.getElementById('profileAvatarActionBtn')?.addEventListener('click', () => {
         document.getElementById('profileAvatarUpload')?.click();
     });
+    document.getElementById('familyMemberAvatarUploadBtn')?.addEventListener('click', () => {
+        document.getElementById('familyMemberAvatarUpload')?.click();
+    });
     document.getElementById('profileAvatarRemoveBtn')?.addEventListener('click', clearProfileAvatar);
     document.getElementById('removeFamilyMemberAvatar')?.addEventListener('click', clearFamilyMemberAvatar);
     document.getElementById('profileName')?.addEventListener('input', () => updateProfileAvatarPreview('profile', pendingProfileAvatar));
@@ -6898,28 +6901,29 @@ function updateProfileAvatarPreview(prefix, avatar = '') {
         return;
     }
 
-    // familyMember prefix（保持原有逻辑）
-    const preview = document.getElementById(`${prefix}AvatarPreview`);
-    const hint = document.getElementById(`${prefix}AvatarHint`);
-    const removeBtn = document.getElementById(`remove${prefix.charAt(0).toUpperCase() + prefix.slice(1)}Avatar`);
+    // familyMember prefix
+    const circle = document.getElementById('familyMemberAvatarUploadBtn');
+    const hint = document.getElementById('familyMemberAvatarHint');
+    const removeBtn = document.getElementById('removeFamilyMemberAvatar');
+    if (!circle) return;
     if (avatar) {
         img.src = avatar;
-        img.style.display = 'block';
-        if (preview) preview.classList.remove('profile-avatar-empty');
-        if (hint) hint.classList.add('hidden');
+        circle.classList.add('has-image');
+        circle.classList.remove('has-name');
         if (removeBtn) removeBtn.classList.remove('hidden');
+        if (hint) hint.classList.add('hidden');
     } else {
         img.removeAttribute('src');
-        img.style.display = 'none';
-        if (preview) preview.classList.add('profile-avatar-empty');
-        if (hint) hint.classList.remove('hidden');
+        circle.classList.remove('has-image');
+        circle.classList.toggle('has-name', !!initial);
         if (removeBtn) removeBtn.classList.add('hidden');
+        if (hint) hint.classList.remove('hidden');
     }
 }
 
 async function handleAvatarFileChange(file, target) {
     if (!file) return;
-    const loadingEl = document.getElementById(target === 'profile' ? 'profileAvatarLoading' : null);
+    const loadingEl = document.getElementById(target === 'profile' ? 'profileAvatarLoading' : 'familyMemberAvatarLoading');
     if (loadingEl) loadingEl.classList.remove('hidden');
     try {
         const base64 = await readAndCompressImage(file);
