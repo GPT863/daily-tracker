@@ -6867,51 +6867,51 @@ function buildProfilePayload(prefix, avatar = '') {
 }
 
 function updateProfileAvatarPreview(prefix, avatar = '') {
-    const preview = document.getElementById(`${prefix}AvatarPreview`);
     const img = document.getElementById(`${prefix}AvatarImg`);
     const fallback = document.getElementById(`${prefix}AvatarFallback`);
-    const hint = document.getElementById(`${prefix}AvatarHint`);
-    const removeBtn = document.getElementById(`remove${prefix.charAt(0).toUpperCase() + prefix.slice(1)}Avatar`);
-    const uploadBtn = document.getElementById(`${prefix}AvatarUploadBtn`);
-    const previewWrap = document.getElementById(`${prefix}AvatarPreviewWrap`);
     const nameInput = document.getElementById(`${prefix}Name`);
-    if (!preview || !img || !fallback) return;
+    if (!img || !fallback) return;
 
     const displayName = nameInput?.value?.trim() || '';
-    fallback.textContent = displayName ? displayName.slice(0, 1) : '头像';
+    const initial = displayName ? displayName.slice(0, 1) : '';
+    fallback.textContent = initial;
 
     if (prefix === 'profile') {
+        const circle = document.getElementById('profileAvatarUploadBtn');
+        const removeBtn = document.getElementById('profileAvatarRemoveBtn');
+        const hint = document.getElementById('profileAvatarHint');
+        if (!circle) return;
+
         if (avatar) {
             img.src = avatar;
-            img.style.display = 'block';
-            preview.classList.remove('profile-avatar-empty');
-            if (uploadBtn) uploadBtn.classList.add('hidden');
-            if (previewWrap) previewWrap.classList.remove('hidden');
+            circle.classList.add('has-image');
+            circle.classList.remove('has-name');
+            if (removeBtn) removeBtn.classList.remove('hidden');
             if (hint) hint.classList.add('hidden');
-            // 更新名字显示
-            const nameEl = document.getElementById('profileAvatarName');
-            if (nameEl) nameEl.textContent = displayName || '已设置头像';
         } else {
             img.removeAttribute('src');
-            img.style.display = 'none';
-            preview.classList.add('profile-avatar-empty');
-            if (uploadBtn) uploadBtn.classList.remove('hidden');
-            if (previewWrap) previewWrap.classList.add('hidden');
+            circle.classList.remove('has-image');
+            circle.classList.toggle('has-name', !!initial);
+            if (removeBtn) removeBtn.classList.add('hidden');
             if (hint) hint.classList.remove('hidden');
         }
         return;
     }
 
+    // familyMember prefix（保持原有逻辑）
+    const preview = document.getElementById(`${prefix}AvatarPreview`);
+    const hint = document.getElementById(`${prefix}AvatarHint`);
+    const removeBtn = document.getElementById(`remove${prefix.charAt(0).toUpperCase() + prefix.slice(1)}Avatar`);
     if (avatar) {
         img.src = avatar;
         img.style.display = 'block';
-        preview.classList.remove('profile-avatar-empty');
+        if (preview) preview.classList.remove('profile-avatar-empty');
         if (hint) hint.classList.add('hidden');
         if (removeBtn) removeBtn.classList.remove('hidden');
     } else {
         img.removeAttribute('src');
         img.style.display = 'none';
-        preview.classList.add('profile-avatar-empty');
+        if (preview) preview.classList.add('profile-avatar-empty');
         if (hint) hint.classList.remove('hidden');
         if (removeBtn) removeBtn.classList.add('hidden');
     }
@@ -6919,13 +6919,19 @@ function updateProfileAvatarPreview(prefix, avatar = '') {
 
 async function handleAvatarFileChange(file, target) {
     if (!file) return;
-    const base64 = await readAndCompressImage(file);
-    if (target === 'profile') {
-        pendingProfileAvatar = base64;
-    } else {
-        pendingFamilyMemberAvatar = base64;
+    const loadingEl = document.getElementById(target === 'profile' ? 'profileAvatarLoading' : null);
+    if (loadingEl) loadingEl.classList.remove('hidden');
+    try {
+        const base64 = await readAndCompressImage(file);
+        if (target === 'profile') {
+            pendingProfileAvatar = base64;
+        } else {
+            pendingFamilyMemberAvatar = base64;
+        }
+        updateProfileAvatarPreview(target, base64);
+    } finally {
+        if (loadingEl) loadingEl.classList.add('hidden');
     }
-    updateProfileAvatarPreview(target, base64);
 }
 
 async function handleProfileAvatarChange(e) {

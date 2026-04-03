@@ -2267,160 +2267,206 @@ body.elder-mode .form-actions button {
 
 .profile-avatar-section {
     margin-bottom: 22px;
-    padding: 16px;
+    padding: 20px 16px 16px;
     border-radius: 18px;
     background: linear-gradient(160deg, rgba(241, 249, 243, 0.94), rgba(233, 245, 237, 0.9));
     border: 1px solid rgba(40, 122, 68, 0.1);
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 10px;
 }
 
 .profile-avatar-wrap {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     width: 100%;
+    gap: 10px;
 }
 
-/* 未上传状态 */
-.profile-avatar-upload-square {
-    width: 100%;
-    height: 80px;
-    border-radius: 12px;
-    border: 2px dashed rgba(40, 122, 68, 0.35);
-    background: rgba(40, 122, 68, 0.05);
-    color: var(--forest-color);
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: all 0.2s;
-}
-
-.profile-avatar-upload-square:hover {
-    background: rgba(40, 122, 68, 0.1);
-    border-color: var(--forest-color);
-}
-
-.avatar-upload-icon {
-    opacity: 0.7;
-}
-
-.avatar-upload-label {
-    font-size: 0.9rem;
-    font-weight: 600;
-}
-
-/* 已上传状态 */
-.profile-avatar-preview-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-}
-
-.profile-avatar-preview-wrap.hidden {
-    display: none;
-}
-
-.profile-avatar-preview {
-    width: 88px;
-    height: 88px;
+/* 统一圆形触发区域 */
+.profile-avatar-circle {
+    width: 104px;
+    height: 104px;
     border-radius: 50%;
-    background: linear-gradient(145deg, rgba(40, 122, 68, 0.16), rgba(126, 217, 163, 0.3));
-    color: var(--forest-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    background: linear-gradient(145deg, rgba(40, 122, 68, 0.10), rgba(126, 217, 163, 0.22));
+    outline: 2.5px dashed rgba(40, 122, 68, 0.32);
+    outline-offset: 3px;
     overflow: hidden;
     flex-shrink: 0;
-    position: relative;
-    box-shadow: 0 4px 14px rgba(31, 122, 61, 0.18);
-    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, outline-color 0.2s ease;
 }
 
-.profile-avatar-preview img {
+.profile-avatar-circle:hover,
+.profile-avatar-circle:focus-visible {
+    transform: scale(1.05);
+    box-shadow: 0 6px 22px rgba(40, 122, 68, 0.20);
+    outline-color: var(--forest-color);
+}
+
+.profile-avatar-circle:active {
+    transform: scale(0.97);
+}
+
+.profile-avatar-circle.has-image {
+    outline: none;
+    box-shadow: 0 4px 16px rgba(40, 122, 68, 0.20);
+}
+
+/* 头像图片 */
+.avatar-img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: none;
+    border-radius: 50%;
 }
 
-.profile-avatar-preview span {
-    font-size: 1.6rem;
-    font-weight: 800;
+.profile-avatar-circle.has-image .avatar-img {
+    display: block;
 }
 
-.profile-avatar-preview.profile-avatar-empty {
-    border: 2px dashed rgba(40, 122, 68, 0.24);
-}
-
-/* 悬浮更换按钮 */
-.avatar-change-overlay {
+/* 姓名首字 */
+.avatar-initials {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    color: white;
-    border: none;
-    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--forest-color);
+    letter-spacing: -0.02em;
+    user-select: none;
+}
+
+.profile-avatar-circle.has-name:not(.has-image) .avatar-initials {
+    display: flex;
+}
+
+/* 空状态占位图标 */
+.avatar-placeholder {
+    position: absolute;
+    inset: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    font-size: 0.65rem;
-    font-weight: 600;
-    opacity: 0;
-    cursor: pointer;
-    transition: opacity 0.2s;
+    gap: 5px;
+    color: rgba(40, 122, 68, 0.60);
+    transition: opacity 0.15s;
 }
 
-.profile-avatar-preview:hover .avatar-change-overlay {
+.avatar-placeholder > span {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.profile-avatar-circle.has-name .avatar-placeholder,
+.profile-avatar-circle.has-image .avatar-placeholder {
+    display: none;
+}
+
+/* 压缩中 loading 遮罩 */
+.avatar-loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.82);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-loading-overlay.hidden {
+    display: none;
+}
+
+.avatar-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid rgba(40, 122, 68, 0.18);
+    border-top-color: var(--forest-color);
+    border-radius: 50%;
+    animation: avatar-spin 0.7s linear infinite;
+}
+
+@keyframes avatar-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 右下角相机角标（已上传时常驻显示） */
+.avatar-edit-badge {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    width: 26px;
+    height: 26px;
+    background: white;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18);
+    color: var(--forest-color);
+    pointer-events: none;
+}
+
+.profile-avatar-circle.has-image .avatar-edit-badge {
+    display: flex;
+}
+
+/* 已上传时悬浮"更换"蒙层 */
+.profile-avatar-circle.has-image::after {
+    content: '更换';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.42);
+    color: white;
+    font-size: 0.82rem;
+    font-weight: 700;
+    border-radius: 50%;
+    display: grid;
+    place-content: center;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    pointer-events: none;
+}
+
+.profile-avatar-circle.has-image:hover::after {
     opacity: 1;
 }
 
-.avatar-remove-btn {
+/* 移除按钮 */
+.avatar-remove-link {
     border: none;
     background: none;
     color: #c0392b;
     font-size: 0.82rem;
     cursor: pointer;
-    padding: 0;
-    opacity: 0.75;
+    padding: 2px 0;
+    opacity: 0.70;
+    transition: opacity 0.15s;
+    line-height: 1;
 }
 
-.avatar-remove-btn:hover {
+.avatar-remove-link:hover {
     opacity: 1;
     text-decoration: underline;
 }
 
-.profile-avatar-edit-btn {
-    min-width: 90px;
-    padding: 11px 14px;
-    font-size: 0.9rem;
-    margin-top: 6px;
-}
-
-.profile-avatar-meta h3 {
-    margin: 0 0 6px;
-    font-size: 1rem;
-    color: var(--text-color);
-}
-
-.profile-avatar-meta p {
+/* 提示文字 */
+.avatar-hint {
     margin: 0;
-    font-size: 0.92rem;
-    line-height: 1.6;
-    color: var(--text-secondary);
-}
-
-.profile-avatar-section .image-upload-hint {
-    margin: 10px 2px 0;
-    font-size: 0.86rem;
+    font-size: 0.84rem;
     line-height: 1.5;
     color: #5b7462;
     text-align: center;
@@ -4388,25 +4434,13 @@ body.elder-mode .stats-card-value {
     }
 
     .profile-avatar-section {
-        padding: 12px;
+        padding: 16px 12px 14px;
         border-radius: 16px;
     }
 
-    .profile-avatar-upload-square {
-        width: 100%;
-        height: 80px;
-        border-radius: 12px;
-    }
-
-    .profile-avatar-preview {
-        width: 88px;
-        height: 88px;
-        border-radius: 50%;
-    }
-
-    .profile-avatar-preview-wrap {
-        width: 100%;
-        justify-content: center;
+    .profile-avatar-circle {
+        width: 96px;
+        height: 96px;
     }
 
     .profile-avatar-edit-btn {
