@@ -228,6 +228,21 @@
                         </span>
                         <span class="my-panel-arrow" aria-hidden="true"></span>
                     </button>
+                    <button id="familyMembersBtn" class="my-panel-action">
+                        <span class="my-panel-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </span>
+                        <span class="my-panel-text">
+                            <strong>家庭成员</strong>
+                            <small>管理爸爸妈妈等家庭成员的健康档案</small>
+                        </span>
+                        <span class="my-panel-arrow" aria-hidden="true"></span>
+                    </button>
                     <button id="medicineBoxBtn" class="my-panel-action">
                         <span class="my-panel-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1305,6 +1320,37 @@
                         <p>记录个人身体基础情况和健康基本情况，为后续健康诊断和个性化建议提供基础数据。</p>
                     </div>
 
+                    <div class="profile-avatar-section">
+                        <div class="profile-avatar-wrap">
+                            <!-- 未上传状态 -->
+                            <button type="button" id="profileAvatarUploadBtn" class="profile-avatar-upload-square">
+                                <span class="avatar-upload-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="8" r="4"/>
+                                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                                    </svg>
+                                </span>
+                                <span class="avatar-upload-label">+ 选择头像</span>
+                            </button>
+                            <!-- 已上传状态 -->
+                            <div id="profileAvatarPreviewWrap" class="profile-avatar-preview-wrap hidden">
+                                <div id="profileAvatarPreview" class="profile-avatar-preview profile-avatar-empty">
+                                    <span id="profileAvatarFallback">头像</span>
+                                    <img id="profileAvatarImg" alt="个人头像预览">
+                                    <button type="button" id="profileAvatarActionBtn" class="avatar-change-overlay">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                            <circle cx="12" cy="13" r="4"/>
+                                        </svg>
+                                        <span>更换</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="file" id="profileAvatarUpload" accept="image/*" hidden>
+                        </div>
+                        <div id="profileAvatarHint" class="image-upload-hint">建议使用清晰正面照片，系统会自动压缩保存。</div>
+                    </div>
+
                     <div class="profile-grid">
                         <div class="form-group">
                             <label for="profileName">姓名</label>
@@ -1385,6 +1431,148 @@
 
                     <div class="form-actions">
                         <button type="submit" class="btn-submit">保存信息</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="familyMembersModal" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="familyMembersModal" aria-label="返回"></button>
+                    <h2>家庭成员</h2>
+                    <button type="button" class="close page-cancel-btn" aria-label="取消">取消</button>
+                </div>
+                <div class="activity-form family-members-page">
+                    <div class="profile-intro family-members-intro">
+                        <p>为爸爸、妈妈或其他家庭成员分别建立独立健康档案，方便后续查看和持续维护。</p>
+                        <button type="button" id="addFamilyMemberBtn" class="btn-submit btn-inline">添加家庭成员</button>
+                    </div>
+                    <div id="familyMembersEmptyState" class="family-members-empty">
+                        <div class="family-members-empty-icon">👨‍👩‍👧‍👦</div>
+                        <h3>还没有家庭成员档案</h3>
+                        <p>先添加一位家庭成员，例如爸爸、妈妈，再为每个人维护独立信息。</p>
+                    </div>
+                    <div id="familyMembersList" class="family-members-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="familyMemberFormModal" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header page-nav-header">
+                    <button type="button" class="page-back-btn" data-back-modal="familyMemberFormModal" aria-label="返回"></button>
+                    <h2 id="familyMemberFormTitle">添加家庭成员</h2>
+                    <button type="button" class="close page-cancel-btn" aria-label="取消">取消</button>
+                </div>
+                <form id="familyMemberForm" class="activity-form">
+                    <div class="profile-intro">
+                        <p>每位家庭成员都维护一份独立档案，字段结构与个人信息一致，便于后续扩展和使用。</p>
+                    </div>
+
+                    <div class="profile-avatar-section">
+                        <div class="profile-avatar-wrap">
+                            <div id="familyMemberAvatarPreview" class="profile-avatar-preview profile-avatar-empty">
+                                <span id="familyMemberAvatarFallback">头像</span>
+                                <img id="familyMemberAvatarImg" alt="家庭成员头像预览">
+                            </div>
+                            <div class="profile-avatar-meta">
+                                <h3>成员头像</h3>
+                                <p>建议上传易识别的照片，列表里会直接显示。</p>
+                            </div>
+                        </div>
+                        <div class="image-upload-card">
+                            <div class="image-upload-actions">
+                                <label class="image-upload-btn">
+                                    选择头像
+                                    <input type="file" id="familyMemberAvatarUpload" accept="image/*" hidden>
+                                </label>
+                                <button type="button" id="removeFamilyMemberAvatar" class="btn-secondary btn-inline hidden">移除头像</button>
+                            </div>
+                            <div id="familyMemberAvatarHint" class="image-upload-hint">头像仅保存在本机，并会随导出文件一起保存。</div>
+                        </div>
+                    </div>
+
+                    <div class="profile-grid">
+                        <div class="form-group">
+                            <label for="familyMemberName">姓名 / 称呼</label>
+                            <input type="text" id="familyMemberName" placeholder="例如：爸爸">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="familyMemberGender">性别</label>
+                            <select id="familyMemberGender">
+                                <option value="">请选择</option>
+                                <option value="male">男</option>
+                                <option value="female">女</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="familyMemberAge">年龄</label>
+                            <input type="number" id="familyMemberAge" min="0" placeholder="例如：68">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="familyMemberHeight">身高（cm）</label>
+                            <input type="number" id="familyMemberHeight" min="0" placeholder="例如：168">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="familyMemberWeight">体重（kg）</label>
+                            <input type="number" id="familyMemberWeight" min="0" step="0.1" placeholder="例如：62.5">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="familyMemberBloodType">血型</label>
+                            <select id="familyMemberBloodType">
+                                <option value="">请选择</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="AB">AB</option>
+                                <option value="O">O</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="familyMemberBloodPressure">常见血压</label>
+                            <input type="text" id="familyMemberBloodPressure" placeholder="例如：120/80">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="familyMemberBloodSugar">常见血糖</label>
+                            <input type="text" id="familyMemberBloodSugar" placeholder="例如：5.6 mmol/L">
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="familyMemberChronicConditions">慢性病 / 既往病史</label>
+                            <textarea id="familyMemberChronicConditions" rows="3" placeholder="例如：高血压、糖尿病"></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="familyMemberAllergies">过敏史</label>
+                            <textarea id="familyMemberAllergies" rows="3" placeholder="例如：海鲜过敏、青霉素过敏"></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="familyMemberMedications">长期用药</label>
+                            <textarea id="familyMemberMedications" rows="3" placeholder="例如：降压药每日 1 次"></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="familyMemberHealthGoals">当前健康目标</label>
+                            <textarea id="familyMemberHealthGoals" rows="3" placeholder="例如：控制血压、规律作息"></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="familyMemberNotes">补充说明</label>
+                            <textarea id="familyMemberNotes" rows="3" placeholder="其他需要长期记录的身体基础情况"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit">保存成员信息</button>
                     </div>
                 </form>
             </div>

@@ -19,6 +19,7 @@ let medicineSortOrder = 'asc';
 let pendingMedicineImage = null;
 let currentDetailMedicineId = null;
 let profile = {};
+let familyMembers = [];
 let metadata = {};
 let activeReminderAlertId = null;
 const triggeredTodayIds = new Set(); // 当前 session 中已弹出过的提醒 ID（防止关闭后每分钟重复弹出）
@@ -89,6 +90,9 @@ let editingReminderId = null;
 let editingMedicineId = null;
 let serviceWorkerRegistration = null;
 let pendingImportData = null;
+let editingFamilyMemberId = null;
+let pendingProfileAvatar = null;
+let pendingFamilyMemberAvatar = null;
 let submitLocks = {
     activity: false,
     health: false,
@@ -98,7 +102,7 @@ let submitLocks = {
     medicine: false
 };
 
-const STORAGE_SCHEMA_VERSION = 2;
+const STORAGE_SCHEMA_VERSION = 3;
 const BACKUP_REMINDER_DAYS = 7;
 const legacyStorageKeys = {
     activities: 'dailyTracker_activities',
@@ -108,6 +112,7 @@ const legacyStorageKeys = {
     reminders: 'dailyTracker_reminders',
     medicines: 'dailyTracker_medicines',
     profile: 'dailyTracker_profile',
+    familyMembers: 'dailyTracker_familyMembers',
     metadata: 'dailyTracker_metadata'
 };
 const idbConfig = {
@@ -169,6 +174,22 @@ const healthTypeUnits = {
     other: ''
 };
 
+const profileFieldNames = [
+    'Name',
+    'Gender',
+    'Age',
+    'Height',
+    'Weight',
+    'BloodType',
+    'BloodPressure',
+    'BloodSugar',
+    'ChronicConditions',
+    'Allergies',
+    'Medications',
+    'HealthGoals',
+    'Notes'
+];
+
 // 初始化应用
 document.addEventListener('DOMContentLoaded', async () => {
     await initDB();
@@ -177,6 +198,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadSymptomRecords();
     loadReminders();
     loadProfile();
+    loadFamilyMembers();
     loadMedicines();
     setupEventListeners();
     setupReminderListeners();
@@ -229,6 +251,7 @@ function createEmptyState() {
         reminders: [],
         medicines: [],
         profile: {},
+        familyMembers: [],
         metadata: getDefaultMetadata()
     };
 }
@@ -303,6 +326,7 @@ async function initializeStorageState() {
         reminders: getLocalStorageJSON(legacyStorageKeys.reminders, []),
         medicines: getLocalStorageJSON(legacyStorageKeys.medicines, []),
         profile: getLocalStorageJSON(legacyStorageKeys.profile, {}),
+        familyMembers: getLocalStorageJSON(legacyStorageKeys.familyMembers, []),
         metadata: {
             ...getDefaultMetadata(),
             ...getLocalStorageJSON(legacyStorageKeys.metadata, {})
@@ -311,7 +335,7 @@ async function initializeStorageState() {
 
     try {
         await openIndexedDB();
-        const keys = ['activities', 'healthRecords', 'symptomRecords', 'dailyNotes', 'reminders', 'medicines', 'profile', 'metadata'];
+        const keys = ['activities', 'healthRecords', 'symptomRecords', 'dailyNotes', 'reminders', 'medicines', 'profile', 'familyMembers', 'metadata'];
         const indexedState = {};
 
         for (const key of keys) {
@@ -327,6 +351,7 @@ async function initializeStorageState() {
                 || Object.keys(fallbackState.dailyNotes).length
                 || fallbackState.reminders.length
                 || Object.keys(fallbackState.profile).length
+                || fallbackState.familyMembers.length
                 ? fallbackState
                 : createEmptyState();
 
@@ -353,6 +378,7 @@ async function initializeStorageState() {
             reminders: indexedState.reminders || [],
             medicines: indexedState.medicines || [],
             profile: indexedState.profile || {},
+            familyMembers: indexedState.familyMembers || [],
             metadata: {
                 ...getDefaultMetadata(),
                 ...(indexedState.metadata || {}),
@@ -393,6 +419,7 @@ async function persistAppState(options = {}) {
         reminders,
         medicines,
         profile,
+        familyMembers,
         metadata
     };
 
@@ -409,6 +436,7 @@ async function persistAppState(options = {}) {
         setLocalStorageJSON(legacyStorageKeys.reminders, reminders);
         setLocalStorageJSON(legacyStorageKeys.medicines, medicines);
         setLocalStorageJSON(legacyStorageKeys.profile, profile);
+        setLocalStorageJSON(legacyStorageKeys.familyMembers, familyMembers);
         setLocalStorageJSON(legacyStorageKeys.metadata, metadata);
     } catch (error) {
         throw new Error('STORAGE_WRITE_FAILED');
@@ -429,6 +457,7 @@ async function initDB() {
     reminders = normalizeReminders(state.reminders || []);
     medicines = state.medicines || [];
     profile = state.profile || {};
+    familyMembers = normalizeFamilyMembers(state.familyMembers || []);
     metadata = {
         ...getDefaultMetadata(),
         ...(state.metadata || {})
@@ -1238,6 +1267,7 @@ function setupEventListeners() {
     document.getElementById('timelineEmptyActionBtn').addEventListener('click', () => openModal());
     document.getElementById('cloudSyncBtn').addEventListener('click', openCloudSyncModal);
     document.getElementById('profileBtn').addEventListener('click', openProfileModal);
+    document.getElementById('familyMembersBtn').addEventListener('click', openFamilyMembersModal);
     document.getElementById('aiHealthAnalysisBtn')?.addEventListener('click', () => {
         switchPage('ai');
         // 如果是从 Modal（例如小屏幕下“我的”可能是一个弹窗）触发的，则尝试关闭
@@ -1316,8 +1346,11 @@ function setupEventListeners() {
                     switchPage('records');
                 } else if (modalId === 'reminderFormModal') {
                     switchPage('reminders');
+                } else if (modalId === 'familyMemberFormModal') {
+                    switchPage('family-members');
                 } else if (modalId === 'medicineBoxModal' || modalId === 'exportModal' ||
                            modalId === 'cloudSyncModal' || modalId === 'profileModal' ||
+                           modalId === 'familyMembersModal' ||
                            modalId === 'aiConfigModal') {
                     switchPage('my');
                 } else if (modalId === 'reminderModal') {
@@ -2574,6 +2607,8 @@ function updatePageDisplay() {
     const exportPage = document.getElementById('exportModal');
     const cloudSyncPage = document.getElementById('cloudSyncModal');
     const profilePage = document.getElementById('profileModal');
+    const familyMembersPage = document.getElementById('familyMembersModal');
+    const familyMemberFormPage = document.getElementById('familyMemberFormModal');
     const medicineBoxPage = document.getElementById('medicineBoxModal');
     const medicineEditPage = document.getElementById('medicineEditModal');
     const medicineDetailPage = document.getElementById('medicineDetailModal');
@@ -2597,6 +2632,8 @@ function updatePageDisplay() {
     const isExport = currentPage === 'export';
     const isCloudSync = currentPage === 'cloud-sync';
     const isProfile = currentPage === 'profile';
+    const isFamilyMembers = currentPage === 'family-members';
+    const isFamilyMemberForm = currentPage === 'family-member-form';
     const isMedicineBox = currentPage === 'medicine-box';
     const isMedicineEdit = currentPage === 'medicine-edit';
     const isMedicineDetail = currentPage === 'medicine-detail';
@@ -2626,6 +2663,14 @@ function updatePageDisplay() {
     cloudSyncPage.style.display = isCloudSync ? 'block' : 'none';
     profilePage.classList.toggle('page-mode', isProfile);
     profilePage.style.display = isProfile ? 'block' : 'none';
+    if (familyMembersPage) {
+        familyMembersPage.classList.toggle('page-mode', isFamilyMembers);
+        familyMembersPage.style.display = isFamilyMembers ? 'block' : 'none';
+    }
+    if (familyMemberFormPage) {
+        familyMemberFormPage.classList.toggle('page-mode', isFamilyMemberForm);
+        familyMemberFormPage.style.display = isFamilyMemberForm ? 'block' : 'none';
+    }
     if (medicineBoxPage) {
         medicineBoxPage.classList.toggle('page-mode', isMedicineBox);
         medicineBoxPage.style.display = isMedicineBox ? 'block' : 'none';
@@ -2653,7 +2698,7 @@ function updatePageDisplay() {
     homeBtn.classList.toggle('nav-active', isHome);
     recordBtn.classList.toggle('nav-active', isRecordFlowPage);
     reminderBtn.classList.toggle('nav-active', isReminders || isReminderAdd);
-    myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile || isMedicineBox || isMedicineEdit || isMedicineDetail || isAiConfig);
+    myBtn.classList.toggle('nav-active', isMy || isExport || isCloudSync || isProfile || isFamilyMembers || isFamilyMemberForm || isMedicineBox || isMedicineEdit || isMedicineDetail || isAiConfig);
     bottomActions?.classList.toggle('hidden', isRecordFormPage || isReminderAdd || isAi || isAiConfig);
 }
 
@@ -2674,6 +2719,24 @@ function openReminderFormPage(reminder = null) {
 
 function openMySubPage(page) {
     switchPage(page);
+    const myModal = document.getElementById('myModal');
+    if (myModal) {
+        myModal.style.display = 'none';
+    }
+}
+
+function showStandalonePage(modalId, pageName) {
+    currentPage = pageName;
+    updatePageDisplay();
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('page-mode');
+        modal.style.display = 'block';
+    }
+    const myModal = document.getElementById('myModal');
+    if (myModal) {
+        myModal.style.display = 'none';
+    }
 }
 
 function setCurrentRecordView(view) {
@@ -4520,7 +4583,7 @@ function isBackendProfileModeEnabled() {
     return isCloudSyncAuthenticated();
 }
 
-function normalizeBackendProfile(profileResponse) {
+function normalizeProfileShape(profileResponse, fallback = {}) {
     return {
         name: profileResponse?.name || '',
         gender: profileResponse?.gender || '',
@@ -4534,8 +4597,23 @@ function normalizeBackendProfile(profileResponse) {
         allergies: profileResponse?.allergies || '',
         medications: profileResponse?.medications || '',
         healthGoals: profileResponse?.healthGoals || '',
-        notes: profileResponse?.notes || ''
+        notes: profileResponse?.notes || '',
+        avatar: profileResponse?.avatar || fallback?.avatar || ''
     };
+}
+
+function normalizeBackendProfile(profileResponse) {
+    return normalizeProfileShape(profileResponse, profile);
+}
+
+function normalizeFamilyMembers(list = []) {
+    if (!Array.isArray(list)) return [];
+    return list.map(member => ({
+        id: member?.id || `family_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+        createdAt: member?.createdAt || '',
+        updatedAt: member?.updatedAt || '',
+        ...normalizeProfileShape(member)
+    }));
 }
 
 async function refreshProfileFromBackend(options = {}) {
@@ -4546,7 +4624,7 @@ async function refreshProfileFromBackend(options = {}) {
 
     try {
         const response = await cloudSyncRequest('/api/profile', { method: 'GET' });
-        profile = response ? normalizeBackendProfile(response) : {};
+        profile = response ? normalizeBackendProfile(response) : normalizeProfileShape(profile);
         await persistAppState({ skipAutoCloudSync: true });
         await updateStorageStatus();
         return profile;
@@ -4595,7 +4673,11 @@ async function refreshDailyNoteFromBackend(dateKey = getDateKey(currentDate), op
 }
 
 function loadProfile() {
-    profile = profile || {};
+    profile = normalizeProfileShape(profile);
+}
+
+function loadFamilyMembers() {
+    familyMembers = normalizeFamilyMembers(familyMembers);
 }
 
 function loadMedicines() {
@@ -4603,6 +4685,7 @@ function loadMedicines() {
 }
 
 async function saveProfile() {
+    profile = normalizeProfileShape(profile);
     if (isBackendProfileModeEnabled()) {
         const response = await cloudSyncRequest('/api/profile', {
             method: 'PUT',
@@ -4622,7 +4705,7 @@ async function saveProfile() {
                 notes: profile.notes || ''
             })
         });
-        profile = normalizeBackendProfile(response);
+        profile = normalizeProfileShape(response, profile);
         await persistAppState({ skipAutoCloudSync: true });
         await updateStorageStatus();
         return;
@@ -5208,6 +5291,30 @@ function debounce(func, wait) {
 
 function setupProfileListeners() {
     document.getElementById('profileForm').addEventListener('submit', handleProfileSubmit);
+    document.getElementById('familyMemberForm')?.addEventListener('submit', handleFamilyMemberSubmit);
+    document.getElementById('addFamilyMemberBtn')?.addEventListener('click', () => openFamilyMemberForm());
+    document.getElementById('profileAvatarUpload')?.addEventListener('change', handleProfileAvatarChange);
+    document.getElementById('familyMemberAvatarUpload')?.addEventListener('change', handleFamilyMemberAvatarChange);
+    document.getElementById('profileAvatarUploadBtn')?.addEventListener('click', () => {
+        document.getElementById('profileAvatarUpload')?.click();
+    });
+    document.getElementById('profileAvatarActionBtn')?.addEventListener('click', () => {
+        document.getElementById('profileAvatarUpload')?.click();
+    });
+    document.getElementById('profileAvatarRemoveBtn')?.addEventListener('click', clearProfileAvatar);
+    document.getElementById('removeFamilyMemberAvatar')?.addEventListener('click', clearFamilyMemberAvatar);
+    document.getElementById('profileName')?.addEventListener('input', () => updateProfileAvatarPreview('profile', pendingProfileAvatar));
+    document.getElementById('familyMemberName')?.addEventListener('input', () => updateProfileAvatarPreview('familyMember', pendingFamilyMemberAvatar));
+    document.getElementById('familyMembersList')?.addEventListener('click', (e) => {
+        const actionBtn = e.target.closest('[data-family-action]');
+        if (!actionBtn) return;
+        const memberId = actionBtn.dataset.memberId;
+        if (actionBtn.dataset.familyAction === 'edit') {
+            openFamilyMemberForm(memberId);
+        } else if (actionBtn.dataset.familyAction === 'delete') {
+            deleteFamilyMember(memberId);
+        }
+    });
 }
 
 // 渲染提醒标签
@@ -6066,6 +6173,8 @@ function closeModal(modal) {
     if ((modal.id === 'exportModal' && currentPage === 'export')
         || (modal.id === 'cloudSyncModal' && currentPage === 'cloud-sync')
         || (modal.id === 'profileModal' && currentPage === 'profile')
+        || (modal.id === 'familyMembersModal' && currentPage === 'family-members')
+        || (modal.id === 'familyMemberFormModal' && currentPage === 'family-member-form')
         || (modal.id === 'medicineBoxModal' && currentPage === 'medicine-box')) {
         switchPage('my');
         return;
@@ -6714,6 +6823,7 @@ async function pullSnapshotFromCloud() {
         updateDisplay();
         updateRemindersDisplay();
         renderReminderTabs('today');
+        renderFamilyMembers();
         updateStorageStatus();
 
         updateCloudSyncStatusSummary(getCloudSyncConfig());
@@ -6728,51 +6838,133 @@ async function pullSnapshotFromCloud() {
 }
 
 function openProfileModal() {
-    populateProfileForm();
-    openMySubPage('profile');
+    pendingProfileAvatar = profile?.avatar || '';
+    populateProfileForm('profile', profile);
+    showStandalonePage('profileModal', 'profile');
 }
 
-function populateProfileForm() {
-    const fields = [
-        'Name',
-        'Gender',
-        'Age',
-        'Height',
-        'Weight',
-        'BloodType',
-        'BloodPressure',
-        'BloodSugar',
-        'ChronicConditions',
-        'Allergies',
-        'Medications',
-        'HealthGoals',
-        'Notes'
-    ];
-
-    fields.forEach(field => {
+function populateProfileForm(prefix, profileData = {}) {
+    const normalized = normalizeProfileShape(profileData);
+    profileFieldNames.forEach(field => {
         const key = field.charAt(0).toLowerCase() + field.slice(1);
-        document.getElementById(`profile${field}`).value = profile[key] || '';
+        const input = document.getElementById(`${prefix}${field}`);
+        if (input) {
+            input.value = normalized[key] || '';
+        }
     });
+    updateProfileAvatarPreview(prefix, normalized.avatar || '');
+}
+
+function buildProfilePayload(prefix, avatar = '') {
+    const payload = {};
+    profileFieldNames.forEach(field => {
+        const key = field.charAt(0).toLowerCase() + field.slice(1);
+        const input = document.getElementById(`${prefix}${field}`);
+        payload[key] = input ? input.value.trim() : '';
+    });
+    payload.avatar = avatar || '';
+    return normalizeProfileShape(payload);
+}
+
+function updateProfileAvatarPreview(prefix, avatar = '') {
+    const preview = document.getElementById(`${prefix}AvatarPreview`);
+    const img = document.getElementById(`${prefix}AvatarImg`);
+    const fallback = document.getElementById(`${prefix}AvatarFallback`);
+    const hint = document.getElementById(`${prefix}AvatarHint`);
+    const removeBtn = document.getElementById(`remove${prefix.charAt(0).toUpperCase() + prefix.slice(1)}Avatar`);
+    const uploadBtn = document.getElementById(`${prefix}AvatarUploadBtn`);
+    const previewWrap = document.getElementById(`${prefix}AvatarPreviewWrap`);
+    const nameInput = document.getElementById(`${prefix}Name`);
+    if (!preview || !img || !fallback) return;
+
+    const displayName = nameInput?.value?.trim() || '';
+    fallback.textContent = displayName ? displayName.slice(0, 1) : '头像';
+
+    if (prefix === 'profile') {
+        if (avatar) {
+            img.src = avatar;
+            img.style.display = 'block';
+            preview.classList.remove('profile-avatar-empty');
+            if (uploadBtn) uploadBtn.classList.add('hidden');
+            if (previewWrap) previewWrap.classList.remove('hidden');
+            if (hint) hint.classList.add('hidden');
+            // 更新名字显示
+            const nameEl = document.getElementById('profileAvatarName');
+            if (nameEl) nameEl.textContent = displayName || '已设置头像';
+        } else {
+            img.removeAttribute('src');
+            img.style.display = 'none';
+            preview.classList.add('profile-avatar-empty');
+            if (uploadBtn) uploadBtn.classList.remove('hidden');
+            if (previewWrap) previewWrap.classList.add('hidden');
+            if (hint) hint.classList.remove('hidden');
+        }
+        return;
+    }
+
+    if (avatar) {
+        img.src = avatar;
+        img.style.display = 'block';
+        preview.classList.remove('profile-avatar-empty');
+        if (hint) hint.classList.add('hidden');
+        if (removeBtn) removeBtn.classList.remove('hidden');
+    } else {
+        img.removeAttribute('src');
+        img.style.display = 'none';
+        preview.classList.add('profile-avatar-empty');
+        if (hint) hint.classList.remove('hidden');
+        if (removeBtn) removeBtn.classList.add('hidden');
+    }
+}
+
+async function handleAvatarFileChange(file, target) {
+    if (!file) return;
+    const base64 = await readAndCompressImage(file);
+    if (target === 'profile') {
+        pendingProfileAvatar = base64;
+    } else {
+        pendingFamilyMemberAvatar = base64;
+    }
+    updateProfileAvatarPreview(target, base64);
+}
+
+async function handleProfileAvatarChange(e) {
+    const file = e.target.files && e.target.files[0];
+    try {
+        await handleAvatarFileChange(file, 'profile');
+    } catch (error) {
+        console.error(error);
+        showToast('头像处理失败');
+    } finally {
+        e.target.value = '';
+    }
+}
+
+async function handleFamilyMemberAvatarChange(e) {
+    const file = e.target.files && e.target.files[0];
+    try {
+        await handleAvatarFileChange(file, 'familyMember');
+    } catch (error) {
+        console.error(error);
+        showToast('头像处理失败');
+    } finally {
+        e.target.value = '';
+    }
+}
+
+function clearProfileAvatar() {
+    pendingProfileAvatar = '';
+    updateProfileAvatarPreview('profile', '');
+}
+
+function clearFamilyMemberAvatar() {
+    pendingFamilyMemberAvatar = '';
+    updateProfileAvatarPreview('familyMember', '');
 }
 
 async function handleProfileSubmit(e) {
     e.preventDefault();
-
-    profile = {
-        name: document.getElementById('profileName').value.trim(),
-        gender: document.getElementById('profileGender').value,
-        age: document.getElementById('profileAge').value,
-        height: document.getElementById('profileHeight').value,
-        weight: document.getElementById('profileWeight').value,
-        bloodType: document.getElementById('profileBloodType').value,
-        bloodPressure: document.getElementById('profileBloodPressure').value.trim(),
-        bloodSugar: document.getElementById('profileBloodSugar').value.trim(),
-        chronicConditions: document.getElementById('profileChronicConditions').value.trim(),
-        allergies: document.getElementById('profileAllergies').value.trim(),
-        medications: document.getElementById('profileMedications').value.trim(),
-        healthGoals: document.getElementById('profileHealthGoals').value.trim(),
-        notes: document.getElementById('profileNotes').value.trim()
-    };
+    profile = buildProfilePayload('profile', pendingProfileAvatar);
 
     try {
         await saveProfile();
@@ -6786,6 +6978,111 @@ async function handleProfileSubmit(e) {
         console.error(error);
         showToast(isBackendProfileModeEnabled() ? '保存失败，请检查后端连接或登录状态' : '个人信息保存失败');
     }
+}
+
+function openFamilyMembersModal() {
+    renderFamilyMembers();
+    showStandalonePage('familyMembersModal', 'family-members');
+}
+
+function openFamilyMemberForm(memberId = null) {
+    editingFamilyMemberId = memberId;
+    const member = memberId ? familyMembers.find(item => item.id === memberId) : null;
+    pendingFamilyMemberAvatar = member?.avatar || '';
+    document.getElementById('familyMemberFormTitle').textContent = member ? '编辑家庭成员' : '添加家庭成员';
+    populateProfileForm('familyMember', member || {});
+    showStandalonePage('familyMemberFormModal', 'family-member-form');
+}
+
+function renderFamilyMembers() {
+    const list = document.getElementById('familyMembersList');
+    const emptyState = document.getElementById('familyMembersEmptyState');
+    if (!list || !emptyState) return;
+
+    familyMembers = normalizeFamilyMembers(familyMembers);
+    if (familyMembers.length === 0) {
+        emptyState.classList.remove('hidden');
+        list.innerHTML = '';
+        return;
+    }
+
+    emptyState.classList.add('hidden');
+    list.innerHTML = familyMembers.map(member => {
+        const summary = [
+            member.gender === 'male' ? '男' : member.gender === 'female' ? '女' : member.gender === 'other' ? '其他' : '',
+            member.age ? `${member.age}岁` : '',
+            member.bloodType ? `${member.bloodType}型` : ''
+        ].filter(Boolean).join(' · ');
+        const healthSummary = [
+            member.chronicConditions ? `病史：${escapeHtml(member.chronicConditions)}` : '',
+            member.medications ? `用药：${escapeHtml(member.medications)}` : '',
+            member.healthGoals ? `目标：${escapeHtml(member.healthGoals)}` : ''
+        ].filter(Boolean).join(' / ');
+
+        return `
+            <article class="family-member-card">
+                <div class="family-member-main">
+                    <div class="family-member-avatar ${member.avatar ? '' : 'empty'}">
+                        ${member.avatar ? `<img src="${member.avatar}" alt="${escapeHtml(member.name || '家庭成员')}">` : `<span>${escapeHtml((member.name || '成员').slice(0, 1))}</span>`}
+                    </div>
+                    <div class="family-member-content">
+                        <div class="family-member-header">
+                            <h3>${escapeHtml(member.name || '未命名成员')}</h3>
+                            ${summary ? `<span class="family-member-meta">${escapeHtml(summary)}</span>` : ''}
+                        </div>
+                        <div class="family-member-info">
+                            ${member.bloodPressure ? `<span>常见血压 ${escapeHtml(member.bloodPressure)}</span>` : ''}
+                            ${member.bloodSugar ? `<span>常见血糖 ${escapeHtml(member.bloodSugar)}</span>` : ''}
+                            ${member.allergies ? `<span>过敏史 ${escapeHtml(member.allergies)}</span>` : ''}
+                        </div>
+                        ${healthSummary ? `<p class="family-member-summary">${healthSummary}</p>` : '<p class="family-member-summary">可继续补充病史、过敏史、长期用药等信息。</p>'}
+                    </div>
+                </div>
+                <div class="family-member-actions">
+                    <button type="button" class="btn-action btn-edit" data-family-action="edit" data-member-id="${member.id}">编辑</button>
+                    <button type="button" class="btn-action btn-delete" data-family-action="delete" data-member-id="${member.id}">删除</button>
+                </div>
+            </article>
+        `;
+    }).join('');
+}
+
+async function handleFamilyMemberSubmit(e) {
+    e.preventDefault();
+    const payload = buildProfilePayload('familyMember', pendingFamilyMemberAvatar);
+    const now = new Date().toISOString();
+
+    if (editingFamilyMemberId) {
+        familyMembers = familyMembers.map(member => member.id === editingFamilyMemberId ? {
+            ...member,
+            ...payload,
+            updatedAt: now
+        } : member);
+    } else {
+        familyMembers.unshift({
+            id: `family_${Date.now()}`,
+            createdAt: now,
+            updatedAt: now,
+            ...payload
+        });
+    }
+
+    familyMembers = normalizeFamilyMembers(familyMembers);
+    await persistAppState({ skipAutoCloudSync: true });
+    await updateStorageStatus();
+    renderFamilyMembers();
+    switchPage('family-members');
+    showToast(editingFamilyMemberId ? '家庭成员已更新' : '家庭成员已添加');
+    editingFamilyMemberId = null;
+}
+
+async function deleteFamilyMember(memberId) {
+    if (!confirm('确定要删除这个家庭成员吗？')) return;
+    familyMembers = familyMembers.filter(member => member.id !== memberId);
+    await persistAppState({ skipAutoCloudSync: true });
+    await updateStorageStatus();
+    renderFamilyMembers();
+    showToast('家庭成员已删除');
 }
 
 // 请求通知权限
@@ -6936,6 +7233,7 @@ function buildFullExportPayload() {
         reminders,
         medicines,
         profile,
+        familyMembers,
         metadata: metadataForExport
     }));
 }
@@ -6974,6 +7272,7 @@ function normalizeImportPayload(parsed) {
             reminders: parsed.reminders || [],
             medicines: parsed.medicines || [],
             profile: parsed.profile || {},
+            familyMembers: parsed.familyMembers || [],
             metadata: parsed.metadata || {}
         };
     }
@@ -6986,6 +7285,7 @@ function normalizeImportPayload(parsed) {
         reminders: parsed.reminders || [],
         medicines: parsed.medicines || [],
         profile: parsed.profile || {},
+        familyMembers: parsed.familyMembers || [],
         metadata: parsed.metadata || {}
     };
 }
@@ -6997,11 +7297,12 @@ function summarizeImportPayload(payload) {
     const noteCount = Object.keys(payload.dailyNotesByDate || {}).length;
     const reminderCount = payload.reminders.length;
     const medicineCount = (payload.medicines || []).length;
+    const familyCount = (payload.familyMembers || []).length;
     const dates = Object.keys(payload.activitiesByDate)
         .concat(Object.keys(payload.healthRecordsByDate), Object.keys(payload.symptomRecordsByDate), Object.keys(payload.dailyNotesByDate || {}))
         .sort();
     const rangeText = dates.length ? `${dates[0]} 至 ${dates[dates.length - 1]}` : '未包含日期记录';
-    return `检测到 ${activityCount} 条活动、${healthCount} 条健康数据、${symptomCount} 条症状记录、${noteCount} 条状态记录、${reminderCount} 条提醒、${medicineCount} 种药品；日期范围：${rangeText}`;
+    return `检测到 ${activityCount} 条活动、${healthCount} 条健康数据、${symptomCount} 条症状记录、${noteCount} 条状态记录、${reminderCount} 条提醒、${medicineCount} 种药品、${familyCount} 位家庭成员；日期范围：${rangeText}`;
 }
 
 async function confirmImport(strategy) {
@@ -7017,7 +7318,8 @@ async function confirmImport(strategy) {
             allDailyNotesData = pendingImportData.dailyNotesByDate || {};
             reminders = normalizeReminders(pendingImportData.reminders);
             medicines = pendingImportData.medicines || [];
-            profile = pendingImportData.profile || {};
+            profile = normalizeProfileShape(pendingImportData.profile || {});
+            familyMembers = normalizeFamilyMembers(pendingImportData.familyMembers || []);
         } else {
             allActivitiesData = mergeDateBuckets(allActivitiesData, pendingImportData.activitiesByDate, normalizeActivity, getActivitySortTime);
             allHealthRecordsData = mergeDateBuckets(allHealthRecordsData, pendingImportData.healthRecordsByDate, item => item, item => item.time || '00:00');
@@ -7031,10 +7333,13 @@ async function confirmImport(strategy) {
             const importedMeds = pendingImportData.medicines || [];
             const existingIds = new Set(medicines.map(m => m.id));
             medicines = [...medicines, ...importedMeds.filter(m => !existingIds.has(m.id))];
-            profile = {
+            profile = normalizeProfileShape({
                 ...profile,
                 ...(pendingImportData.profile || {})
-            };
+            });
+            const importedMembers = normalizeFamilyMembers(pendingImportData.familyMembers || []);
+            const existingMemberIds = new Set(familyMembers.map(member => member.id));
+            familyMembers = [...familyMembers, ...importedMembers.filter(member => !existingMemberIds.has(member.id))];
         }
 
         metadata.lastImportAt = new Date().toISOString();
@@ -7057,6 +7362,7 @@ async function confirmImport(strategy) {
         allDailyNotesData = previousState.dailyNotesByDate || {};
         reminders = previousState.reminders;
         profile = previousState.profile;
+        familyMembers = previousState.familyMembers || [];
         metadata = {
             ...metadata,
             ...(previousState.metadata || {})
