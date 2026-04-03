@@ -5308,6 +5308,12 @@ function setupProfileListeners() {
     document.getElementById('removeFamilyMemberAvatar')?.addEventListener('click', clearFamilyMemberAvatar);
     document.getElementById('profileName')?.addEventListener('input', () => updateProfileAvatarPreview('profile', pendingProfileAvatar));
     document.getElementById('familyMemberName')?.addEventListener('input', () => updateProfileAvatarPreview('familyMember', pendingFamilyMemberAvatar));
+    ['profileHeight', 'profileWeight'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', () => updateBmiDisplay('profile'));
+    });
+    ['familyMemberHeight', 'familyMemberWeight'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', () => updateBmiDisplay('familyMember'));
+    });
     document.getElementById('familyMembersList')?.addEventListener('click', (e) => {
         const actionBtn = e.target.closest('[data-family-action]');
         if (!actionBtn) return;
@@ -6846,6 +6852,46 @@ function openProfileModal() {
     showStandalonePage('profileModal', 'profile');
 }
 
+function calculateBmi(height, weight) {
+    const h = parseFloat(height);
+    const w = parseFloat(weight);
+    if (!h || !w || h <= 0 || w <= 0) return null;
+    return w / ((h / 100) ** 2);
+}
+
+function updateBmiDisplay(prefix) {
+    const bmiRow = document.getElementById(`${prefix}BmiDisplay`);
+    const bmiValue = document.getElementById(`${prefix}BmiValue`);
+    const bmiLabel = document.getElementById(`${prefix}BmiLabel`);
+    if (!bmiRow || !bmiValue || !bmiLabel) return;
+
+    const h = document.getElementById(`${prefix}Height`)?.value;
+    const w = document.getElementById(`${prefix}Weight`)?.value;
+    const bmi = calculateBmi(h, w);
+
+    if (bmi === null) {
+        bmiRow.hidden = true;
+        return;
+    }
+
+    bmiRow.hidden = false;
+    bmiValue.textContent = bmi.toFixed(1);
+    bmiLabel.className = 'profile-bmi-badge';
+    if (bmi < 18.5) {
+        bmiLabel.textContent = '偏轻';
+        bmiLabel.classList.add('bmi-underweight');
+    } else if (bmi < 24) {
+        bmiLabel.textContent = '正常';
+        bmiLabel.classList.add('bmi-normal');
+    } else if (bmi < 28) {
+        bmiLabel.textContent = '超重';
+        bmiLabel.classList.add('bmi-overweight');
+    } else {
+        bmiLabel.textContent = '肥胖';
+        bmiLabel.classList.add('bmi-obese');
+    }
+}
+
 function populateProfileForm(prefix, profileData = {}) {
     const normalized = normalizeProfileShape(profileData);
     profileFieldNames.forEach(field => {
@@ -6856,6 +6902,7 @@ function populateProfileForm(prefix, profileData = {}) {
         }
     });
     updateProfileAvatarPreview(prefix, normalized.avatar || '');
+    updateBmiDisplay(prefix);
 }
 
 function buildProfilePayload(prefix, avatar = '') {

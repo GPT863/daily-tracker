@@ -1353,82 +1353,100 @@
                         <p class="avatar-hint" id="profileAvatarHint">支持 JPG、PNG，自动压缩保存</p>
                     </div>
 
-                    <div class="profile-grid">
-                        <div class="form-group">
-                            <label for="profileName">姓名</label>
-                            <input type="text" id="profileName" placeholder="例如：张三">
+                    <div class="profile-sections">
+
+                        <div class="profile-section">
+                            <h4 class="profile-section-title">基础信息</h4>
+                            <div class="profile-grid">
+                                <div class="form-group">
+                                    <label for="profileName">姓名</label>
+                                    <input type="text" id="profileName" placeholder="例如：张三">
+                                </div>
+                                <div class="form-group">
+                                    <label for="profileGender">性别</label>
+                                    <select id="profileGender">
+                                        <option value="">请选择</option>
+                                        <option value="male">男</option>
+                                        <option value="female">女</option>
+                                        <option value="other">其他</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profileAge">年龄</label>
+                                    <input type="number" id="profileAge" min="0" max="120" placeholder="例如：35">
+                                </div>
+                                <div class="form-group">
+                                    <label for="profileHeight">身高（cm）</label>
+                                    <input type="number" id="profileHeight" min="0" max="250" placeholder="例如：168">
+                                </div>
+                                <div class="form-group">
+                                    <label for="profileWeight">体重（kg）</label>
+                                    <input type="number" id="profileWeight" min="0" max="500" step="0.1" placeholder="例如：62.5">
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="profileGender">性别</label>
-                            <select id="profileGender">
-                                <option value="">请选择</option>
-                                <option value="male">男</option>
-                                <option value="female">女</option>
-                                <option value="other">其他</option>
-                            </select>
+                        <div class="profile-section">
+                            <h4 class="profile-section-title">体征参考</h4>
+                            <div class="profile-grid">
+                                <div class="form-group">
+                                    <label for="profileBloodType">血型</label>
+                                    <select id="profileBloodType">
+                                        <option value="">请选择</option>
+                                        <option value="A">A</option>
+                                        <option value="B">B</option>
+                                        <option value="AB">AB</option>
+                                        <option value="O">O</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profileBloodPressure">常见血压（mmHg）</label>
+                                    <input type="text" id="profileBloodPressure" placeholder="例如：120/80">
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="profileBloodSugar">常见血糖</label>
+                                    <input type="text" id="profileBloodSugar" placeholder="例如：5.6 mmol/L">
+                                </div>
+                            </div>
+                            <div class="profile-bmi-row" id="profileBmiDisplay" hidden>
+                                <span class="profile-bmi-text">BMI</span>
+                                <strong class="profile-bmi-value" id="profileBmiValue"></strong>
+                                <span class="profile-bmi-badge" id="profileBmiLabel"></span>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="profileAge">年龄</label>
-                            <input type="number" id="profileAge" min="0" placeholder="例如：35">
+                        <div class="profile-section">
+                            <h4 class="profile-section-title">病史与用药</h4>
+                            <div class="profile-grid">
+                                <div class="form-group full-width">
+                                    <label for="profileChronicConditions">慢性病 / 既往病史</label>
+                                    <textarea id="profileChronicConditions" rows="3" placeholder="例如：高血压、脂肪肝、胃炎"></textarea>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="profileAllergies">过敏史</label>
+                                    <textarea id="profileAllergies" rows="3" placeholder="例如：海鲜过敏、青霉素过敏"></textarea>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="profileMedications">长期用药</label>
+                                    <textarea id="profileMedications" rows="3" placeholder="例如：降压药每日 1 次，维生素 D 每日 1 粒"></textarea>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="profileHeight">身高（cm）</label>
-                            <input type="number" id="profileHeight" min="0" placeholder="例如：168">
+                        <div class="profile-section">
+                            <h4 class="profile-section-title">健康目标</h4>
+                            <div class="profile-grid">
+                                <div class="form-group full-width">
+                                    <label for="profileHealthGoals">当前健康目标</label>
+                                    <textarea id="profileHealthGoals" rows="3" placeholder="例如：控制血压、规律睡眠、减重 5kg"></textarea>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="profileNotes">补充说明</label>
+                                    <textarea id="profileNotes" rows="3" placeholder="其他需要长期记录的身体基础情况"></textarea>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="profileWeight">体重（kg）</label>
-                            <input type="number" id="profileWeight" min="0" step="0.1" placeholder="例如：62.5">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="profileBloodType">血型</label>
-                            <select id="profileBloodType">
-                                <option value="">请选择</option>
-                                <option value="A">A</option>
-                                <option value="B">B</option>
-                                <option value="AB">AB</option>
-                                <option value="O">O</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="profileBloodPressure">常见血压</label>
-                            <input type="text" id="profileBloodPressure" placeholder="例如：120/80">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="profileBloodSugar">常见血糖</label>
-                            <input type="text" id="profileBloodSugar" placeholder="例如：5.6 mmol/L">
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label for="profileChronicConditions">慢性病 / 既往病史</label>
-                            <textarea id="profileChronicConditions" rows="3" placeholder="例如：高血压、脂肪肝、胃炎"></textarea>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label for="profileAllergies">过敏史</label>
-                            <textarea id="profileAllergies" rows="3" placeholder="例如：海鲜过敏、青霉素过敏"></textarea>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label for="profileMedications">长期用药</label>
-                            <textarea id="profileMedications" rows="3" placeholder="例如：降压药每日 1 次，维生素 D 每日 1 粒"></textarea>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label for="profileHealthGoals">当前健康目标</label>
-                            <textarea id="profileHealthGoals" rows="3" placeholder="例如：控制血压、规律睡眠、减重 5kg"></textarea>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label for="profileNotes">补充说明</label>
-                            <textarea id="profileNotes" rows="3" placeholder="其他需要长期记录的身体基础情况"></textarea>
-                        </div>
                     </div>
 
                     <div class="form-actions">
@@ -1505,82 +1523,100 @@
                         <p class="avatar-hint" id="familyMemberAvatarHint">头像仅保存在本机，并会随导出文件一起保存。</p>
                     </div>
 
-                    <div class="profile-grid">
-                        <div class="form-group">
-                            <label for="familyMemberName">姓名 / 称呼</label>
-                            <input type="text" id="familyMemberName" placeholder="例如：爸爸">
+                    <div class="profile-sections">
+
+                        <div class="profile-section">
+                            <h4 class="profile-section-title">基础信息</h4>
+                            <div class="profile-grid">
+                                <div class="form-group">
+                                    <label for="familyMemberName">姓名 / 称呼</label>
+                                    <input type="text" id="familyMemberName" placeholder="例如：爸爸">
+                                </div>
+                                <div class="form-group">
+                                    <label for="familyMemberGender">性别</label>
+                                    <select id="familyMemberGender">
+                                        <option value="">请选择</option>
+                                        <option value="male">男</option>
+                                        <option value="female">女</option>
+                                        <option value="other">其他</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="familyMemberAge">年龄</label>
+                                    <input type="number" id="familyMemberAge" min="0" max="120" placeholder="例如：68">
+                                </div>
+                                <div class="form-group">
+                                    <label for="familyMemberHeight">身高（cm）</label>
+                                    <input type="number" id="familyMemberHeight" min="0" max="250" placeholder="例如：168">
+                                </div>
+                                <div class="form-group">
+                                    <label for="familyMemberWeight">体重（kg）</label>
+                                    <input type="number" id="familyMemberWeight" min="0" max="500" step="0.1" placeholder="例如：62.5">
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="familyMemberGender">性别</label>
-                            <select id="familyMemberGender">
-                                <option value="">请选择</option>
-                                <option value="male">男</option>
-                                <option value="female">女</option>
-                                <option value="other">其他</option>
-                            </select>
+                        <div class="profile-section">
+                            <h4 class="profile-section-title">体征参考</h4>
+                            <div class="profile-grid">
+                                <div class="form-group">
+                                    <label for="familyMemberBloodType">血型</label>
+                                    <select id="familyMemberBloodType">
+                                        <option value="">请选择</option>
+                                        <option value="A">A</option>
+                                        <option value="B">B</option>
+                                        <option value="AB">AB</option>
+                                        <option value="O">O</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="familyMemberBloodPressure">常见血压（mmHg）</label>
+                                    <input type="text" id="familyMemberBloodPressure" placeholder="例如：120/80">
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="familyMemberBloodSugar">常见血糖</label>
+                                    <input type="text" id="familyMemberBloodSugar" placeholder="例如：5.6 mmol/L">
+                                </div>
+                            </div>
+                            <div class="profile-bmi-row" id="familyMemberBmiDisplay" hidden>
+                                <span class="profile-bmi-text">BMI</span>
+                                <strong class="profile-bmi-value" id="familyMemberBmiValue"></strong>
+                                <span class="profile-bmi-badge" id="familyMemberBmiLabel"></span>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="familyMemberAge">年龄</label>
-                            <input type="number" id="familyMemberAge" min="0" placeholder="例如：68">
+                        <div class="profile-section">
+                            <h4 class="profile-section-title">病史与用药</h4>
+                            <div class="profile-grid">
+                                <div class="form-group full-width">
+                                    <label for="familyMemberChronicConditions">慢性病 / 既往病史</label>
+                                    <textarea id="familyMemberChronicConditions" rows="3" placeholder="例如：高血压、糖尿病"></textarea>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="familyMemberAllergies">过敏史</label>
+                                    <textarea id="familyMemberAllergies" rows="3" placeholder="例如：海鲜过敏、青霉素过敏"></textarea>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="familyMemberMedications">长期用药</label>
+                                    <textarea id="familyMemberMedications" rows="3" placeholder="例如：降压药每日 1 次"></textarea>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="familyMemberHeight">身高（cm）</label>
-                            <input type="number" id="familyMemberHeight" min="0" placeholder="例如：168">
+                        <div class="profile-section">
+                            <h4 class="profile-section-title">健康目标</h4>
+                            <div class="profile-grid">
+                                <div class="form-group full-width">
+                                    <label for="familyMemberHealthGoals">当前健康目标</label>
+                                    <textarea id="familyMemberHealthGoals" rows="3" placeholder="例如：控制血压、规律作息"></textarea>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="familyMemberNotes">补充说明</label>
+                                    <textarea id="familyMemberNotes" rows="3" placeholder="其他需要长期记录的身体基础情况"></textarea>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="familyMemberWeight">体重（kg）</label>
-                            <input type="number" id="familyMemberWeight" min="0" step="0.1" placeholder="例如：62.5">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="familyMemberBloodType">血型</label>
-                            <select id="familyMemberBloodType">
-                                <option value="">请选择</option>
-                                <option value="A">A</option>
-                                <option value="B">B</option>
-                                <option value="AB">AB</option>
-                                <option value="O">O</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="familyMemberBloodPressure">常见血压</label>
-                            <input type="text" id="familyMemberBloodPressure" placeholder="例如：120/80">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="familyMemberBloodSugar">常见血糖</label>
-                            <input type="text" id="familyMemberBloodSugar" placeholder="例如：5.6 mmol/L">
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label for="familyMemberChronicConditions">慢性病 / 既往病史</label>
-                            <textarea id="familyMemberChronicConditions" rows="3" placeholder="例如：高血压、糖尿病"></textarea>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label for="familyMemberAllergies">过敏史</label>
-                            <textarea id="familyMemberAllergies" rows="3" placeholder="例如：海鲜过敏、青霉素过敏"></textarea>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label for="familyMemberMedications">长期用药</label>
-                            <textarea id="familyMemberMedications" rows="3" placeholder="例如：降压药每日 1 次"></textarea>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label for="familyMemberHealthGoals">当前健康目标</label>
-                            <textarea id="familyMemberHealthGoals" rows="3" placeholder="例如：控制血压、规律作息"></textarea>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label for="familyMemberNotes">补充说明</label>
-                            <textarea id="familyMemberNotes" rows="3" placeholder="其他需要长期记录的身体基础情况"></textarea>
-                        </div>
                     </div>
 
                     <div class="form-actions">
