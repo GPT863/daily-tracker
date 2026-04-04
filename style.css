@@ -2449,6 +2449,30 @@ body.elder-mode .form-actions button {
     gap: 10px;
 }
 
+/* 未上传：圆形居中按钮 */
+.profile-avatar-upload-square {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 2px dashed rgba(40, 122, 68, 0.4);
+    background: rgba(40, 122, 68, 0.06);
+    color: var(--forest-color);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.profile-avatar-upload-square:hover {
+    background: rgba(40, 122, 68, 0.12);
+    border-color: var(--forest-color);
+    transform: scale(1.03);
+}
+
 /* 统一圆形触发区域 */
 .profile-avatar-circle {
     width: 104px;
@@ -4590,7 +4614,6 @@ body.elder-mode .stats-card-value {
         grid-template-columns: 1fr;
     }
 
-    .profile-avatar-wrap,
     .family-member-main,
     .family-members-intro {
         flex-direction: column;
