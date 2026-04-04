@@ -2826,7 +2826,10 @@ function getCurrentRecordConfig() {
             subtitle: '集中查看当天的健康测量数据与备注',
             heroText: '记录当天的血压、心率、血糖等数据，便于持续观察身体变化。',
             actionLabel: '+新增',
-            emptyTitle: '今天还没有测量记录',
+            emptyTitle: '今天还没有测量数据',
+            emptyIcon: '📊',
+            emptySubtitle: '记录血压、血糖、心率等健康指标',
+            emptyCtaText: '+ 去测量',
             emptyHint: '',
             items
         };
@@ -2841,7 +2844,10 @@ function getCurrentRecordConfig() {
             subtitle: '集中查看当天症状变化、处理措施与图片',
             heroText: '记录症状出现的时间、描述和处理措施，方便后续回顾与判断。',
             actionLabel: '+新增',
-            emptyTitle: '今天还没有症状记录',
+            emptyTitle: '今天没有症状记录',
+            emptyIcon: '🩺',
+            emptySubtitle: '记录身体不适，方便后续追踪',
+            emptyCtaText: '+ 记录症状',
             emptyHint: '',
             items
         };
@@ -2857,6 +2863,9 @@ function getCurrentRecordConfig() {
         heroText: '记录当天的饮食、运动、睡眠与用药安排，形成清晰的生活轨迹。',
         actionLabel: '+新增',
         emptyTitle: '今天还没有活动记录',
+        emptyIcon: '🏃',
+        emptySubtitle: '记录饮食、运动、用药等日常活动',
+        emptyCtaText: '+ 添加活动',
         emptyHint: '',
         items
     };
@@ -2877,10 +2886,8 @@ function updateRecordsPage() {
     const actionBtn = document.getElementById('recordPrimaryActionBtn');
     const list = document.getElementById('recordsList');
     const emptyState = document.getElementById('recordsEmptyState');
-    const emptyTitle = document.getElementById('recordsEmptyTitle');
-    const emptyHint = document.getElementById('recordsEmptyHint');
     const appTitle = document.querySelector('.app-header h1');
-    if (!topTitle || !actionBtn || !list || !emptyState || !emptyTitle || !emptyHint) return;
+    if (!topTitle || !actionBtn || !list || !emptyState) return;
 
     document.querySelectorAll('.records-tab-btn').forEach(btn => {
         const isActive = btn.dataset.recordView === currentRecordView;
@@ -2895,15 +2902,24 @@ function updateRecordsPage() {
     const config = getCurrentRecordConfig();
     topTitle.innerHTML = getRecordsTopTitle(currentRecordView);
     actionBtn.textContent = config.actionLabel;
-    emptyTitle.textContent = config.emptyTitle;
-    emptyHint.textContent = config.emptyHint;
     if (appTitle && currentPage === 'records') {
         appTitle.textContent = config.title;
     }
 
     if (config.items.length === 0) {
         list.innerHTML = '';
-        emptyState.style.display = 'block';
+        emptyState.style.display = 'flex';
+        const iconEl = document.getElementById('recordsEmptyIcon');
+        const subtitleEl = document.getElementById('recordsEmptySubtitle');
+        const ctaEl = document.getElementById('recordsEmptyCta');
+        const titleEl = document.getElementById('recordsEmptyTitle');
+        if (iconEl) iconEl.textContent = config.emptyIcon || '📋';
+        if (titleEl) titleEl.textContent = config.emptyTitle || '';
+        if (subtitleEl) subtitleEl.textContent = config.emptySubtitle || '';
+        if (ctaEl) {
+            ctaEl.textContent = config.emptyCtaText || '+ 新增';
+            ctaEl.onclick = () => document.getElementById('recordPrimaryActionBtn')?.click();
+        }
         return;
     }
 
@@ -5424,7 +5440,12 @@ function renderTodayReminders() {
 
     const container = document.getElementById('todayReminderList');
     container.innerHTML = todayReminders.length === 0
-        ? '<div class="reminder-empty-state"><div class="reminder-empty-state-icon">📋</div><div class="reminder-empty-state-text">今天没有提醒</div></div>'
+        ? `<div class="empty-state-block">
+            <div class="empty-icon">🔔</div>
+            <p class="empty-title">今天没有提醒</p>
+            <p class="empty-subtitle">添加服药、运动等定时提醒</p>
+            <button class="empty-cta" onclick="document.getElementById('reminderHeaderAddBtn')?.click()">+ 添加提醒</button>
+           </div>`
         : todayReminders.map(r => renderReminderItem(r)).join('');
 }
 
