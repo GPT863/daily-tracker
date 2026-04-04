@@ -1,0 +1,69 @@
+<h2>空状态视觉风格</h2>
+<p class="subtitle">影响「记录」「提醒」「时间线」三处空状态，选一种统一风格</p>
+
+<div class="options">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>大图标 + 短文案</h3>
+      <p>放大 emoji 图标（64px）+ 一句话说明 + 绿色 CTA 按钮，简洁轻量</p>
+      <div style="margin-top:12px;background:#f9fdf9;border:1px solid #e0ede0;border-radius:12px;padding:28px 16px;text-align:center;">
+        <div style="font-size:52px;line-height:1;margin-bottom:12px;">🏃</div>
+        <div style="font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">今天还没有活动记录</div>
+        <div style="font-size:13px;color:#888;margin-bottom:16px;">记录饮食、运动、用药等日常活动</div>
+        <button style="background:#4CAF50;color:#fff;border:none;border-radius:20px;padding:9px 24px;font-size:14px;font-weight:600;cursor:pointer;">+ 添加活动</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>SVG 插图 + 引导文案</h3>
+      <p>纯 CSS/SVG 小插图（无外部依赖）+ 两行文案 + CTA，更有设计感</p>
+      <div style="margin-top:12px;background:#f9fdf9;border:1px solid #e0ede0;border-radius:12px;padding:24px 16px;text-align:center;">
+        <svg width="80" height="72" viewBox="0 0 80 72" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:14px;">
+          <rect x="10" y="18" width="60" height="42" rx="6" fill="#dff5e4" stroke="#4CAF50" stroke-width="1.5"/>
+          <rect x="18" y="26" width="30" height="4" rx="2" fill="#4CAF50" opacity="0.4"/>
+          <rect x="18" y="34" width="20" height="4" rx="2" fill="#4CAF50" opacity="0.25"/>
+          <rect x="18" y="42" width="24" height="4" rx="2" fill="#4CAF50" opacity="0.25"/>
+          <circle cx="58" cy="20" r="13" fill="#4CAF50"/>
+          <text x="58" y="25" text-anchor="middle" fill="white" font-size="14" font-weight="bold">+</text>
+        </svg>
+        <div style="font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">今天还没有活动记录</div>
+        <div style="font-size:13px;color:#888;margin-bottom:16px;">点击右上角或下方按钮，<br>开始记录今天的第一条活动</div>
+        <button style="background:transparent;color:#4CAF50;border:2px solid #4CAF50;border-radius:20px;padding:8px 22px;font-size:14px;font-weight:600;cursor:pointer;">+ 添加第一条</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>卡片占位 + 虚线边框</h3>
+      <p>用虚线卡片暗示「这里将出现内容」，视觉上不突兀，适合习惯使用的老用户</p>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+        <div style="border:2px dashed #c8e6c9;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;background:#fafff9;">
+          <div style="width:36px;height:36px;border-radius:50%;background:#e8f5e9;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🍽️</div>
+          <div>
+            <div style="font-size:13px;color:#aaa;">还没有用餐记录</div>
+            <div style="font-size:11px;color:#c8e6c9;margin-top:2px;">点击添加 →</div>
+          </div>
+        </div>
+        <div style="border:2px dashed #c8e6c9;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;background:#fafff9;">
+          <div style="width:36px;height:36px;border-radius:50%;background:#e8f5e9;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💊</div>
+          <div>
+            <div style="font-size:13px;color:#aaa;">还没有用药记录</div>
+          </div>
+        </div>
+        <div style="text-align:center;padding:8px;font-size:12px;color:#bbb;">+ 添加记录</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:16px;padding:12px 14px;background:#f0f7f0;border-radius:10px;font-size:13px;color:#555;">
+  💡 三种方案均使用现有 CSS 变量实现，无需引入图片资源。B 方案的 SVG 插图可为每个页面定制不同图案（活动/测量/提醒）。
+</div>

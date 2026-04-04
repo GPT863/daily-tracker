@@ -1,0 +1,105 @@
+<h2>第三期完整设计方案</h2>
+<p class="subtitle">确认以下 5 项后，生成实施计划</p>
+
+<div style="display:flex;flex-direction:column;gap:14px;margin-top:16px;">
+
+  <div style="border:1.5px solid #4CAF50;border-radius:12px;overflow:hidden;">
+    <div style="background:#4CAF50;padding:10px 16px;display:flex;align-items:center;gap:8px;">
+      <span style="color:#fff;font-weight:700;font-size:14px;">⑬ 「我的」页 Profile Header</span>
+      <span style="margin-left:auto;background:rgba(255,255,255,0.25);color:#fff;border-radius:10px;padding:2px 10px;font-size:12px;">方案 B</span>
+    </div>
+    <div style="padding:14px 16px;background:#f9fdf9;font-size:13px;color:#444;">
+      <div style="background:linear-gradient(135deg,#1f7a3d,#4CAF50);border-radius:12px;padding:16px;color:#fff;text-align:center;margin-bottom:10px;">
+        <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;margin:0 auto 8px;">张</div>
+        <div style="font-weight:700;font-size:14px;">张晨</div>
+        <div style="opacity:0.85;font-size:12px;margin-top:2px;">34岁 · 女 · BMI 19.8</div>
+        <div style="display:flex;justify-content:center;gap:6px;margin-top:8px;">
+          <div style="background:rgba(255,255,255,0.2);border-radius:6px;padding:3px 10px;font-size:11px;">档案 76%</div>
+          <div style="background:rgba(255,255,255,0.2);border-radius:6px;padding:3px 10px;font-size:11px;">今日 5 条</div>
+        </div>
+      </div>
+      <ul style="margin:0;padding-left:16px;line-height:1.9;color:#555;">
+        <li>读取 <code>profile</code> 中的姓名、年龄、性别、BMI（身高体重自动计算）</li>
+        <li>「今日 N 条」= 当天活动 + 测量 + 症状记录总数</li>
+        <li>未填写个人信息时显示「完善档案」引导按钮</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="border:1.5px solid #4CAF50;border-radius:12px;overflow:hidden;">
+    <div style="background:#4CAF50;padding:10px 16px;display:flex;align-items:center;gap:8px;">
+      <span style="color:#fff;font-weight:700;font-size:14px;">⑩ 空状态视觉升级</span>
+      <span style="margin-left:auto;background:rgba(255,255,255,0.25);color:#fff;border-radius:10px;padding:2px 10px;font-size:12px;">方案 A</span>
+    </div>
+    <div style="padding:14px 16px;background:#f9fdf9;font-size:13px;color:#444;">
+      <div style="background:#fff;border:1px solid #e0ede0;border-radius:10px;padding:20px;text-align:center;margin-bottom:10px;">
+        <div style="font-size:44px;margin-bottom:8px;">🏃</div>
+        <div style="font-weight:600;font-size:14px;color:#1a1a1a;margin-bottom:4px;">今天还没有活动记录</div>
+        <div style="font-size:12px;color:#888;margin-bottom:12px;">记录饮食、运动、用药等日常活动</div>
+        <div style="display:inline-block;background:#4CAF50;color:#fff;border-radius:20px;padding:7px 20px;font-size:13px;font-weight:600;">+ 添加活动</div>
+      </div>
+      <ul style="margin:0;padding-left:16px;line-height:1.9;color:#555;">
+        <li>活动页：🏃 「今天还没有活动记录」</li>
+        <li>测量页：📊 「今天还没有测量数据」</li>
+        <li>症状页：💊 「今天没有症状记录」</li>
+        <li>提醒页：🔔 「今天没有提醒」</li>
+        <li>时间线：📋 「今天还没有记录哦」（保持现状，已有 emoji）</li>
+        <li>CTA 按钮点击行为与现有「+新增」按钮一致</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="border:1.5px solid #4CAF50;border-radius:12px;overflow:hidden;">
+    <div style="background:#4CAF50;padding:10px 16px;">
+      <span style="color:#fff;font-weight:700;font-size:14px;">⑪ 提醒卡片图片缩略图化</span>
+    </div>
+    <div style="padding:14px 16px;background:#f9fdf9;font-size:13px;color:#444;">
+      <div style="background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:12px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px;">
+        <div style="flex:1;">
+          <div style="font-size:12px;color:#888;margin-bottom:4px;">09:00 · 每天</div>
+          <div style="font-weight:600;font-size:14px;color:#1a1a1a;">记得服药</div>
+          <div style="font-size:12px;color:#666;margin-top:3px;">早餐后服用</div>
+        </div>
+        <div style="width:56px;height:56px;border-radius:8px;background:linear-gradient(135deg,#a8d8a8,#4CAF50);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:600;">缩略图</div>
+      </div>
+      <ul style="margin:0;padding-left:16px;line-height:1.9;color:#555;">
+        <li>列表视图：图片缩为 56×56px，border-radius: 8px，右对齐</li>
+        <li>详情弹窗（到点提醒 / 编辑页）：保留大图展示</li>
+        <li>无图片时不留空位，卡片自动填满</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="border:1.5px solid #4CAF50;border-radius:12px;overflow:hidden;">
+    <div style="background:#4CAF50;padding:10px 16px;display:flex;align-items:center;gap:8px;">
+      <span style="color:#fff;font-weight:700;font-size:14px;">⑫ 添加提醒表单视觉统一</span>
+      <span style="margin-left:auto;background:rgba(255,255,255,0.25);color:#fff;border-radius:10px;padding:2px 10px;font-size:12px;">方案 A</span>
+    </div>
+    <div style="padding:14px 16px;background:#f9fdf9;font-size:13px;color:#444;">
+      <ul style="margin:0;padding-left:16px;line-height:1.9;color:#555;">
+        <li><code>#reminderModal .modal-content</code> 内层表单加 <code>background: var(--mint-color)</code>（#dff5e4）</li>
+        <li>字段标签字重、颜色与 <code>#activityModal</code> 保持一致（font-weight: 600, color: #1a1a1a）</li>
+        <li>input / select / textarea 统一使用白色背景圆角样式</li>
+        <li>提交按钮样式与「添加活动」保持一致</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="border:1.5px solid #4CAF50;border-radius:12px;overflow:hidden;">
+    <div style="background:#4CAF50;padding:10px 16px;">
+      <span style="color:#fff;font-weight:700;font-size:14px;">⑭ Header 过渡 + 全屏按钮位置修复</span>
+    </div>
+    <div style="padding:14px 16px;background:#f9fdf9;font-size:13px;color:#444;">
+      <ul style="margin:0;padding-left:16px;line-height:1.9;color:#555;">
+        <li>首页 <code>.app-header</code> 底部加 <code>padding-bottom: 12px</code>，用 <code>border-radius: 0 0 20px 20px</code> 圆化底边</li>
+        <li><code>.app-main</code> 顶部 <code>margin-top: -12px</code>，卡片自然叠在 header 圆角上，形成层叠过渡</li>
+        <li><code>#dailyNoteFullscreenBtn</code> 从 <code>position: absolute; top: 8px; right: 8px</code> 改为 <code>position: absolute; bottom: 8px; right: 8px</code>，远离输入起始区</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px;padding:14px;background:#e8f5e9;border-radius:10px;font-size:13px;color:#2e7d32;border:1px solid #c8e6c9;">
+  ✅ 以上方案均在现有 HTML/CSS/JS 基础上修改，无需引入新依赖。如果方案确认，下一步生成详细实施计划。
+</div>

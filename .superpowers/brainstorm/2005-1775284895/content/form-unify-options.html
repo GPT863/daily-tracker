@@ -1,0 +1,72 @@
+<h2>两个表单如何统一视觉风格？</h2>
+<p class="subtitle">当前「添加活动」是浅绿背景，「添加提醒」是纯白背景</p>
+
+<div class="options">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>提醒表单跟随活动表单</h3>
+      <p>给「添加提醒」加上与活动表单相同的浅绿背景（#f0f7f0）和字段样式，两者完全统一</p>
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <div style="flex:1;background:#f0f7f0;border-radius:10px;padding:12px;font-size:12px;">
+          <div style="font-weight:700;color:#1f7a3d;margin-bottom:8px;font-size:13px;">添加活动</div>
+          <div style="background:#fff;border-radius:6px;padding:7px 10px;margin-bottom:6px;color:#555;">活动时间</div>
+          <div style="background:#fff;border-radius:6px;padding:7px 10px;margin-bottom:6px;color:#555;">类型</div>
+          <div style="background:#fff;border-radius:6px;padding:7px 10px;color:#555;">内容</div>
+        </div>
+        <div style="flex:1;background:#f0f7f0;border-radius:10px;padding:12px;font-size:12px;">
+          <div style="font-weight:700;color:#1f7a3d;margin-bottom:8px;font-size:13px;">添加提醒</div>
+          <div style="background:#fff;border-radius:6px;padding:7px 10px;margin-bottom:6px;color:#555;">提醒内容</div>
+          <div style="background:#fff;border-radius:6px;padding:7px 10px;margin-bottom:6px;color:#555;">日期 / 时间</div>
+          <div style="background:#fff;border-radius:6px;padding:7px 10px;color:#555;">重复规则</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:#4CAF50;">✓ 两个表单完全一致</div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>两者都改为中性白底</h3>
+      <p>活动和提醒表单都改为白色背景，字段样式统一，更简洁、不依赖绿色背景</p>
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <div style="flex:1;background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:12px;font-size:12px;">
+          <div style="font-weight:700;color:#1a1a1a;margin-bottom:8px;font-size:13px;">添加活动</div>
+          <div style="background:#f5f5f5;border-radius:6px;padding:7px 10px;margin-bottom:6px;color:#555;">活动时间</div>
+          <div style="background:#f5f5f5;border-radius:6px;padding:7px 10px;margin-bottom:6px;color:#555;">类型</div>
+          <div style="background:#f5f5f5;border-radius:6px;padding:7px 10px;color:#555;">内容</div>
+        </div>
+        <div style="flex:1;background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:12px;font-size:12px;">
+          <div style="font-weight:700;color:#1a1a1a;margin-bottom:8px;font-size:13px;">添加提醒</div>
+          <div style="background:#f5f5f5;border-radius:6px;padding:7px 10px;margin-bottom:6px;color:#555;">提醒内容</div>
+          <div style="background:#f5f5f5;border-radius:6px;padding:7px 10px;margin-bottom:6px;color:#555;">日期 / 时间</div>
+          <div style="background:#f5f5f5;border-radius:6px;padding:7px 10px;color:#555;">重复规则</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:#888;">改动稍多，需同时调整活动表单</div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px;">
+  <h3 style="font-size:14px;margin-bottom:12px;">另外两项已有明确方向，无需选择：</h3>
+  <div style="display:grid;gap:8px;">
+    <div style="background:#f9f9f9;border-radius:10px;padding:12px 14px;font-size:13px;display:flex;gap:10px;align-items:flex-start;">
+      <span style="font-size:16px;flex-shrink:0;">⑪</span>
+      <div>
+        <strong>提醒卡片图片缩略图化</strong><br>
+        <span style="color:#888;">列表视图：图片缩为 56×56px 圆角缩略图，右对齐；详情弹窗内保留大图展示</span>
+      </div>
+    </div>
+    <div style="background:#f9f9f9;border-radius:10px;padding:12px 14px;font-size:13px;display:flex;gap:10px;align-items:flex-start;">
+      <span style="font-size:16px;flex-shrink:0;">⑭</span>
+      <div>
+        <strong>Header 过渡 + 全屏按钮位置</strong><br>
+        <span style="color:#888;">Header 底部加 8px 渐变淡出到页面背景色；全屏按钮移至 textarea 右下角外侧，避免遮挡</span>
+      </div>
+    </div>
+  </div>
+</div>

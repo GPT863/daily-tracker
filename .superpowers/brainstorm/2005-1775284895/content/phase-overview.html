@@ -1,0 +1,96 @@
+<h2>三期优化方案总览</h2>
+<p class="subtitle">请确认每期的问题归属是否合理，或告知需要调整</p>
+
+<div style="display:flex;flex-direction:column;gap:20px;margin-top:16px;">
+
+  <div style="border:2px solid #e55;border-radius:12px;padding:20px;background:#fff8f8;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <span style="font-size:22px;">🔴</span>
+      <h3 style="margin:0;color:#c0392b;">第一期 — 核心体验修复</h3>
+      <span style="margin-left:auto;background:#e55;color:#fff;border-radius:20px;padding:3px 12px;font-size:13px;font-weight:600;">4 个问题</span>
+    </div>
+    <div style="display:grid;gap:8px;">
+      <div style="background:#fff;border:1px solid #fcc;border-radius:8px;padding:10px 14px;font-size:14px;">
+        <strong>① 提醒弹窗可关闭</strong><br>
+        <span style="color:#888;">添加右上角 × 关闭按钮；不覆盖其他已打开的表单</span>
+      </div>
+      <div style="background:#fff;border:1px solid #fcc;border-radius:8px;padding:10px 14px;font-size:14px;">
+        <strong>② 底部 + 号直接新增记录</strong><br>
+        <span style="color:#888;">点击 + 弹出选择器（活动 / 测量 / 症状），不跳转列表页</span>
+      </div>
+      <div style="background:#fff;border:1px solid #fcc;border-radius:8px;padding:10px 14px;font-size:14px;">
+        <strong>③ 测量数值显示参考范围 + 颜色预警</strong><br>
+        <span style="color:#888;">血压/血糖/尿酸等数值旁显示正常区间，偏高/偏低变色提示</span>
+      </div>
+      <div style="background:#fff;border:1px solid #fcc;border-radius:8px;padding:10px 14px;font-size:14px;">
+        <strong>④ 症状卡片补充左侧颜色竖条</strong><br>
+        <span style="color:#888;">与活动、测量卡片统一视觉语言，症状统一用红色 #e85d5d</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="border:2px solid #e8920a;border-radius:12px;padding:20px;background:#fffbf5;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <span style="font-size:22px;">🟠</span>
+      <h3 style="margin:0;color:#b7500a;">第二期 — 业务流程完善</h3>
+      <span style="margin-left:auto;background:#e8920a;color:#fff;border-radius:20px;padding:3px 12px;font-size:13px;font-weight:600;">5 个问题</span>
+    </div>
+    <div style="display:grid;gap:8px;">
+      <div style="background:#fff;border:1px solid #fdd;border-radius:8px;padding:10px 14px;font-size:14px;">
+        <strong>⑤ 提醒 → 记录闭环</strong><br>
+        <span style="color:#888;">「标记完成」后提示「是否同时添加一条活动记录？」</span>
+      </div>
+      <div style="background:#fff;border:1px solid #fdd;border-radius:8px;padding:10px 14px;font-size:14px;">
+        <strong>⑥ 重复提醒支持「跳过本次」</strong><br>
+        <span style="color:#888;">提醒弹窗新增「跳过今天」选项，仅跳过当次不影响后续</span>
+      </div>
+      <div style="background:#fff;border:1px solid #fdd;border-radius:8px;padding:10px 14px;font-size:14px;">
+        <strong>⑦ 今日状态记录与时间线关系说明</strong><br>
+        <span style="color:#888;">两个模块加区隔标注，或合并为同一 section 避免混淆</span>
+      </div>
+      <div style="background:#fff;border:1px solid #fdd;border-radius:8px;padding:10px 14px;font-size:14px;">
+        <strong>⑧ 今日提醒 vs 全部提醒去重</strong><br>
+        <span style="color:#888;">「全部提醒」改为管理视图（分组/筛选），不再重复展示今日</span>
+      </div>
+      <div style="background:#fff;border:1px solid #fdd;border-radius:8px;padding:10px 14px;font-size:14px;">
+        <strong>⑨ 症状记录增加严重程度字段</strong><br>
+        <span style="color:#888;">添加 1–10 滑块评分，为后续趋势分析提供量化维度</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="border:2px solid #c9a100;border-radius:12px;padding:20px;background:#fffef0;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <span style="font-size:22px;">🟡</span>
+      <h3 style="margin:0;color:#7a6000;">第三期 — 视觉与体验打磨</h3>
+      <span style="margin-left:auto;background:#c9a100;color:#fff;border-radius:20px;padding:3px 12px;font-size:13px;font-weight:600;">5 个问题</span>
+    </div>
+    <div style="display:grid;gap:8px;">
+      <div style="background:#fff;border:1px solid #eee;border-radius:8px;padding:10px 14px;font-size:14px;">
+        <strong>⑩ 空状态视觉升级</strong><br>
+        <span style="color:#888;">各页面空状态添加插图 + 引导性 CTA</span>
+      </div>
+      <div style="background:#fff;border:1px solid #eee;border-radius:8px;padding:10px 14px;font-size:14px;">
+        <strong>⑪ 提醒卡片图片缩略图化</strong><br>
+        <span style="color:#888;">列表视图图片缩为 48px 缩略图，详情弹窗内展示大图</span>
+      </div>
+      <div style="background:#fff;border:1px solid #eee;border-radius:8px;padding:10px 14px;font-size:14px;">
+        <strong>⑫ 添加提醒表单视觉统一</strong><br>
+        <span style="color:#888;">与「添加活动」对齐：浅绿背景、字段标签风格统一</span>
+      </div>
+      <div style="background:#fff;border:1px solid #eee;border-radius:8px;padding:10px 14px;font-size:14px;">
+        <strong>⑬ 「我的」页增加用户 Profile Header</strong><br>
+        <span style="color:#888;">顶部展示头像、姓名、档案完整度摘要</span>
+      </div>
+      <div style="background:#fff;border:1px solid #eee;border-radius:8px;padding:10px 14px;font-size:14px;">
+        <strong>⑭ Header 底部过渡 + 全屏按钮位置修复</strong><br>
+        <span style="color:#888;">首页绿色 Header 加渐变过渡；全屏按钮移出 textarea 覆盖区</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px;padding:14px;background:#f0f7f0;border-radius:10px;font-size:14px;color:#444;">
+  💬 如果某个问题你觉得优先级应该调整，直接告诉我，我来挪。确认没问题的话，我们进入第一期详细设计。
+</div>
