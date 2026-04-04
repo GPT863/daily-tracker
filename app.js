@@ -5665,23 +5665,21 @@ function renderReminderItem(reminder, showDate = false) {
 
     return `
         <div class="reminder-detail-item ${isCompleted ? 'completed' : ''} ${isPast && !isCompleted ? 'overdue' : ''}">
-            <div class="reminder-detail-header">
-                <div>
-                    <span class="reminder-detail-time">${timeStr}</span>
-                    <span class="reminder-detail-date">${dateStr}</span>
-                    ${repeatLabel ? `<span style="margin-left:8px;font-size:0.8rem;">🔄 ${repeatLabel}</span>` : ''}
+            <div class="reminder-detail-header" style="display:flex;align-items:flex-start;gap:10px;">
+                <div style="flex:1;min-width:0;">
+                    <div>
+                        <span class="reminder-detail-time">${timeStr}</span>
+                        <span class="reminder-detail-date">${dateStr}</span>
+                        ${repeatLabel ? `<span style="margin-left:8px;font-size:0.8rem;">🔄 ${repeatLabel}</span>` : ''}
+                    </div>
+                    <div class="reminder-detail-title">${escapeHtml(reminder.title)}</div>
+                    ${(reminder.notes || snoozeInfo || getReminderRepeatLabel(reminder.repeat)) ? `<div class="reminder-detail-notes">${escapeHtml([reminder.notes, snoozeInfo, getReminderRepeatLabel(reminder.repeat)].filter(Boolean).join(' · '))}</div>` : ''}
                 </div>
-                <div>
-                    ${typeIcons[reminder.type]}
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+                    <span style="font-size:20px;">${typeIcons[reminder.type] || ''}</span>
+                    ${reminder.image ? `<img src="${reminder.image}" alt="" style="width:56px;height:56px;border-radius:8px;object-fit:cover;">` : ''}
                 </div>
             </div>
-            <div class="reminder-detail-title">${escapeHtml(reminder.title)}</div>
-            ${reminder.image ? `
-                <div class="reminder-detail-image-wrap">
-                    <img class="reminder-detail-image" src="${reminder.image}" alt="${escapeHtml(reminder.title)}">
-                </div>
-            ` : ''}
-            ${(reminder.notes || snoozeInfo || getReminderRepeatLabel(reminder.repeat)) ? `<div class="reminder-detail-notes">${escapeHtml([reminder.notes, snoozeInfo, getReminderRepeatLabel(reminder.repeat)].filter(Boolean).join(' · '))}</div>` : ''}
             <div class="reminder-detail-actions">
                 ${!isCompleted ? `<button class="btn-action btn-edit" onclick="editReminder('${reminder.id}')">编辑</button>` : ''}
                 <button class="btn-action btn-complete" onclick="completeReminder('${reminder.id}')">
