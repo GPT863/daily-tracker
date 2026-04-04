@@ -2583,12 +2583,62 @@ function updateDisplay() {
     updateStats();
 }
 
+function renderMyProfileHeader() {
+    const avatarEl = document.getElementById('myProfileAvatar');
+    const nameEl = document.getElementById('myProfileName');
+    const metaEl = document.getElementById('myProfileMeta');
+    const tagsEl = document.getElementById('myProfileTags');
+    if (!avatarEl || !nameEl || !metaEl || !tagsEl) return;
+
+    // 头像
+    const name = profile.name || '';
+    if (profile.avatar) {
+        avatarEl.innerHTML = `<img src="${profile.avatar}" alt="头像">`;
+    } else {
+        avatarEl.textContent = name ? name.charAt(0) : '健';
+    }
+
+    // 姓名
+    nameEl.textContent = name || '健康用户';
+
+    // 年龄·性别·BMI 行
+    const parts = [];
+    if (profile.age) parts.push(`${profile.age}岁`);
+    const genderMap = { male: '男', female: '女' };
+    if (profile.gender && genderMap[profile.gender]) parts.push(genderMap[profile.gender]);
+    const h = parseFloat(profile.height);
+    const w = parseFloat(profile.weight);
+    if (h > 0 && w > 0) {
+        const bmi = (w / Math.pow(h / 100, 2)).toFixed(1);
+        parts.push(`BMI ${bmi}`);
+    }
+    metaEl.textContent = parts.join(' · ');
+
+    // 标签行
+    const todayCount = activities.length + healthRecords.length + symptomRecords.length;
+    const fields = ['name','gender','age','height','weight','bloodType','chronicConditions','allergies','medications','smoking','drinking','exercise','sleepHours','healthGoals','notes'];
+    const filled = fields.filter(f => profile[f] && String(profile[f]).trim() !== '').length;
+    const completeness = Math.round(filled / fields.length * 100);
+
+    if (!name && !profile.age && !profile.gender) {
+        tagsEl.innerHTML = `<span class="my-profile-tag" onclick="document.getElementById('profileBtn')?.click()">完善个人档案 →</span>`;
+    } else {
+        tagsEl.innerHTML = `
+            <span class="my-profile-tag">档案 ${completeness}%</span>
+            <span class="my-profile-tag">今日 ${todayCount} 条</span>
+        `;
+    }
+}
+
 function switchPage(page, isBack = false) {
     if (!isBack && currentPage && currentPage !== page) {
         pageHistory.push(currentPage);
     }
     currentPage = page;
     updatePageDisplay();
+    if (page === 'my') {
+        renderMyProfileHeader();
+    }
     if (page === 'records' || page === 'activity-form' || page === 'health-form' || page === 'symptom-form') {
         updateRecordsPage();
     }

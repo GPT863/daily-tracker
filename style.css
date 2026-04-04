@@ -8182,3 +8182,68 @@ body.elder-mode .health-quick-unit {
 .empty-state-block .empty-cta:hover {
     background: var(--forest-color);
 }
+
+/* ── Phase 3: 我的页 Profile Header ── */
+.my-profile-header {
+    background: linear-gradient(135deg, var(--forest-color) 0%, var(--primary-color) 100%);
+    border-radius: 16px;
+    padding: 20px 16px;
+    margin: 0 0 16px;
+    text-align: center;
+    color: #fff;
+}
+
+.my-profile-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    overflow: hidden;
+}
+
+.my-profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.my-profile-name {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.my-profile-meta {
+    font-size: 12px;
+    opacity: 0.85;
+    margin-bottom: 10px;
+    min-height: 16px;
+}
+
+.my-profile-tags {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.my-profile-tag {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 4px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.my-profile-tag:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
