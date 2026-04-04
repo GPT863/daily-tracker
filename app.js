@@ -6958,43 +6958,31 @@ function updateProfileAvatarPreview(prefix, avatar = '') {
 
     if (prefix === 'profile') {
         const circle = document.getElementById('profileAvatarUploadBtn');
-        const removeBtn = document.getElementById('profileAvatarRemoveBtn');
-        const hint = document.getElementById('profileAvatarHint');
         if (!circle) return;
 
         if (avatar) {
             img.src = avatar;
             circle.classList.add('has-image');
             circle.classList.remove('has-name');
-            if (removeBtn) removeBtn.classList.remove('hidden');
-            if (hint) hint.classList.add('hidden');
         } else {
             img.removeAttribute('src');
             circle.classList.remove('has-image');
             circle.classList.toggle('has-name', !!initial);
-            if (removeBtn) removeBtn.classList.add('hidden');
-            if (hint) hint.classList.remove('hidden');
         }
         return;
     }
 
     // familyMember prefix
     const circle = document.getElementById('familyMemberAvatarUploadBtn');
-    const hint = document.getElementById('familyMemberAvatarHint');
-    const removeBtn = document.getElementById('removeFamilyMemberAvatar');
     if (!circle) return;
     if (avatar) {
         img.src = avatar;
         circle.classList.add('has-image');
         circle.classList.remove('has-name');
-        if (removeBtn) removeBtn.classList.remove('hidden');
-        if (hint) hint.classList.add('hidden');
     } else {
         img.removeAttribute('src');
         circle.classList.remove('has-image');
         circle.classList.toggle('has-name', !!initial);
-        if (removeBtn) removeBtn.classList.add('hidden');
-        if (hint) hint.classList.remove('hidden');
     }
 }
 
