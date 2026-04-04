@@ -8247,3 +8247,9 @@ body.elder-mode .health-quick-unit {
 .my-profile-tag:hover {
     background: rgba(255, 255, 255, 0.35);
 }
+
+/* Task 7: 提醒表单视觉统一 */
+#reminderFormModal .activity-form,
+#reminderModal .activity-form {
+    background: var(--mint-color);
+}
