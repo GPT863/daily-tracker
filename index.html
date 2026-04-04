@@ -78,9 +78,11 @@
                     </div>
                     <div class="health-section-body">
                         <div id="healthQuickPreview" class="health-quick-preview"></div>
-                        <div id="healthEmptyState" class="empty-state small">
-                            <p>今天还没有健康数据</p>
-                            <button type="button" id="healthEmptyActionBtn" class="btn-empty-action">去测量</button>
+                        <div id="healthEmptyState" class="empty-state-block">
+                            <div class="empty-icon">📊</div>
+                            <p class="empty-title">今天还没有测量数据</p>
+                            <p class="empty-subtitle">记录血压、血糖、心率等健康指标</p>
+                            <button type="button" id="healthEmptyActionBtn" class="empty-cta">+ 去测量</button>
                         </div>
                     </div>
                 </section>
@@ -98,9 +100,11 @@
                         <button id="viewAllReminders" class="text-btn">查看全部</button>
                     </div>
                     <div id="todayReminders" class="reminder-list"></div>
-                    <div id="todayRemindersEmptyState" class="empty-state small">
-                        <p>今天还没有提醒哦</p>
-                        <button type="button" id="reminderEmptyActionBtn" class="btn-empty-action">去添加</button>
+                    <div id="todayRemindersEmptyState" class="empty-state-block">
+                        <div class="empty-icon">🔔</div>
+                        <p class="empty-title">今天没有提醒</p>
+                        <p class="empty-subtitle">添加服药、运动等定时提醒</p>
+                        <button type="button" id="reminderEmptyActionBtn" class="empty-cta">+ 添加提醒</button>
                     </div>
                 </section>
 
@@ -143,9 +147,11 @@
                         </div>
                     </div>
                     <div id="timeline" class="timeline"></div>
-                    <div id="emptyState" class="empty-state">
-                        <p>今天还没有记录哦</p>
-                        <button type="button" id="timelineEmptyActionBtn" class="btn-empty-action">去添加</button>
+                    <div id="emptyState" class="empty-state-block">
+                        <div class="empty-icon">📋</div>
+                        <p class="empty-title">今天还没有记录哦</p>
+                        <p class="empty-subtitle">记录饮食、运动、用药等日常活动</p>
+                        <button type="button" id="timelineEmptyActionBtn" class="empty-cta">去添加</button>
                     </div>
                 </section>
             </div>
@@ -1057,9 +1063,11 @@
                     </div>
                     <div class="records-scrollable-content">
                         <div id="recordsList" class="reminder-detail-list records-stream"></div>
-                        <div id="recordsEmptyState" class="empty-state">
-                            <p id="recordsEmptyTitle">今天还没有活动记录</p>
-                            <p id="recordsEmptyHint">点击右上角按钮添加第一条内容。</p>
+                        <div id="recordsEmptyState" class="empty-state-block">
+                            <div class="empty-icon" id="recordsEmptyIcon">🏃</div>
+                            <p class="empty-title" id="recordsEmptyTitle">今天还没有活动记录</p>
+                            <p class="empty-subtitle" id="recordsEmptySubtitle">记录饮食、运动、用药等日常活动</p>
+                            <button type="button" id="recordsEmptyCta" class="empty-cta">+ 添加活动</button>
                         </div>
                     </div>
                 </div>
