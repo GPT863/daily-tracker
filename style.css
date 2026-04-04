@@ -2255,6 +2255,44 @@ body.elder-mode .form-actions button {
     color: var(--text-secondary);
 }
 
+/* 档案完整度指示器 */
+.profile-completeness {
+    margin-bottom: 16px;
+}
+
+.profile-completeness-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.profile-completeness-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.profile-completeness-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--forest-color);
+}
+
+.profile-completeness-bar {
+    height: 5px;
+    border-radius: 99px;
+    background: rgba(40, 122, 68, 0.12);
+    overflow: hidden;
+}
+
+.profile-completeness-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #4caf50, #2e7d32);
+    transition: width 0.35s ease;
+    width: 0%;
+}
+
 .profile-sections {
     display: flex;
     flex-direction: column;

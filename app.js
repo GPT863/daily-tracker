@@ -186,6 +186,10 @@ const profileFieldNames = [
     'ChronicConditions',
     'Allergies',
     'Medications',
+    'Smoking',
+    'Drinking',
+    'Exercise',
+    'SleepHours',
     'HealthGoals',
     'Notes'
 ];
@@ -4596,6 +4600,10 @@ function normalizeProfileShape(profileResponse, fallback = {}) {
         chronicConditions: profileResponse?.chronicConditions || '',
         allergies: profileResponse?.allergies || '',
         medications: profileResponse?.medications || '',
+        smoking: profileResponse?.smoking || '',
+        drinking: profileResponse?.drinking || '',
+        exercise: profileResponse?.exercise || '',
+        sleepHours: profileResponse?.sleepHours || '',
         healthGoals: profileResponse?.healthGoals || '',
         notes: profileResponse?.notes || '',
         avatar: profileResponse?.avatar || fallback?.avatar || ''
@@ -5313,6 +5321,12 @@ function setupProfileListeners() {
     });
     ['familyMemberHeight', 'familyMemberWeight'].forEach(id => {
         document.getElementById(id)?.addEventListener('input', () => updateBmiDisplay('familyMember'));
+    });
+    profileFieldNames.forEach(field => {
+        document.getElementById(`profile${field}`)?.addEventListener('input', () => updateCompletenessIndicator('profile'));
+        document.getElementById(`profile${field}`)?.addEventListener('change', () => updateCompletenessIndicator('profile'));
+        document.getElementById(`familyMember${field}`)?.addEventListener('input', () => updateCompletenessIndicator('familyMember'));
+        document.getElementById(`familyMember${field}`)?.addEventListener('change', () => updateCompletenessIndicator('familyMember'));
     });
     document.getElementById('familyMembersList')?.addEventListener('click', (e) => {
         const actionBtn = e.target.closest('[data-family-action]');
@@ -6852,6 +6866,21 @@ function openProfileModal() {
     showStandalonePage('profileModal', 'profile');
 }
 
+function updateCompletenessIndicator(prefix) {
+    const idPrefix = prefix === 'profile' ? 'profile' : 'familyMember';
+    const fill = document.getElementById(`${idPrefix}CompletenessFill`);
+    const text = document.getElementById(`${idPrefix}CompletenessText`);
+    if (!fill || !text) return;
+    const total = profileFieldNames.length;
+    const filled = profileFieldNames.filter(field => {
+        const el = document.getElementById(`${prefix}${field}`);
+        return el && el.value.trim() !== '';
+    }).length;
+    const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
+    fill.style.width = `${pct}%`;
+    text.textContent = `${filled} / ${total} 项`;
+}
+
 function calculateBmi(height, weight) {
     const h = parseFloat(height);
     const w = parseFloat(weight);
@@ -6903,6 +6932,7 @@ function populateProfileForm(prefix, profileData = {}) {
     });
     updateProfileAvatarPreview(prefix, normalized.avatar || '');
     updateBmiDisplay(prefix);
+    updateCompletenessIndicator(prefix);
 }
 
 function buildProfilePayload(prefix, avatar = '') {

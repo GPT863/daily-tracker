@@ -1320,6 +1320,16 @@
                         <p>记录个人身体基础情况和健康基本情况，为后续健康诊断和个性化建议提供基础数据。</p>
                     </div>
 
+                    <div class="profile-completeness" id="profileCompleteness">
+                        <div class="profile-completeness-header">
+                            <span class="profile-completeness-label">档案完整度</span>
+                            <span class="profile-completeness-text" id="profileCompletenessText"></span>
+                        </div>
+                        <div class="profile-completeness-bar">
+                            <div class="profile-completeness-fill" id="profileCompletenessFill"></div>
+                        </div>
+                    </div>
+
                     <div class="profile-avatar-section">
                         <div class="profile-avatar-wrap">
                             <button type="button" id="profileAvatarUploadBtn" class="profile-avatar-circle" aria-label="上传头像">
@@ -1434,6 +1444,45 @@
                         </div>
 
                         <div class="profile-section">
+                            <h4 class="profile-section-title">生活习惯</h4>
+                            <div class="profile-grid">
+                                <div class="form-group">
+                                    <label for="profileSmoking">吸烟习惯</label>
+                                    <select id="profileSmoking">
+                                        <option value="">请选择</option>
+                                        <option value="none">不吸烟</option>
+                                        <option value="occasional">偶尔吸烟</option>
+                                        <option value="daily">每天吸烟</option>
+                                        <option value="quit">已戒烟</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profileDrinking">饮酒习惯</label>
+                                    <select id="profileDrinking">
+                                        <option value="">请选择</option>
+                                        <option value="none">不喝酒</option>
+                                        <option value="occasional">偶尔喝酒</option>
+                                        <option value="frequent">经常喝酒</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profileExercise">运动习惯</label>
+                                    <select id="profileExercise">
+                                        <option value="">请选择</option>
+                                        <option value="none">基本不运动</option>
+                                        <option value="light">每周 1–2 次</option>
+                                        <option value="moderate">每周 3–4 次</option>
+                                        <option value="daily">每天运动</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profileSleepHours">平均睡眠（小时）</label>
+                                    <input type="number" id="profileSleepHours" min="0" max="24" step="0.5" placeholder="例如：7.5">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-section">
                             <h4 class="profile-section-title">健康目标</h4>
                             <div class="profile-grid">
                                 <div class="form-group full-width">
@@ -1488,6 +1537,16 @@
                 <form id="familyMemberForm" class="activity-form">
                     <div class="profile-intro">
                         <p>每位家庭成员都维护一份独立档案，字段结构与个人信息一致，便于后续扩展和使用。</p>
+                    </div>
+
+                    <div class="profile-completeness" id="familyMemberCompleteness">
+                        <div class="profile-completeness-header">
+                            <span class="profile-completeness-label">档案完整度</span>
+                            <span class="profile-completeness-text" id="familyMemberCompletenessText"></span>
+                        </div>
+                        <div class="profile-completeness-bar">
+                            <div class="profile-completeness-fill" id="familyMemberCompletenessFill"></div>
+                        </div>
                     </div>
 
                     <div class="profile-avatar-section">
@@ -1599,6 +1658,45 @@
                                 <div class="form-group full-width">
                                     <label for="familyMemberMedications">长期用药</label>
                                     <textarea id="familyMemberMedications" rows="3" placeholder="例如：降压药每日 1 次"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-section">
+                            <h4 class="profile-section-title">生活习惯</h4>
+                            <div class="profile-grid">
+                                <div class="form-group">
+                                    <label for="familyMemberSmoking">吸烟习惯</label>
+                                    <select id="familyMemberSmoking">
+                                        <option value="">请选择</option>
+                                        <option value="none">不吸烟</option>
+                                        <option value="occasional">偶尔吸烟</option>
+                                        <option value="daily">每天吸烟</option>
+                                        <option value="quit">已戒烟</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="familyMemberDrinking">饮酒习惯</label>
+                                    <select id="familyMemberDrinking">
+                                        <option value="">请选择</option>
+                                        <option value="none">不喝酒</option>
+                                        <option value="occasional">偶尔喝酒</option>
+                                        <option value="frequent">经常喝酒</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="familyMemberExercise">运动习惯</label>
+                                    <select id="familyMemberExercise">
+                                        <option value="">请选择</option>
+                                        <option value="none">基本不运动</option>
+                                        <option value="light">每周 1–2 次</option>
+                                        <option value="moderate">每周 3–4 次</option>
+                                        <option value="daily">每天运动</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="familyMemberSleepHours">平均睡眠（小时）</label>
+                                    <input type="number" id="familyMemberSleepHours" min="0" max="24" step="0.5" placeholder="例如：7.5">
                                 </div>
                             </div>
                         </div>
