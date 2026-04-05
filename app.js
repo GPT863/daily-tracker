@@ -5777,7 +5777,7 @@ async function handleReminderSubmit(e) {
     showToast(wasEditing ? '提醒已更新！' : '提醒已添加！');
     submitLocks.reminder = false;
     switchPage('reminders');
-    renderReminderTabs('today');
+    renderReminderTabs('all');
     updateRemindersDisplay();
 }
 
@@ -7950,7 +7950,16 @@ function applyTemplate(templateId) {
     document.getElementById('activityContent').value = template.content;
     document.getElementById('activityFeeling').value = template.feeling || '';
     document.getElementById('activityStartTime').value = startTime;
-    document.getElementById('activityEndTime').value = template.duration ? addMinutesToTime(startTime, template.duration) : startTime;
+    const candidateEndTime = template.duration ? addMinutesToTime(startTime, template.duration) : startTime;
+    // Cap end time at current time for today's records to avoid future-time validation failure
+    const now = new Date();
+    const isToday = currentDate.toDateString() === now.toDateString();
+    if (isToday) {
+        const nowHM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        document.getElementById('activityEndTime').value = (candidateEndTime > nowHM) ? nowHM : candidateEndTime;
+    } else {
+        document.getElementById('activityEndTime').value = candidateEndTime;
+    }
     updateActivityDurationField();
 
     // 高亮选中的模板
