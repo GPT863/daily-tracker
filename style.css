@@ -490,8 +490,8 @@ body.elder-mode .form-actions button {
 }
 
 #currentDate {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 1rem;
+    font-weight: 600;
 }
 
 .current-date-btn {
@@ -500,8 +500,8 @@ body.elder-mode .form-actions button {
     color: white;
     font-size: 1rem;
     font-weight: 600;
-    padding: 10px 16px;
-    border-radius: 12px;
+    padding: 7px 14px;
+    border-radius: 10px;
     cursor: pointer;
     transition: background 0.25s, border-color 0.25s, transform 0.25s;
     width: 100%;
