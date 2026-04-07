@@ -3270,19 +3270,6 @@ body.elder-mode .form-actions button {
     gap: 8px;
 }
 
-#reminderHeaderAddBtn {
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: var(--forest-color);
-    font-size: 0.98rem;
-    font-weight: 600;
-}
-
-#reminderHeaderAddBtn:hover {
-    background: transparent;
-    color: #1f7a3d;
-}
 
 .tab-btn {
     flex: 1;
